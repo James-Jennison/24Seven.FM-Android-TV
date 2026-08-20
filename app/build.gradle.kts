@@ -2,7 +2,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -29,7 +28,8 @@ require(!hasAnyUploadSigningValue || hasCompleteUploadSigning) {
 
 android {
     namespace = "com.codeframe78.twentyfourseven.player"
-    compileSdk = 36
+    compileSdk = 37
+    compileSdkMinor = 1
     defaultConfig {
         applicationId = "com.codeframe78.twentyfourseven.tv"
         minSdk = 26
