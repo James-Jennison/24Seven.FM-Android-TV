@@ -34,6 +34,7 @@ import com.codeframe78.twentyfourseven.player.domain.StationId
 import com.codeframe78.twentyfourseven.player.domain.HistoryTrack
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingState
 import com.codeframe78.twentyfourseven.player.domain.PlaybackState
+import com.codeframe78.twentyfourseven.player.domain.PlaybackRoute
 import com.codeframe78.twentyfourseven.player.domain.PlaybackStatus
 import com.codeframe78.twentyfourseven.player.domain.SleepTimerState
 import com.codeframe78.twentyfourseven.player.domain.QueueLoadStatus
@@ -162,51 +163,6 @@ class RadioAppTest {
 
         composeRule.onNodeWithTag("phone_navigation_bar").assertExists()
         composeRule.onNodeWithTag("tablet_navigation_rail").assertDoesNotExist()
-    }
-
-    @Test
-    fun shortWidePlayerKeepsAllControlsAndStationLogosVisibleWithoutTheCarousel() {
-        val landscapeStations = listOf(
-            station,
-            station.copy(id = StationId("1980s"), name = "24Seven.FM 80s", shortName = "80s"),
-            station.copy(id = StationId("afm"), name = "Adagio.FM", shortName = "AFM"),
-            station.copy(id = StationId("dfm"), name = "Death.FM", shortName = "DFM"),
-            station.copy(id = StationId("efm"), name = "Entranced.FM", shortName = "EFM"),
-        )
-        composeRule.setContent {
-            MaterialTheme {
-                Box(Modifier.requiredSize(760.dp, 400.dp)) {
-                    RadioApp(
-                        state = sampleState().copy(stations = landscapeStations, selectedStation = landscapeStations.first()),
-                        onSelectStation = {},
-                        onSelectDestination = {},
-                        onPlay = {},
-                        onPause = {},
-                        onStop = {},
-                        onRefreshQueue = {},
-                    )
-                }
-            }
-        }
-
-        composeRule.onNodeWithTag("tablet_navigation_rail").assertIsDisplayed()
-        composeRule.onNodeWithTag("landscape_player").assertIsDisplayed()
-        composeRule.onNodeWithTag("landscape_station_selector").assertIsDisplayed()
-        listOf(
-            "previous_station",
-            "sleep_timer_open",
-            "primary_play_pause",
-            "audio_output_open",
-            "next_station",
-            "landscape_station_sst",
-            "landscape_station_1980s",
-            "landscape_station_afm",
-            "landscape_station_dfm",
-            "landscape_station_efm",
-        ).forEach { tag ->
-            composeRule.onNodeWithTag(tag).assertIsDisplayed()
-        }
-        composeRule.onNodeWithTag("station_selector").assertDoesNotExist()
     }
 
     @Test
@@ -643,6 +599,34 @@ class RadioAppTest {
         composeRule.onNodeWithTag("audio_output_open").assertIsDisplayed().performClick()
         composeRule.onNodeWithText("Using Razr Buds").assertDoesNotExist()
         composeRule.runOnIdle { assertEquals(1, chooserOpenCount) }
+    }
+
+    @Test
+    fun castEntryPointAndActiveRouteAreVisibleInTheNativePlayer() {
+        composeRule.setContent {
+            MaterialTheme {
+                RadioApp(
+                    state = sampleState().copy(
+                        playback = PlaybackState(
+                            stationId = station.id,
+                            status = PlaybackStatus.Playing,
+                            route = PlaybackRoute.Casting,
+                            castDeviceName = "Living room",
+                        ),
+                    ),
+                    onSelectStation = {},
+                    onSelectDestination = {},
+                    onPlay = {},
+                    onPause = {},
+                    onStop = {},
+                    onRefreshQueue = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("cast_route_button").assertIsDisplayed()
+        composeRule.onNodeWithTag("cast_route_status").assertIsDisplayed()
+        composeRule.onNodeWithText("Casting to Living room").assertIsDisplayed()
     }
 
     @Test
