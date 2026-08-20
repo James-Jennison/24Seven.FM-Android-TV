@@ -6,7 +6,6 @@ import com.codeframe78.twentyfourseven.player.data.InMemoryNowPlayingRepository
 import com.codeframe78.twentyfourseven.player.data.PollingQueueRepository
 import com.codeframe78.twentyfourseven.player.data.NetworkAuthRepository
 import com.codeframe78.twentyfourseven.player.data.AndroidKeystoreAuthSessionStore
-import com.codeframe78.twentyfourseven.player.data.AndroidCommunityNotificationRepository
 import com.codeframe78.twentyfourseven.player.data.PollingChatRepository
 import com.codeframe78.twentyfourseven.player.data.StationAuthRemoteDataSource
 import com.codeframe78.twentyfourseven.player.data.StationAuthSessionCoordinator
@@ -28,6 +27,7 @@ import com.codeframe78.twentyfourseven.player.domain.NowPlayingRepository
 import com.codeframe78.twentyfourseven.player.domain.SongRequestRepository
 import com.codeframe78.twentyfourseven.player.domain.FavoriteTracksRepository
 import com.codeframe78.twentyfourseven.player.domain.ListenerActivityRepository
+import com.codeframe78.twentyfourseven.player.domain.UnavailableCommunityNotificationRepository
 import com.codeframe78.twentyfourseven.player.playback.Media3PlaybackController
 
 class RadioApplication : Application() {
@@ -40,7 +40,7 @@ class AppContainer(application: Application) {
     private val authSessions = StationAuthSessionCoordinator(authSessionStore)
     private val stationPreferences = SharedPreferencesStationPreferencesRepository(application)
     val communitySafetyRepository = SharedPreferencesCommunitySafetyRepository(application)
-    val communityNotificationRepository = AndroidCommunityNotificationRepository(application)
+    val communityNotificationRepository = UnavailableCommunityNotificationRepository
 
     val stationRepository = BootstrapStationRepository(stationPreferences)
     val nowPlayingRepository: NowPlayingRepository = nowPlayingStore

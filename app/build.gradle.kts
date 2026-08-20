@@ -31,13 +31,13 @@ android {
     namespace = "com.codeframe78.twentyfourseven.player"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.codeframe78.twentyfourseven.player"
+        applicationId = "com.codeframe78.twentyfourseven.tv"
         minSdk = 26
         targetSdk = 36
-        versionCode = 16
-        versionName = "0.1.0-alpha07"
+        versionCode = 1
+        versionName = "0.1.0-tv-alpha01"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        manifestPlaceholders["appLabel"] = "24Seven.FM Player"
+        manifestPlaceholders["appLabel"] = "24Seven.FM TV"
         manifestPlaceholders["buildRevision"] = sourceRevision
     }
     buildFeatures { compose = true }
@@ -55,7 +55,7 @@ android {
         getByName("debug") {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            manifestPlaceholders["appLabel"] = "24Seven.FM Player (Debug)"
+            manifestPlaceholders["appLabel"] = "24Seven.FM TV (Debug)"
         }
         getByName("release") {
             isMinifyEnabled = true
@@ -90,6 +90,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.tv:tv-material:1.1.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
     implementation("androidx.media3:media3-common:1.11.0")
