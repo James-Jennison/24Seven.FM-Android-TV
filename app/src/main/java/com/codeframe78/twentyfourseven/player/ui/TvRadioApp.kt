@@ -33,7 +33,7 @@ import com.codeframe78.twentyfourseven.player.domain.StationId
  */
 @Composable
 internal fun TvRadioApp(
-    state: MainUiState,
+    state: TvRadioUiState,
     onSelectStation: (StationId) -> Unit,
     onPlay: () -> Unit,
     onPause: () -> Unit,
@@ -109,7 +109,7 @@ internal fun TvRadioApp(
 }
 
 @Composable
-private fun TvNowPlaying(state: MainUiState) {
+private fun TvNowPlaying(state: TvRadioUiState) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(28.dp),

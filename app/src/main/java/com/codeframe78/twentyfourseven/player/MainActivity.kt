@@ -5,8 +5,8 @@ import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.codeframe78.twentyfourseven.player.ui.MainViewModel
 import com.codeframe78.twentyfourseven.player.ui.TvRadioApp
+import com.codeframe78.twentyfourseven.player.ui.TvRadioViewModel
 
 /**
  * The Android TV-only entry point. Mobile activities and external-app handoffs are deliberately
@@ -17,19 +17,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val container = (application as RadioApplication).appContainer
         setContent {
-            val viewModel: MainViewModel = viewModel(
-                factory = MainViewModel.Factory(
+            val viewModel: TvRadioViewModel = viewModel(
+                factory = TvRadioViewModel.Factory(
                     container.stationRepository,
                     container.playbackController,
                     container.nowPlayingRepository,
-                    container.queueRepository,
-                    container.authRepository,
-                    container.chatRepository,
-                    container.songRequestRepository,
-                    container.favoriteTracksRepository,
-                    container.listenerActivityRepository,
-                    container.communitySafetyRepository,
-                    container.communityNotificationRepository,
                 ),
             )
             val state = viewModel.uiState.collectAsStateWithLifecycle().value
