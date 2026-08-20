@@ -102,7 +102,7 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.5.0")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.json:json:20251224")
+    testImplementation("org.json:json:20260814")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.test:core-ktx:1.7.0")
