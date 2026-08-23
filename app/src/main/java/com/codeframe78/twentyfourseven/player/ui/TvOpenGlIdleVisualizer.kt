@@ -209,42 +209,137 @@ private fun TvOpenGlIdleVisualizer(
                 val panelTop = size.height * .055f
                 val panelWidth = size.width * .93f
                 val panelHeight = size.height * .89f
-                val jogCentre = Offset(size.width * .255f, size.height * .565f)
-                val jogRadius = size.height * .255f
+                val jogCentre = Offset(size.width * .255f, size.height * .575f)
+                val jogRadius = size.height * .250f
+                val mixerLeft = size.width * .485f
+                val mixerRight = size.width * .755f
+                val waveformLeft = size.width * .505f
+                val waveformTop = size.height * .260f
+                val waveformWidth = size.width * .405f
+                val waveformHeight = size.height * .245f
+
+                // A physical control surface first: a matte faceplate, recessed
+                // displays and hardware details. The animated GL layer above it
+                // supplies the live PCM waveform, jog response, EQ and VU levels.
                 drawRoundRect(
-                    color = Color(0x1A7C9CC0),
+                    color = Color(0xB80A101B),
                     topLeft = Offset(panelLeft, panelTop),
                     size = Size(panelWidth, panelHeight),
                     cornerRadius = CornerRadius(size.height * .025f),
                 )
                 drawRoundRect(
-                    color = Color(0x668CB3D8),
+                    color = Color(0x70111D2B),
+                    topLeft = Offset(panelLeft + size.height * .006f, panelTop + size.height * .006f),
+                    size = Size(panelWidth - size.height * .012f, panelHeight - size.height * .012f),
+                    cornerRadius = CornerRadius(size.height * .020f),
+                )
+                drawRoundRect(
+                    color = Color(0xFF5C7D9D),
                     topLeft = Offset(panelLeft, panelTop),
                     size = Size(panelWidth, panelHeight),
                     cornerRadius = CornerRadius(size.height * .025f),
-                    style = Stroke(width = size.height * .002f),
+                    style = Stroke(width = size.height * .0018f),
                 )
-                drawCircle(Color(0x131E476C), jogRadius, jogCentre)
-                drawCircle(Color(0x5579BEEB), jogRadius, jogCentre, style = Stroke(width = size.height * .003f))
-                drawCircle(Color(0x33101C2D), jogRadius * .62f, jogCentre)
-                drawCircle(Color(0x405F83A8), jogRadius * .62f, jogCentre, style = Stroke(width = size.height * .002f))
+
+                listOf(.052f to .078f, .948f to .078f, .052f to .922f, .948f to .922f).forEach { (x, y) ->
+                    val screw = Offset(size.width * x, size.height * y)
+                    drawCircle(Color(0xFF7892AA), size.height * .006f, screw)
+                    drawCircle(Color(0xFF070B10), size.height * .0028f, screw)
+                }
+
                 drawRoundRect(
-                    color = Color(0x29172035),
-                    topLeft = Offset(size.width * .505f, size.height * .285f),
-                    size = Size(size.width * .405f, size.height * .235f),
+                    color = Color(0x8A07101B),
+                    topLeft = Offset(size.width * .075f, size.height * .245f),
+                    size = Size(size.width * .360f, size.height * .625f),
+                    cornerRadius = CornerRadius(size.height * .018f),
+                )
+                drawCircle(Color(0x7202060A), jogRadius, jogCentre)
+                drawCircle(Color(0xFF6A7F91), jogRadius, jogCentre, style = Stroke(width = size.height * .005f))
+                drawCircle(Color(0x5A142232), jogRadius * .885f, jogCentre)
+                drawCircle(Color(0xFF293D51), jogRadius * .800f, jogCentre, style = Stroke(width = size.height * .0014f))
+                drawCircle(Color(0x4A0B121C), jogRadius * .585f, jogCentre)
+                drawCircle(Color(0xFF54738C), jogRadius * .585f, jogCentre, style = Stroke(width = size.height * .002f))
+                repeat(40) { tick ->
+                    val angle = tick * Tau / 40f
+                    val tickInner = jogRadius * .910f
+                    val tickOuter = jogRadius * .955f
+                    val start = Offset(jogCentre.x + cos(angle) * tickInner, jogCentre.y + sin(angle) * tickInner)
+                    val end = Offset(jogCentre.x + cos(angle) * tickOuter, jogCentre.y + sin(angle) * tickOuter)
+                    drawLine(Color(0xFF668096), start, end, strokeWidth = size.height * .0014f)
+                }
+                drawLine(
+                    Color(0xFFFF4CA4),
+                    Offset(jogCentre.x, jogCentre.y - jogRadius * .78f),
+                    Offset(jogCentre.x, jogCentre.y - jogRadius * .61f),
+                    strokeWidth = size.height * .004f,
+                )
+
+                drawRoundRect(
+                    color = Color(0xA0040A11),
+                    topLeft = Offset(waveformLeft, waveformTop),
+                    size = Size(waveformWidth, waveformHeight),
                     cornerRadius = CornerRadius(size.height * .010f),
                 )
                 drawRoundRect(
-                    color = Color(0x5B7DA5CB),
-                    topLeft = Offset(size.width * .505f, size.height * .285f),
-                    size = Size(size.width * .405f, size.height * .235f),
+                    color = Color(0xFF587895),
+                    topLeft = Offset(waveformLeft, waveformTop),
+                    size = Size(waveformWidth, waveformHeight),
                     cornerRadius = CornerRadius(size.height * .010f),
-                    style = Stroke(width = size.height * .0017f),
+                    style = Stroke(width = size.height * .0015f),
                 )
-                drawLine(Color(0x557DA5CB), Offset(size.width * .475f, size.height * .630f), Offset(size.width * .925f, size.height * .630f), strokeWidth = size.height * .0015f)
+                repeat(4) { row ->
+                    val y = waveformTop + waveformHeight * (row + 1f) / 5f
+                    drawLine(Color(0x243C5772), Offset(waveformLeft, y), Offset(waveformLeft + waveformWidth, y), strokeWidth = size.height * .001f)
+                }
+                repeat(8) { column ->
+                    val x = waveformLeft + waveformWidth * (column + 1f) / 9f
+                    drawLine(Color(0x1C3C5772), Offset(x, waveformTop), Offset(x, waveformTop + waveformHeight), strokeWidth = size.height * .001f)
+                }
+
+                drawRoundRect(
+                    color = Color(0x9808121E),
+                    topLeft = Offset(mixerLeft, size.height * .550f),
+                    size = Size(mixerRight - mixerLeft, size.height * .285f),
+                    cornerRadius = CornerRadius(size.height * .012f),
+                )
+                drawRoundRect(
+                    color = Color(0xFF496C88),
+                    topLeft = Offset(mixerLeft, size.height * .550f),
+                    size = Size(mixerRight - mixerLeft, size.height * .285f),
+                    cornerRadius = CornerRadius(size.height * .012f),
+                    style = Stroke(width = size.height * .0014f),
+                )
+                repeat(4) { channel ->
+                    val channelX = size.width * (.5075f + channel * .0725f)
+                    drawLine(Color(0xFF425C73), Offset(channelX, size.height * .588f), Offset(channelX, size.height * .760f), strokeWidth = size.height * .008f)
+                    repeat(3) { knob ->
+                        val knobY = size.height * (.585f + knob * .050f)
+                        drawCircle(Color(0xFF05090E), size.height * .019f, Offset(channelX, knobY))
+                        drawCircle(Color(0xFF6F8496), size.height * .019f, Offset(channelX, knobY), style = Stroke(width = size.height * .0014f))
+                        drawLine(
+                            if (knob == 0) Color(0xFFFF63C3) else Color(0xFF7DC8FF),
+                            Offset(channelX, knobY),
+                            Offset(channelX + size.height * .010f, knobY - size.height * .008f),
+                            strokeWidth = size.height * .002f,
+                        )
+                    }
+                }
+                drawLine(Color(0xFF425C73), Offset(size.width * .525f, size.height * .865f), Offset(size.width * .720f, size.height * .865f), strokeWidth = size.height * .010f)
+                drawRoundRect(
+                    color = Color(0xFFD5E9F8),
+                    topLeft = Offset(size.width * .610f, size.height * .852f),
+                    size = Size(size.width * .030f, size.height * .026f),
+                    cornerRadius = CornerRadius(size.height * .004f),
+                )
+                listOf("CUE" to .112f, "LIVE" to .195f, "SYNC" to .330f).forEach { (_, position) ->
+                    val center = Offset(size.width * position, size.height * .875f)
+                    drawCircle(Color(0xFF0A121D), size.height * .030f, center)
+                    drawCircle(Color(0xFF607A92), size.height * .030f, center, style = Stroke(width = size.height * .0015f))
+                }
+
                 drawIntoCanvas { canvas ->
                     signalDeckLabelPaint.textAlign = AndroidPaint.Align.LEFT
-                    signalDeckLabelPaint.textSize = size.height * .036f
+                    signalDeckLabelPaint.textSize = size.height * .034f
                     signalDeckLabelPaint.alpha = 220
                     canvas.nativeCanvas.drawText(
                         signalDeckLabelPaint.truncateToWidth(stationName?.takeIf { it.isNotBlank() } ?: "NO STATION SELECTED", size.width * .56f),
@@ -254,21 +349,32 @@ private fun TvOpenGlIdleVisualizer(
                     )
                     signalDeckLabelPaint.textSize = size.height * .018f
                     signalDeckLabelPaint.alpha = 145
-                    canvas.nativeCanvas.drawText("LIVE DECK  •  DECODED PCM CONTROL SURFACE", size.width * .070f, size.height * .178f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("BROADCAST DJ CONSOLE  •  DECODED PCM", size.width * .070f, size.height * .178f, signalDeckLabelPaint)
                     signalDeckLabelPaint.textAlign = AndroidPaint.Align.CENTER
-                    signalDeckLabelPaint.textSize = size.height * .022f
+                    signalDeckLabelPaint.textSize = size.height * .019f
                     signalDeckLabelPaint.alpha = 200
                     canvas.nativeCanvas.drawText("LIVE", jogCentre.x, jogCentre.y + size.height * .010f, signalDeckLabelPaint)
                     signalDeckLabelPaint.textSize = size.height * .015f
                     signalDeckLabelPaint.alpha = 145
-                    canvas.nativeCanvas.drawText("JOG / LOW", jogCentre.x, jogCentre.y + size.height * .042f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("WAVEFORM", size.width * .708f, size.height * .315f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("CHANNEL EQ", size.width * .680f, size.height * .680f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("PROGRAM DECK", jogCentre.x, jogCentre.y + size.height * .042f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("LIVE PCM WAVEFORM", size.width * .708f, size.height * .288f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("LOW", size.width * .5075f, size.height * .545f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("LOW-MID", size.width * .580f, size.height * .545f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("MID", size.width * .6525f, size.height * .545f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("HIGH", size.width * .725f, size.height * .545f, signalDeckLabelPaint)
                     canvas.nativeCanvas.drawText("MASTER L", size.width * .780f, size.height * .838f, signalDeckLabelPaint)
                     canvas.nativeCanvas.drawText("MASTER R", size.width * .865f, size.height * .838f, signalDeckLabelPaint)
                     signalDeckLabelPaint.textSize = size.height * .014f
                     signalDeckLabelPaint.alpha = 150
                     canvas.nativeCanvas.drawText("PHASE ${formatCorrelation(signalDeckCorrelation)}", size.width * .708f, size.height * .875f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText(masterReadings[0], size.width * .780f, size.height * .890f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText(masterReadings[1], size.width * .865f, size.height * .890f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("CUE", size.width * .112f, size.height * .882f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("LIVE", size.width * .195f, size.height * .882f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("SYNC", size.width * .330f, size.height * .882f, signalDeckLabelPaint)
+                    signalDeckLabelPaint.textSize = size.height * .013f
+                    signalDeckLabelPaint.alpha = 130
+                    canvas.nativeCanvas.drawText("CROSSFADER", size.width * .622f, size.height * .912f, signalDeckLabelPaint)
                 }
             }
         }
@@ -1383,20 +1489,27 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         val low = (band(0) * .70f + band(1) * .30f).coerceIn(0f, 1f)
         val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
         val high = ((band(6) + band(7)) * .5f).coerceIn(0f, 1f)
+        val jogCenterX = -.49f
+        val jogCenterY = -.13f
 
         // Live low-end gives the jog wheel its mass. The ring never rotates on
         // its own; it only reshapes and brightens with the current programme.
         repeat(4) { ring ->
             val radius = .105f + ring * .075f + low * (.014f + ring * .010f) + impact * .025f
-            circle(radius, palette(ring + 1, .13f + low * .27f + mid * .10f), 84, 1f + high * .80f)
+            begin()
+            repeat(84) { index ->
+                val angle = index * Tau / 83f
+                vertex(jogCenterX + cos(angle) * radius * aspect(), jogCenterY + sin(angle) * radius)
+            }
+            lineStrip(84, palette(ring + 1, .13f + low * .27f + mid * .10f), 1f + high * .80f)
         }
         repeat(24) { spoke ->
             val angle = spoke * Tau / 24f + phase * (.035f + low * .12f)
             val inner = .075f
             val outer = .22f + low * .115f + mid * .045f + impact * .040f
             begin()
-            vertex(-.49f + cos(angle) * inner * aspect(), -.13f + sin(angle) * inner)
-            vertex(-.49f + cos(angle) * outer * aspect(), -.13f + sin(angle) * outer)
+            vertex(jogCenterX + cos(angle) * inner * aspect(), jogCenterY + sin(angle) * inner)
+            vertex(jogCenterX + cos(angle) * outer * aspect(), jogCenterY + sin(angle) * outer)
             lines(2, palette(spoke, .08f + low * .20f + transient * .10f), .7f + high * .75f)
         }
 

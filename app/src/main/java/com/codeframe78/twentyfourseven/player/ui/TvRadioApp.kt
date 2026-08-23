@@ -118,6 +118,7 @@ internal fun TvRadioApp(
     var menuDestination by remember { mutableStateOf<TvMenuDestination?>(null) }
     var idleVisualizerActive by remember { mutableStateOf(false) }
     var fullScreenPreviewRequested by remember { mutableStateOf(false) }
+    var fullScreenPreviewStyle by remember { mutableStateOf<IdleVisualizerStyle?>(null) }
     var interactionRevision by remember { mutableStateOf(0) }
     var consumeMenuOpeningDirectionUp by remember { mutableStateOf(false) }
     LaunchedEffect(state.playback.status, menuDestination, interactionRevision, fullScreenPreviewRequested) {
@@ -147,6 +148,7 @@ internal fun TvRadioApp(
             // the automatic idle screen. Return it to that selector so a user
             // can compare styles without reopening General Options.
             fullScreenPreviewRequested = false
+            fullScreenPreviewStyle = null
             menuDestination = TvMenuDestination.IdleScreen
         } else {
             idleVisualizerActive = false
@@ -164,6 +166,7 @@ internal fun TvRadioApp(
                         if (idleVisualizerActive) {
                             idleVisualizerActive = false
                             fullScreenPreviewRequested = false
+                            fullScreenPreviewStyle = null
                         }
                         if (event.key == Key.DirectionDown && menuDestination == null) {
                             menuDestination = TvMenuDestination.GeneralOptions
@@ -201,7 +204,7 @@ internal fun TvRadioApp(
             )
             if (idleVisualizerActive) {
                 TvIdleVisualizer(
-                    style = state.idleScreen.visualizer,
+                    style = fullScreenPreviewStyle ?: state.idleScreen.visualizer,
                     audioState = visualization,
                     stationName = state.selectedStation?.name,
                     modifier = Modifier.fillMaxSize(),
@@ -302,7 +305,8 @@ internal fun TvRadioApp(
                         state = state,
                         visualization = visualization,
                         onSelectVisualizer = onSelectIdleVisualizer,
-                        onPreviewFullScreen = {
+                        onPreviewFullScreen = { previewStyle ->
+                            fullScreenPreviewStyle = previewStyle
                             fullScreenPreviewRequested = true
                             menuDestination = null
                         },
@@ -332,6 +336,7 @@ private enum class TvMenuDestination {
 }
 
 private const val TvIdleScreenDelayMillis = 10 * 60 * 1_000L
+private const val TvVisualizerDoubleActivateWindowMillis = 650L
 
 @Composable
 private fun TvGeneralOptionsSheet(
@@ -371,7 +376,7 @@ private fun TvIdleScreenSheet(
     state: TvRadioUiState,
     visualization: StateFlow<AudioVisualizationState>,
     onSelectVisualizer: (IdleVisualizerStyle) -> Unit,
-    onPreviewFullScreen: () -> Unit,
+    onPreviewFullScreen: (IdleVisualizerStyle) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val selectedAction = remember { FocusRequester() }
@@ -379,6 +384,8 @@ private fun TvIdleScreenSheet(
     val styles = IdleVisualizerStyle.entries.toList()
     val selectorListState = rememberLazyListState()
     var previewStyle by remember { mutableStateOf(state.idleScreen.visualizer) }
+    var lastActivatedStyle by remember { mutableStateOf<IdleVisualizerStyle?>(null) }
+    var lastActivatedAtMillis by remember { mutableStateOf(0L) }
     androidx.activity.compose.BackHandler(onBack = onDismiss)
     LaunchedEffect(state.idleScreen.visualizer) {
         previewStyle = state.idleScreen.visualizer
@@ -433,7 +440,7 @@ private fun TvIdleScreenSheet(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Button(
-                onClick = onPreviewFullScreen,
+                onClick = { onPreviewFullScreen(previewStyle) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(36.dp)
@@ -481,6 +488,17 @@ private fun TvIdleScreenSheet(
                         onClick = {
                             previewStyle = style
                             onSelectVisualizer(style)
+                            val now = android.os.SystemClock.elapsedRealtime()
+                            val isDoubleActivation = lastActivatedStyle == style &&
+                                now - lastActivatedAtMillis <= TvVisualizerDoubleActivateWindowMillis
+                            if (isDoubleActivation) {
+                                lastActivatedStyle = null
+                                lastActivatedAtMillis = 0L
+                                onPreviewFullScreen(style)
+                            } else {
+                                lastActivatedStyle = style
+                                lastActivatedAtMillis = now
+                            }
                         },
                         onPreview = { previewStyle = style },
                         modifier = if (style == state.idleScreen.visualizer) {
