@@ -20,6 +20,8 @@ debug-runtime launch passed.
   1980s.FM; D-pad left returned it to the first station.
 - The hardware media play/pause key changed the active MediaSession from `PLAYING` to `PAUSED` and
   then back to `PLAYING`.
+- The project owner physically tested playback recovery after an Ethernet disconnect/reconnect. D-pad focus, Back,
+  the selector's hidden `↓ OPTIONS` route, media pause/resume, and sleep-timer expiry remained correct after recovery.
 - The 1080p logical layout remained within its TV safe area on the 4K output path.
 - TalkBack was temporarily enabled on the Streamer, bound successfully, and exposed the active station as
   “StreamingSoundtracks.com, live. Select to pause playback,” the inactive station actions, Now Playing

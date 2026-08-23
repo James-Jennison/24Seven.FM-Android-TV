@@ -33,9 +33,9 @@ recovery, and remaining TV acceptance evidence remain open.
 Certify focus traversal, Back behavior, TalkBack, basic/Bluetooth remote input, emulator and physical TV playback, network recovery, 1080p/4K layout, low-memory behavior, 64-bit/16 KB packaging, and all five stations.
 
 **Status: In progress.** The Google TV Streamer pass confirms D-pad focus, Back-to-home with
-background playback, media-key pause/resume, and TalkBack-visible semantics; the API 35 16 KB emulator
-also cold-launches the debug app. Audible TalkBack, additional physical remote, visual-layout, low-memory,
-and signed-release/Play-split evidence remain open.
+background playback, media-key pause/resume, Ethernet recovery, post-recovery hidden-options access, and
+sleep-timer expiry; the API 35 16 KB emulator also cold-launches the debug app. Audible TalkBack, additional
+physical remote, visual-layout, low-memory, and signed-release/Play-split evidence remain open.
 
 ## TV06 — Play alpha delivery
 
