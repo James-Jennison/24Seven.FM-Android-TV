@@ -83,6 +83,9 @@ private fun TvOpenGlIdleVisualizer(
     var masterReadings by remember { mutableStateOf(listOf("-30 dB", "-30 dB")) }
     var signalDeckStereo by remember { mutableStateOf(false) }
     var signalDeckCorrelation by remember { mutableStateOf(0f) }
+    var djWaveform by remember { mutableStateOf(List(AudioWaveformSampleCount) { 0f }) }
+    var djBandLevels by remember { mutableStateOf(List(CalibratedBandCount) { 0f }) }
+    var djDeckEnergy by remember { mutableStateOf(0f) }
     val signalDeckLabelPaint = remember {
         AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
             color = android.graphics.Color.rgb(220, 235, 255)
@@ -273,6 +276,32 @@ private fun TvOpenGlIdleVisualizer(
                     Offset(jogCentre.x, jogCentre.y - jogRadius * .61f),
                     strokeWidth = size.height * .004f,
                 )
+                // The platter's illumination is PCM-led: each ring and spoke
+                // follows one calibrated frequency range, with no free-running
+                // rotation or decorative clock animation.
+                djBandLevels.forEachIndexed { band, level ->
+                    val radius = jogRadius * (.23f + band * .125f + level * .080f)
+                    val colour = listOf(Color(0xFF48C7FF), Color(0xFFB764FF), Color(0xFFFF4CA4), Color(0xFF7FF0B1))[band]
+                    drawCircle(
+                        colour.copy(alpha = (.18f + level * .68f).coerceAtMost(.82f)),
+                        radius,
+                        jogCentre,
+                        style = Stroke(width = size.height * (.0013f + level * .0022f)),
+                    )
+                }
+                repeat(32) { spoke ->
+                    val level = djBandLevels[spoke % CalibratedBandCount]
+                    val angle = spoke * Tau / 32f
+                    val inner = jogRadius * .285f
+                    val outer = jogRadius * (.430f + level * .385f)
+                    val colour = listOf(Color(0xFF48C7FF), Color(0xFFB764FF), Color(0xFFFF4CA4), Color(0xFF7FF0B1))[spoke % CalibratedBandCount]
+                    drawLine(
+                        colour.copy(alpha = .08f + level * .48f),
+                        Offset(jogCentre.x + cos(angle) * inner, jogCentre.y + sin(angle) * inner),
+                        Offset(jogCentre.x + cos(angle) * outer, jogCentre.y + sin(angle) * outer),
+                        strokeWidth = size.height * (.001f + level * .0014f),
+                    )
+                }
 
                 drawRoundRect(
                     color = Color(0xA0040A11),
@@ -295,6 +324,32 @@ private fun TvOpenGlIdleVisualizer(
                     val x = waveformLeft + waveformWidth * (column + 1f) / 9f
                     drawLine(Color(0x1C3C5772), Offset(x, waveformTop), Offset(x, waveformTop + waveformHeight), strokeWidth = size.height * .001f)
                 }
+                val waveformCentreY = waveformTop + waveformHeight * .5f
+                val waveformAmplitude = waveformHeight * (.28f + djDeckEnergy.coerceIn(0f, 1f) * .22f)
+                val waveformPoints = 112
+                repeat(waveformPoints - 1) { index ->
+                    val sourceA = index * (djWaveform.lastIndex.coerceAtLeast(1)) / (waveformPoints - 1)
+                    val sourceB = (index + 1) * (djWaveform.lastIndex.coerceAtLeast(1)) / (waveformPoints - 1)
+                    val start = Offset(
+                        waveformLeft + index * waveformWidth / (waveformPoints - 1),
+                        waveformCentreY - djWaveform[sourceA].coerceIn(-1f, 1f) * waveformAmplitude,
+                    )
+                    val end = Offset(
+                        waveformLeft + (index + 1) * waveformWidth / (waveformPoints - 1),
+                        waveformCentreY - djWaveform[sourceB].coerceIn(-1f, 1f) * waveformAmplitude,
+                    )
+                    drawLine(Color(0xFFB86CFF), start, end, strokeWidth = size.height * .0030f)
+                    drawLine(Color(0xFF6DE3FF), start, end, strokeWidth = size.height * .0010f)
+                }
+
+                val phaseStart = size.width * .785f
+                val phaseEnd = size.width * .910f
+                val phaseY = size.height * .542f
+                val phaseNeedle = phaseStart + (signalDeckCorrelation.coerceIn(-1f, 1f) + 1f) * .5f * (phaseEnd - phaseStart)
+                val phaseColour = if (signalDeckCorrelation < 0f) Color(0xFFFF6B87) else Color(0xFF79E9C2)
+                drawLine(Color(0xFF3B5872), Offset(phaseStart, phaseY), Offset(phaseEnd, phaseY), strokeWidth = size.height * .003f)
+                drawLine(Color(0xFF6F8FA8), Offset((phaseStart + phaseEnd) * .5f, phaseY - size.height * .010f), Offset((phaseStart + phaseEnd) * .5f, phaseY + size.height * .010f), strokeWidth = size.height * .0014f)
+                drawCircle(phaseColour, size.height * .006f, Offset(phaseNeedle, phaseY))
 
                 drawRoundRect(
                     color = Color(0x9808121E),
@@ -366,7 +421,7 @@ private fun TvOpenGlIdleVisualizer(
                     canvas.nativeCanvas.drawText("MASTER R", size.width * .865f, size.height * .838f, signalDeckLabelPaint)
                     signalDeckLabelPaint.textSize = size.height * .014f
                     signalDeckLabelPaint.alpha = 150
-                    canvas.nativeCanvas.drawText("PHASE ${formatCorrelation(signalDeckCorrelation)}", size.width * .708f, size.height * .875f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("PHASE ${formatCorrelation(signalDeckCorrelation)}", size.width * .848f, size.height * .575f, signalDeckLabelPaint)
                     canvas.nativeCanvas.drawText(masterReadings[0], size.width * .780f, size.height * .890f, signalDeckLabelPaint)
                     canvas.nativeCanvas.drawText(masterReadings[1], size.width * .865f, size.height * .890f, signalDeckLabelPaint)
                     canvas.nativeCanvas.drawText("CUE", size.width * .112f, size.height * .882f, signalDeckLabelPaint)
@@ -382,6 +437,7 @@ private fun TvOpenGlIdleVisualizer(
     LaunchedEffect(surface, audioState, style) {
         val activeSurface = surface ?: return@LaunchedEffect
         var lastSignalDeckReadoutAt = 0L
+        var lastDjDeckCanvasAt = 0L
         audioState.collect { audio ->
             activeSurface.updateAudio(audio)
             val now = SystemClock.elapsedRealtime()
@@ -391,6 +447,12 @@ private fun TvOpenGlIdleVisualizer(
                 masterReadings = listOf(audio.leftDbfs, audio.rightDbfs).map(::formatDbfs)
                 signalDeckStereo = audio.channelCount > 1
                 signalDeckCorrelation = audio.stereoCorrelation
+            }
+            if (style == IdleVisualizerStyle.DjConsole && now - lastDjDeckCanvasAt >= 50L) {
+                lastDjDeckCanvasAt = now
+                djWaveform = audio.waveform.toList()
+                djBandLevels = audio.calibratedBandDbfs.map(::dbfsToMasterMeter)
+                djDeckEnergy = audio.energy
             }
         }
     }
