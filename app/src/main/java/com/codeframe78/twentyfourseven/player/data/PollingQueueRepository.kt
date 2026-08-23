@@ -6,6 +6,7 @@ import com.codeframe78.twentyfourseven.player.domain.QueueState
 import com.codeframe78.twentyfourseven.player.domain.StationId
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.channelFlow
@@ -20,6 +21,7 @@ class PollingQueueRepository internal constructor(
     private val remote: QueueRemoteDataSource,
     private val pollIntervalMillis: Long = MINIMUM_POLL_INTERVAL_MILLIS,
     private val elapsedRealtimeMillis: () -> Long = { System.nanoTime() / 1_000_000 },
+    private val snapshots: QueueSnapshotStore = NoOpQueueSnapshotStore,
 ) : QueueRepository {
     private val states = ConcurrentHashMap<StationId, MutableStateFlow<QueueState>>()
     private val locks = ConcurrentHashMap<StationId, Mutex>()
@@ -59,37 +61,46 @@ class PollingQueueRepository internal constructor(
             } else {
                 state.value = state.value.copy(isStale = true, errorMessage = null)
             }
-            runCatching { remote.fetch(stationId) }
-                .onSuccess { payload ->
+            val payload = try {
+                remote.fetch(stationId)
+            } catch (cancelled: CancellationException) {
+                // A TV destination change cancels the previous read. It is not a network failure,
+                // and the replacement destination must be able to start its own request promptly.
+                lastAttempts.remove(stationId, now)
+                throw cancelled
+            } catch (_: Throwable) {
+                if (state.value.status == QueueLoadStatus.Ready) {
+                    state.value = state.value.copy(
+                        isStale = true,
+                        errorMessage = "Cached Queue data could not be refreshed.",
+                    )
+                } else {
                     state.value = QueueState(
                         stationId = stationId,
-                        status = QueueLoadStatus.Ready,
-                        upcoming = payload.upcoming,
-                        recentlyPlayed = payload.recentlyPlayed,
-                        isStale = false,
+                        status = QueueLoadStatus.Error,
+                        errorMessage = "Queue and history could not be refreshed.",
                     )
                 }
-                .onFailure {
-                    if (state.value.status == QueueLoadStatus.Ready) {
-                        state.value = state.value.copy(
-                            isStale = true,
-                            errorMessage = "Cached Queue data could not be refreshed.",
-                        )
-                    } else {
-                        state.value = QueueState(
-                            stationId = stationId,
-                            status = QueueLoadStatus.Error,
-                            errorMessage = "Queue and history could not be refreshed.",
-                        )
-                    }
-                }
+                return
+            }
+            state.value = QueueState(
+                stationId = stationId,
+                status = QueueLoadStatus.Ready,
+                upcoming = payload.upcoming,
+                recentlyPlayed = payload.recentlyPlayed,
+                isStale = false,
+            )
+            snapshots.write(state.value)
         }
     }
 
     override suspend fun currentQueue(stationId: StationId): QueueState = state(stationId).value
 
+    override fun cachedQueue(stationId: StationId): QueueState? = state(stationId).value
+        .takeIf { it.status == QueueLoadStatus.Ready }
+
     private fun state(stationId: StationId): MutableStateFlow<QueueState> =
-        states.getOrPut(stationId) { MutableStateFlow(QueueState(stationId)) }
+        states.getOrPut(stationId) { MutableStateFlow(snapshots.read(stationId) ?: QueueState(stationId)) }
 
     internal companion object {
         const val MINIMUM_POLL_INTERVAL_MILLIS = 60_000L

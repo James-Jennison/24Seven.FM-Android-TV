@@ -13,11 +13,13 @@ data class NowPlayingState(
 
 interface NowPlayingRepository {
     fun observeNowPlaying(): Flow<NowPlayingState>
+    fun current(): NowPlayingState
 }
 
 interface NowPlayingPublisher {
     fun publish(state: NowPlayingState)
     fun clear(stationId: StationId? = null)
+    fun current(): NowPlayingState
 }
 
 interface NowPlayingArtworkRepository {

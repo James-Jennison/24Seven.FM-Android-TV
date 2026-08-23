@@ -42,4 +42,5 @@ interface QueueRepository {
     fun observeQueue(stationId: StationId): Flow<QueueState>
     suspend fun refresh(stationId: StationId)
     suspend fun currentQueue(stationId: StationId): QueueState
+    fun cachedQueue(stationId: StationId): QueueState? = null
 }

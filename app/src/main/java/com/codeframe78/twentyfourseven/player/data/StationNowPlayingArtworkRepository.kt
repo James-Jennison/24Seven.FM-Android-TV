@@ -104,7 +104,7 @@ internal class CurrentTrackArtworkParser {
             coverUri?.toString()
         }
         val artist = response.optString("Artist", "").decodeHtmlEntities()?.normalizeTrailingTheArticle()
-        val album = response.optString("Album", "").decodeHtmlEntities()
+        val album = response.optString("Album", "").decodeHtmlEntities()?.normalizeTrailingTheArticle()
         val track = response.optString("Track", "").decodeHtmlEntities()?.normalizeTrailingTheArticle()
         val displayTitle = listOfNotNull(artist, track).joinToString(" - ").takeIf(String::isNotBlank)
             ?: track

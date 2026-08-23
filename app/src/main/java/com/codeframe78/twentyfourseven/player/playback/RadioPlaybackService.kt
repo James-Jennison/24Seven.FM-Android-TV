@@ -25,8 +25,8 @@ import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
 import com.codeframe78.twentyfourseven.player.MainActivity
 import com.codeframe78.twentyfourseven.player.RadioApplication
+import com.codeframe78.twentyfourseven.player.domain.NowPlayingDetailsRepository
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingPublisher
-import com.codeframe78.twentyfourseven.player.domain.NowPlayingArtworkRepository
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingState
 import com.codeframe78.twentyfourseven.player.domain.StationId
 import com.codeframe78.twentyfourseven.player.domain.normalizeTrailingTheArticle
@@ -47,14 +47,15 @@ class RadioPlaybackService : MediaSessionService() {
     private val nowPlayingPublisher: NowPlayingPublisher by lazy {
         (application as RadioApplication).appContainer.nowPlayingPublisher
     }
-    private val artworkRepository: NowPlayingArtworkRepository by lazy {
-        (application as RadioApplication).appContainer.nowPlayingArtworkRepository
+    private val nowPlayingDetailsRepository: NowPlayingDetailsRepository by lazy {
+        (application as RadioApplication).appContainer.nowPlayingDetailsRepository
     }
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var artworkJob: Job? = null
+    private var detailsJob: Job? = null
     private var sleepTimerJob: Job? = null
     private var sleepTimerButtonVisible = false
     private var activeNowPlaying: NowPlayingState? = null
+    private var activeIcyTitle: String? = null
     private var activeMediaId: String? = null
     private val sleepTimerPreferences by lazy {
         getSharedPreferences(SLEEP_TIMER_PREFERENCES_NAME, Context.MODE_PRIVATE)
@@ -90,28 +91,44 @@ class RadioPlaybackService : MediaSessionService() {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             val incomingMediaId = mediaItem?.mediaId
             if (!shouldClearNowPlaying(activeMediaId, incomingMediaId)) return
-            artworkJob?.cancel()
+            detailsJob?.cancel()
             activeNowPlaying = null
+            activeIcyTitle = null
             activeMediaId = incomingMediaId
-            nowPlayingPublisher.clear(mediaItem?.stationId())
+            val incomingStationId = mediaItem?.stationId()
+            // ExoPlayer emits a transient null item while a controller replaces its media list.
+            // It is not a user station change, so it must not erase the restored startup snapshot.
+            if (incomingStationId == null) return
+            // A normal process restart has a public snapshot for the same station. Keep it on
+            // screen while the stream connects instead of flashing the generic app artwork.
+            if (nowPlayingPublisher.current().stationId != incomingStationId) {
+                nowPlayingPublisher.clear(incomingStationId)
+            }
         }
 
         override fun onMetadata(metadata: Metadata) {
             val stationId = player.currentMediaItem?.stationId() ?: return
             val nowPlaying = metadata.toNowPlayingState(stationId) ?: return
-            if (activeNowPlaying?.stationId == stationId && activeNowPlaying?.displayTitle == nowPlaying.displayTitle) return
-            artworkJob?.cancel()
+            if (activeNowPlaying?.stationId == stationId && activeIcyTitle == nowPlaying.displayTitle) return
+            detailsJob?.cancel()
             activeMediaId = player.currentMediaItem?.mediaId
             activeNowPlaying = nowPlaying
+            activeIcyTitle = nowPlaying.displayTitle
             updateSessionMetadata(nowPlaying)
             nowPlayingPublisher.publish(nowPlaying)
-            artworkJob = serviceScope.launch {
-                val artworkUrl = runCatching { artworkRepository.fetchArtwork(stationId) }.getOrNull() ?: return@launch
-                if (activeNowPlaying != nowPlaying || player.currentMediaItem?.stationId() != stationId) return@launch
-                val enriched = nowPlaying.copy(artworkUrl = artworkUrl)
-                activeNowPlaying = enriched
-                updateSessionMetadata(enriched)
-                nowPlayingPublisher.publish(enriched)
+            detailsJob = serviceScope.launch {
+                val details = runCatching { nowPlayingDetailsRepository.fetchNowPlaying(stationId) }.getOrNull()
+                    ?: return@launch
+                if (
+                    activeIcyTitle != nowPlaying.displayTitle ||
+                    player.currentMediaItem?.stationId() != stationId ||
+                    !details.isCurrentDetailFor(nowPlaying)
+                ) {
+                    return@launch
+                }
+                activeNowPlaying = details
+                updateSessionMetadata(details)
+                nowPlayingPublisher.publish(details)
             }
         }
     }
@@ -414,3 +431,15 @@ internal fun String.normalizeIcyArtistSortArticle(): String {
 
 internal fun shouldClearNowPlaying(activeMediaId: String?, incomingMediaId: String?): Boolean =
     activeMediaId == null || incomingMediaId == null || activeMediaId != incomingMediaId
+
+/**
+ * An ICY title is sometimes shortened by the stream metadata block. A public station response is
+ * authoritative only when it identifies the same station and expands (or exactly matches) that
+ * currently-live title; otherwise it may describe the preceding track.
+ */
+internal fun NowPlayingState.isCurrentDetailFor(icyNowPlaying: NowPlayingState): Boolean {
+    if (stationId == null || stationId != icyNowPlaying.stationId) return false
+    val fullTitle = displayTitle?.trim()?.takeIf(String::isNotBlank) ?: return false
+    val icyTitle = icyNowPlaying.displayTitle?.trim()?.takeIf(String::isNotBlank) ?: return false
+    return fullTitle.startsWith(icyTitle, ignoreCase = true) || icyTitle.startsWith(fullTitle, ignoreCase = true)
+}

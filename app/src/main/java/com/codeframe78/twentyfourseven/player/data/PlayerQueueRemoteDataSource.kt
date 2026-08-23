@@ -120,7 +120,7 @@ internal class PlayerQueueRemoteDataSource(
         const val REQUEST_TIMEOUT_MILLIS = 10_000
         const val MAX_RESPONSE_CHARACTERS = 512_000
         const val MAX_REDIRECTS = 5
-        const val VISIBLE_QUEUE_TRACK_LIMIT = 30
+        const val VISIBLE_QUEUE_TRACK_LIMIT = 5
         const val VERIFICATION_QUEUE_TRACK_LIMIT = 500
         val REDIRECT_STATUSES = setOf(301, 302, 303, 307, 308)
         val endpoints = mapOf(

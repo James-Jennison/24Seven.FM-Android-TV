@@ -5,6 +5,7 @@ import com.codeframe78.twentyfourseven.player.domain.QueueLoadStatus
 import com.codeframe78.twentyfourseven.player.domain.QueueTrack
 import com.codeframe78.twentyfourseven.player.domain.StationId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -94,6 +95,26 @@ class PollingQueueRepositoryTest {
         assertEquals("Upcoming", state.upcoming.single().displayTitle)
         assertTrue(state.isStale)
         assertEquals("Cached Queue data could not be refreshed.", state.errorMessage)
+    }
+
+    @Test
+    fun `a cancelled Queue read is not reported as an error or rate limited`() = runTest {
+        val remote = FakeRemote(failure = CancellationException("destination changed"))
+        val repository = PollingQueueRepository(
+            remote = remote,
+            elapsedRealtimeMillis = { testScheduler.currentTime },
+        )
+
+        try {
+            repository.refresh(stationId)
+        } catch (_: CancellationException) {
+            // Expected: navigation cancellation must propagate to the previous collector.
+        }
+        remote.failure = null
+        repository.refresh(stationId)
+
+        assertEquals(2, remote.calls)
+        assertEquals(QueueLoadStatus.Ready, repository.currentQueue(stationId).status)
     }
 
     private class FakeRemote(var failure: Throwable? = null) : QueueRemoteDataSource {

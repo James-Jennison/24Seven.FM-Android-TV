@@ -2,6 +2,7 @@ package com.codeframe78.twentyfourseven.player.data
 
 import com.codeframe78.twentyfourseven.player.domain.HistoryTrack
 import com.codeframe78.twentyfourseven.player.domain.QueueTrack
+import com.codeframe78.twentyfourseven.player.domain.normalizeTrailingTheArticle
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
@@ -113,7 +114,7 @@ internal class PlayerQueueResponseParser {
         val cells = row.select("td")
         if (cells.size < 3) return null
         val artistName = cells[2].selectFirst("strong")?.text()?.trim()?.takeIf(String::isNotEmpty)
-        val displayTitle = cells[2].selectFirst("span")?.text()?.trim().orEmpty()
+        val displayTitle = cells[2].selectFirst("span")?.text()?.trim()?.normalizeTrailingTheArticle().orEmpty()
         if (displayTitle.isEmpty()) return null
         return ParsedTrack(
             displayTitle = displayTitle,
@@ -124,7 +125,8 @@ internal class PlayerQueueResponseParser {
             durationLabel = null,
             artworkUrl = cells[1].selectFirst("img[src]")
                 ?.absUrl("src")
-                ?.takeIf { isSafeWebUrl(it, baseUrl) },
+                ?.takeIf { isSafeWebUrl(it, baseUrl) }
+                ?.let(::preferredArtworkUrl),
         )
     }
 
@@ -136,39 +138,35 @@ internal class PlayerQueueResponseParser {
         val details = cells[2]
         val titleSpan = details.select("span")
             .firstOrNull { !it.hasClass("req-text") && it.text().trim().isNotEmpty() }
-        val usesCurrentStationMarkup = titleSpan != null && details.selectFirst("i") == null
-        val (album, artist, title) = if (usesCurrentStationMarkup) {
-            val parsedArtist = details.selectFirst("b")?.text()?.trim()?.takeIf(String::isNotEmpty) ?: return null
-            val parsedAlbum = details.clone().apply { select("b, span, br").remove() }
+        val title = titleSpan?.text()?.trim()?.takeIf(String::isNotEmpty)
+            ?: details.clone().apply { select("b, i, span").remove() }
                 .text()
                 .trim()
                 .removePrefix("-")
                 .trim()
-                .takeIf(String::isNotEmpty) ?: return null
-            Triple(parsedAlbum, parsedArtist, titleSpan.text().trim())
-        } else {
-            val parsedAlbum = details.selectFirst("b")?.text()?.trim()?.takeIf(String::isNotEmpty) ?: return null
-            val parsedArtist = details.selectFirst("i")?.text()?.trim()?.takeIf(String::isNotEmpty)
-            val parsedTitle = details.clone().apply { select("b, i, span").remove() }
+                .takeIf(String::isNotEmpty)
+            ?: return null
+        val album = details.selectFirst("b")?.text()?.trim()?.takeIf(String::isNotEmpty) ?: return null
+        val artist = details.selectFirst("i")?.text()?.trim()?.takeIf(String::isNotEmpty)
+            ?: details.clone().apply { select("b, span, br").remove() }
                 .text()
                 .trim()
                 .removePrefix("-")
                 .trim()
-                .takeIf(String::isNotEmpty) ?: return null
-            Triple(parsedAlbum, parsedArtist, parsedTitle)
-        }
+                .takeIf(String::isNotEmpty)
         val attribution = parseRequestAttribution(details)
         return ExtendedTrack(
             position = position,
-            displayTitle = title,
+            displayTitle = title.normalizeTrailingTheArticle(),
             songId = requestIdentifier(details, "songID") ?: requestIdentifier(cells[1], "songID"),
             albumId = requestIdentifier(details, "asin") ?: requestIdentifier(cells[1], "asin"),
             artistName = artist,
-            albumTitle = album,
+            albumTitle = album.normalizeTrailingTheArticle(),
             durationLabel = duration,
             artworkUrl = cells[1].selectFirst("img[src]")
                 ?.absUrl("src")
-                ?.takeIf { isSafeWebUrl(it, baseUrl) },
+                ?.takeIf { isSafeWebUrl(it, baseUrl) }
+                ?.let(::preferredArtworkUrl),
             requesterName = attribution?.requesterName,
             requestMessage = attribution?.message,
         )
@@ -193,6 +191,13 @@ internal class PlayerQueueResponseParser {
             message = message?.take(MAX_REQUEST_MESSAGE_CHARACTERS),
         )
     }
+
+    /**
+     * Queue/Played markup supplies 40 px covers. The same approved station origin provides the
+     * 500 px variant at this path, which is needed for TV's logical-1080p surface and 4K output.
+     */
+    private fun preferredArtworkUrl(url: String): String =
+        url.replace("/images/cover/040/", "/images/cover/500/")
 
     private fun isSafeWebUrl(url: String, baseUrl: String): Boolean = runCatching {
         val uri = URI(url)

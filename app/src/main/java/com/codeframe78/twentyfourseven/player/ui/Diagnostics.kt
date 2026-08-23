@@ -45,7 +45,7 @@ internal fun buildDiagnosticReport(
     playback: PlaybackState,
     transitions: List<DiagnosticTransition>,
 ): String = buildString {
-    appendLine("24Seven.FM Player diagnostics")
+    appendLine("24Seven.FM diagnostics")
     appendLine("App version: ${safeDiagnosticValue(environment.appVersion)} (${environment.versionCode.coerceAtLeast(0L)})")
     appendLine("Build type: ${safeDiagnosticValue(environment.buildType)}")
     appendLine("Source revision: ${safeDiagnosticValue(environment.sourceRevision)}")

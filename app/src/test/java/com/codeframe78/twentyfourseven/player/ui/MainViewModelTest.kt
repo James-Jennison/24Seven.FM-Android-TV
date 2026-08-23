@@ -805,6 +805,7 @@ class MainViewModelTest {
         val state = MutableStateFlow(NowPlayingState())
 
         override fun observeNowPlaying() = state
+        override fun current(): NowPlayingState = state.value
     }
 
     private class FakeAuthRepository : AuthRepository {

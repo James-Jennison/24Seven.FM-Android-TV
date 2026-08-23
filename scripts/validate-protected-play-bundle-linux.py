@@ -33,13 +33,11 @@ except ImportError as exc:  # pragma: no cover - exercised only on an incomplete
 RECOVERY_FORMAT = "24seven.fm-play-upload-recovery"
 RECOVERY_VERSION = 1
 MINIMUM_KDF_ITERATIONS = 600_000
+MINIMUM_RECOVERY_PASSPHRASE_LENGTH = 8
 RECOVERY_AAD = f"{RECOVERY_FORMAT}-v{RECOVERY_VERSION}".encode()
-EXPECTED_UPLOAD_CERTIFICATE_SHA256 = (
-    "F6E8E81271964FFC3F8A0D548B49B4DB93AEFC48CCB74B8744512670F4279E3F"
-)
 REPLACEMENT_UPLOAD_ALIAS = "24seven-upload"
 REPLACEMENT_UPLOAD_DNAME = (
-    "CN=24Seven.FM Player Upload, OU=Mobile, O=24Seven.FM Community, C=US"
+    "CN=24Seven.FM TV Upload, OU=TV, O=24Seven.FM Community, C=US"
 )
 
 
@@ -117,8 +115,10 @@ def decrypt_recovery_envelope(envelope: object, passphrase: str) -> bytearray:
 def _require_replacement_passphrase() -> str:
     first = getpass.getpass("New recovery passphrase: ")
     second = getpass.getpass("Confirm recovery passphrase: ")
-    if len(first) < 16:
-        raise SigningError("The recovery passphrase must contain at least 16 characters.")
+    if len(first) < MINIMUM_RECOVERY_PASSPHRASE_LENGTH:
+        raise SigningError(
+            f"The recovery passphrase must contain at least {MINIMUM_RECOVERY_PASSPHRASE_LENGTH} characters."
+        )
     if not secrets.compare_digest(first, second):
         raise SigningError("The recovery passphrases do not match.")
     return first
@@ -312,7 +312,7 @@ def parse_recovery_payload(
 def load_recovery_package(
     package_path: Path,
     passphrase: str,
-    expected_certificate_sha256: str | None = EXPECTED_UPLOAD_CERTIFICATE_SHA256,
+    expected_certificate_sha256: str | None,
 ) -> RecoveryPayload:
     try:
         envelope = json.loads(package_path.read_text(encoding="utf-8"))
@@ -470,7 +470,7 @@ def check_environment(repository_root: Path) -> Path:
     if sys.platform != "linux":
         raise SigningError("This protected signing helper supports Linux only.")
     if not (repository_root / "gradlew").is_file():
-        raise SigningError("Run the helper from the 24Seven.FM Player repository checkout.")
+        raise SigningError("Run the helper from the 24Seven.FM Android TV repository checkout.")
     if not Path("/dev/shm").is_dir():
         raise SigningError("Memory-backed /dev/shm storage is unavailable.")
     for command in ("findmnt", "java", "keytool", "jarsigner"):
@@ -558,6 +558,13 @@ def parse_arguments() -> argparse.Namespace:
         help="Encrypted recovery package outside the repository",
     )
     parser.add_argument(
+        "--expected-upload-certificate",
+        help=(
+            "Registered TV Play upload certificate SHA-256 for routine release builds. "
+            "Do not use with --accept-first-upload-identity."
+        ),
+    )
+    parser.add_argument(
         "--build-apk", action="store_true", help="Also build the signed release APK"
     )
     parser.add_argument(
@@ -605,11 +612,13 @@ def main() -> int:
                 "--create-replacement-recovery-package is used."
             )
         _assert_external_package(arguments.recovery_package, repository_root)
-        if arguments.accept_first_upload_identity and arguments.recovery_package.name != (
-            "24seven-upload-replacement-20260811.24seven-recovery"
-        ):
+        if arguments.accept_first_upload_identity and arguments.expected_upload_certificate:
             raise SigningError(
-                "First-upload identity acceptance is restricted to the approved replacement recovery package."
+                "Specify either --accept-first-upload-identity or --expected-upload-certificate, not both."
+            )
+        if not arguments.accept_first_upload_identity and not arguments.expected_upload_certificate:
+            raise SigningError(
+                "--expected-upload-certificate is required after the first Play upload identity is registered."
             )
         passphrase = getpass.getpass("Recovery passphrase: ")
         payload: RecoveryPayload | None = None
@@ -617,7 +626,9 @@ def main() -> int:
             payload = load_recovery_package(
                 arguments.recovery_package.expanduser(),
                 passphrase,
-                None if arguments.accept_first_upload_identity else EXPECTED_UPLOAD_CERTIFICATE_SHA256,
+                None
+                if arguments.accept_first_upload_identity
+                else arguments.expected_upload_certificate,
             )
             passphrase = ""
             with materialized_keystore(payload) as keystore_path:

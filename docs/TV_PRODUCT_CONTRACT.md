@@ -10,11 +10,11 @@ The source baseline is Player Alpha 07 commit `2130defab51857856f98dbb734e98b09a
 
 The first TV alpha is an anonymous listener experience:
 
-- Five permitted stations, station switching, live playback, MediaSession controls, Now Playing artwork/metadata, Queue/History, and sleep timer.
+- Five permitted stations, station switching that starts the selected live stream, a selected-station `Station - Live` stop toggle, MediaSession controls, Now Playing artwork/metadata, public read-only Queue/History, and sleep timer.
 - D-pad-only, landscape, high-contrast 10-foot UI with visible focus and safe margins.
 - Device-local age/terms acknowledgement and privacy-safe diagnostics.
 
-It excludes sign-in, Favorites, Chat, requests, reporting/contact handoffs, browser flows, account management, notifications, commerce, and Cast. A later milestone must explicitly authorize and certify each excluded surface before it is exposed.
+It excludes sign-in, Favorites, Chat, requests, reporting/contact handoffs, browser flows, account management, notifications, commerce, and Cast. Queue/History display only public track titles; member identifiers and messages are not shown. A later milestone must explicitly authorize and certify each excluded surface before it is exposed.
 
 ## Release boundary
 

@@ -77,11 +77,14 @@ class CurrentTrackArtworkParserTest {
     fun `restores leading the from catalog sort order`() {
         val response = JSONObject()
             .put("Artist", "Passions, The")
-            .put("Track", "The Story")
+            .put("Album", "Story, The")
+            .put("Track", "Story, The")
             .toString()
 
         val details = parser.parseNowPlaying(response, "https://1980s.fm/", StationId("1980s"))
 
         assertEquals("The Passions - The Story", details?.displayTitle)
+        assertEquals("The Story", details?.album)
+        assertEquals("The Story", details?.track)
     }
 }

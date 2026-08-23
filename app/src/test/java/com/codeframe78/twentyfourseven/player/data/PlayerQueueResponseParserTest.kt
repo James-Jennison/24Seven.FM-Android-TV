@@ -73,6 +73,42 @@ class PlayerQueueResponseParserTest {
     }
 
     @Test
+    fun `uses the station 500 pixel cover variant when Queue Played supplies a 40 pixel cover`() {
+        val result = parser.parseExtended(
+            extendedPage(
+                queue = extendedRow(1, artwork = "/images/cover/040/B000006O6R.jpg"),
+                history = "",
+            ),
+            "https://streamingsoundtracks.com/",
+        )
+
+        assertEquals(
+            "https://streamingsoundtracks.com/images/cover/500/B000006O6R.jpg",
+            result.upcoming.single().artworkUrl,
+        )
+    }
+
+    @Test
+    fun `restores a trailing the article for queue titles and albums`() {
+        val result = parser.parseExtended(
+            extendedPage(
+                queue = extendedRow(
+                    1,
+                    album = "Great Escape, The",
+                    title = "Theme, The",
+                ),
+                history = "",
+            ),
+            "https://streamingsoundtracks.com/",
+        )
+
+        with(result.upcoming.single()) {
+            assertEquals("The Theme", displayTitle)
+            assertEquals("The Great Escape", albumTitle)
+        }
+    }
+
+    @Test
     fun `parses the current station queue markup`() {
         val result = parser.parseExtended(
             extendedPage(
@@ -80,7 +116,7 @@ class PlayerQueueResponseParserTest {
                     <tr>
                       <td><span class="glowing-rank">1</span><br>4:08</td>
                       <td><a href="/modules.php?name=Album&amp;asin=ALBUM_1"><img src="/covers/queue.jpg"></a></td>
-                      <td><b>Current artist</b> - Current album<br>
+                      <td><b>Current album</b> - Current artist<br>
                         <span style="color: #AAAAAA;">Current title</span>
                         <br><span class="req-text"><a href="/modules.php?name=Your_Account&amp;op=userinfo&amp;username=Listener"><b>Listener</b></a></span>
                       </td>

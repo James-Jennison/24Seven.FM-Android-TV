@@ -8,17 +8,34 @@ Establish the TV application ID, product contract, independent roadmap, and disa
 
 Add the TV-only launcher manifest, banner/icon assets, landscape activity, Compose for TV root, and manifest validation.
 
+**Status: Complete.** The API 34 physical-TV validation is recorded in
+[tv02-device-validation.md](tv02-device-validation.md).
+
 ## TV03 — Listener-first playback
 
 Deliver D-pad station selection, Now Playing, MediaSession playback controls, and safe live-radio behavior for all five permitted stations.
+
+**Status: In progress.** Physical-TV evidence now covers D-pad selection, live session state for all five permitted
+stations, and real Ethernet recovery; audible output/metadata freshness and the remaining TV acceptance coverage are
+still required.
 
 ## TV04 — Read-only library and device preferences
 
 Add D-pad Queue/History, sleep timer, and privacy-safe local diagnostics. Do not expose authentication or mutations.
 
+**Status: In progress.** All five stations' anonymous public Queue/History, D-pad sleep-timer set/cancel, and
+privacy-safe local diagnostics have physical-TV evidence in
+[tv04-queue-history-validation.md](tv04-queue-history-validation.md). Timer expiry, any desired persistence policy,
+recovery, and remaining TV acceptance evidence remain open.
+
 ## TV05 — TV acceptance
 
 Certify focus traversal, Back behavior, TalkBack, basic/Bluetooth remote input, emulator and physical TV playback, network recovery, 1080p/4K layout, low-memory behavior, 64-bit/16 KB packaging, and all five stations.
+
+**Status: In progress.** The Google TV Streamer pass confirms D-pad focus, Back-to-home with
+background playback, media-key pause/resume, and TalkBack-visible semantics; the API 35 16 KB emulator
+also cold-launches the debug app. Audible TalkBack, additional physical remote, visual-layout, low-memory,
+and signed-release/Play-split evidence remain open.
 
 ## TV06 — Play alpha delivery
 

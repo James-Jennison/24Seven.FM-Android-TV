@@ -4,6 +4,7 @@ import androidx.media3.common.Metadata
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.extractor.metadata.icy.IcyInfo
+import com.codeframe78.twentyfourseven.player.domain.NowPlayingState
 import com.codeframe78.twentyfourseven.player.domain.StationId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -79,5 +80,33 @@ class IcyMetadataMappingTest {
         assertTrue(shouldClearNowPlaying("death:0", "death:1"))
         assertTrue(shouldClearNowPlaying("death:0", "sst:0"))
         assertTrue(shouldClearNowPlaying(null, "death:0"))
+    }
+
+    @Test
+    fun `public details may expand a shortened live ICY title for the same station`() {
+        val icy = NowPlayingState(
+            stationId = StationId("sst"),
+            displayTitle = "New Japan Philharmonic - Super Mario Brothers: Smash",
+        )
+        val details = NowPlayingState(
+            stationId = StationId("sst"),
+            displayTitle = "New Japan Philharmonic - Super Mario Brothers: Smash Brothers Grand Medley",
+        )
+
+        assertTrue(details.isCurrentDetailFor(icy))
+    }
+
+    @Test
+    fun `public details for a different track never replace the live ICY title`() {
+        val icy = NowPlayingState(
+            stationId = StationId("sst"),
+            displayTitle = "New Japan Philharmonic - Super Mario Brothers: Smash",
+        )
+        val staleDetails = NowPlayingState(
+            stationId = StationId("sst"),
+            displayTitle = "Bear McCreary - Deathication (Movement #2)",
+        )
+
+        assertFalse(staleDetails.isCurrentDetailFor(icy))
     }
 }

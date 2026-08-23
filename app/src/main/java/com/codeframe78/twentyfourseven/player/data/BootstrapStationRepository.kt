@@ -77,6 +77,8 @@ class BootstrapStationRepository(
 
     override fun observeStations(): Flow<List<Station>> = flowOf(stations)
     override fun observeSelectedStation(): Flow<Station> = selected.asStateFlow()
+    override fun currentStations(): List<Station> = stations
+    override fun currentSelectedStation(): Station = selected.value
     override fun observeStationPreferences(): Flow<LocalStationPreferences> = preferences.observePreferences()
 
     override suspend fun selectStation(stationId: StationId) {
