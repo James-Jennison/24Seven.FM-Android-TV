@@ -417,13 +417,13 @@ private fun TvOpenGlIdleVisualizer(
                     canvas.nativeCanvas.drawText("LOW-MID", size.width * .580f, size.height * .545f, signalDeckLabelPaint)
                     canvas.nativeCanvas.drawText("MID", size.width * .6525f, size.height * .545f, signalDeckLabelPaint)
                     canvas.nativeCanvas.drawText("HIGH", size.width * .725f, size.height * .545f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("MASTER L", size.width * .780f, size.height * .838f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("MASTER R", size.width * .865f, size.height * .838f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("MASTER L", size.width * .780f, size.height * .842f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("MASTER R", size.width * .865f, size.height * .842f, signalDeckLabelPaint)
                     signalDeckLabelPaint.textSize = size.height * .014f
                     signalDeckLabelPaint.alpha = 150
                     canvas.nativeCanvas.drawText("PHASE ${formatCorrelation(signalDeckCorrelation)}", size.width * .848f, size.height * .575f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText(masterReadings[0], size.width * .780f, size.height * .890f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText(masterReadings[1], size.width * .865f, size.height * .890f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText(masterReadings[0], size.width * .780f, size.height * .902f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText(masterReadings[1], size.width * .865f, size.height * .902f, signalDeckLabelPaint)
                     canvas.nativeCanvas.drawText("CUE", size.width * .112f, size.height * .882f, signalDeckLabelPaint)
                     canvas.nativeCanvas.drawText("LIVE", size.width * .195f, size.height * .882f, signalDeckLabelPaint)
                     canvas.nativeCanvas.drawText("SYNC", size.width * .330f, size.height * .882f, signalDeckLabelPaint)
@@ -1621,8 +1621,10 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         val masterXs = floatArrayOf(.58f, .73f)
         val masterLevels = floatArrayOf(masterLeft, masterRight)
         masterXs.forEachIndexed { index, x ->
-            val y0 = -.80f
-            val y1 = -.52f
+            // Leave a dedicated caption/readout strip below the moving hardware
+            // meter instead of allowing its stem to run through the text.
+            val y0 = -.56f
+            val y1 = -.28f
             begin(); vertex(x, y0); vertex(x, y1)
             lines(2, White.withAlpha(.14f), 5f)
             begin(); vertex(x, y0); vertex(x, y0 + (y1 - y0) * masterLevels[index])
