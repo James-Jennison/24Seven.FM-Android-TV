@@ -203,6 +203,75 @@ private fun TvOpenGlIdleVisualizer(
                 }
             }
         }
+        if (style == IdleVisualizerStyle.DjConsole) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val panelLeft = size.width * .035f
+                val panelTop = size.height * .055f
+                val panelWidth = size.width * .93f
+                val panelHeight = size.height * .89f
+                val jogCentre = Offset(size.width * .255f, size.height * .565f)
+                val jogRadius = size.height * .255f
+                drawRoundRect(
+                    color = Color(0x1A7C9CC0),
+                    topLeft = Offset(panelLeft, panelTop),
+                    size = Size(panelWidth, panelHeight),
+                    cornerRadius = CornerRadius(size.height * .025f),
+                )
+                drawRoundRect(
+                    color = Color(0x668CB3D8),
+                    topLeft = Offset(panelLeft, panelTop),
+                    size = Size(panelWidth, panelHeight),
+                    cornerRadius = CornerRadius(size.height * .025f),
+                    style = Stroke(width = size.height * .002f),
+                )
+                drawCircle(Color(0x131E476C), jogRadius, jogCentre)
+                drawCircle(Color(0x5579BEEB), jogRadius, jogCentre, style = Stroke(width = size.height * .003f))
+                drawCircle(Color(0x33101C2D), jogRadius * .62f, jogCentre)
+                drawCircle(Color(0x405F83A8), jogRadius * .62f, jogCentre, style = Stroke(width = size.height * .002f))
+                drawRoundRect(
+                    color = Color(0x29172035),
+                    topLeft = Offset(size.width * .505f, size.height * .285f),
+                    size = Size(size.width * .405f, size.height * .235f),
+                    cornerRadius = CornerRadius(size.height * .010f),
+                )
+                drawRoundRect(
+                    color = Color(0x5B7DA5CB),
+                    topLeft = Offset(size.width * .505f, size.height * .285f),
+                    size = Size(size.width * .405f, size.height * .235f),
+                    cornerRadius = CornerRadius(size.height * .010f),
+                    style = Stroke(width = size.height * .0017f),
+                )
+                drawLine(Color(0x557DA5CB), Offset(size.width * .475f, size.height * .630f), Offset(size.width * .925f, size.height * .630f), strokeWidth = size.height * .0015f)
+                drawIntoCanvas { canvas ->
+                    signalDeckLabelPaint.textAlign = AndroidPaint.Align.LEFT
+                    signalDeckLabelPaint.textSize = size.height * .036f
+                    signalDeckLabelPaint.alpha = 220
+                    canvas.nativeCanvas.drawText(
+                        signalDeckLabelPaint.truncateToWidth(stationName?.takeIf { it.isNotBlank() } ?: "NO STATION SELECTED", size.width * .56f),
+                        size.width * .070f,
+                        size.height * .135f,
+                        signalDeckLabelPaint,
+                    )
+                    signalDeckLabelPaint.textSize = size.height * .018f
+                    signalDeckLabelPaint.alpha = 145
+                    canvas.nativeCanvas.drawText("LIVE DECK  •  DECODED PCM CONTROL SURFACE", size.width * .070f, size.height * .178f, signalDeckLabelPaint)
+                    signalDeckLabelPaint.textAlign = AndroidPaint.Align.CENTER
+                    signalDeckLabelPaint.textSize = size.height * .022f
+                    signalDeckLabelPaint.alpha = 200
+                    canvas.nativeCanvas.drawText("LIVE", jogCentre.x, jogCentre.y + size.height * .010f, signalDeckLabelPaint)
+                    signalDeckLabelPaint.textSize = size.height * .015f
+                    signalDeckLabelPaint.alpha = 145
+                    canvas.nativeCanvas.drawText("JOG / LOW", jogCentre.x, jogCentre.y + size.height * .042f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("WAVEFORM", size.width * .708f, size.height * .315f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("CHANNEL EQ", size.width * .680f, size.height * .680f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("MASTER L", size.width * .780f, size.height * .838f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("MASTER R", size.width * .865f, size.height * .838f, signalDeckLabelPaint)
+                    signalDeckLabelPaint.textSize = size.height * .014f
+                    signalDeckLabelPaint.alpha = 150
+                    canvas.nativeCanvas.drawText("PHASE ${formatCorrelation(signalDeckCorrelation)}", size.width * .708f, size.height * .875f, signalDeckLabelPaint)
+                }
+            }
+        }
     }
     LaunchedEffect(surface, audioState, style) {
         val activeSurface = surface ?: return@LaunchedEffect
@@ -210,7 +279,7 @@ private fun TvOpenGlIdleVisualizer(
         audioState.collect { audio ->
             activeSurface.updateAudio(audio)
             val now = SystemClock.elapsedRealtime()
-            if (style == IdleVisualizerStyle.VinylPulse && now - lastSignalDeckReadoutAt >= 125L) {
+            if ((style == IdleVisualizerStyle.VinylPulse || style == IdleVisualizerStyle.DjConsole) && now - lastSignalDeckReadoutAt >= 125L) {
                 lastSignalDeckReadoutAt = now
                 signalDeckReadings = audio.calibratedBandDbfs.map(::formatDbfs)
                 masterReadings = listOf(audio.leftDbfs, audio.rightDbfs).map(::formatDbfs)
@@ -696,7 +765,8 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
             8 -> chromafield()
             9 -> lightTrails()
             10 -> eqSpectrum()
-            else -> signalDeck()
+            11 -> signalDeck()
+            else -> djConsole()
         }
         GLES20.glDisableVertexAttribArray(positionHandle)
     }
@@ -1306,6 +1376,83 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         meterArc(centerX = .18f, centerY = -.75f, level = masterRight, peak = masterRightPeak, colour = 4, scale = .34f)
         begin(); vertex(-.94f, -.60f); vertex(.94f, -.60f)
         lines(2, White.withAlpha(.13f), 1f)
+    }
+
+    /** A single honest live deck: every animated control is sourced from decoded PCM. */
+    private fun djConsole() {
+        val low = (band(0) * .70f + band(1) * .30f).coerceIn(0f, 1f)
+        val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
+        val high = ((band(6) + band(7)) * .5f).coerceIn(0f, 1f)
+
+        // Live low-end gives the jog wheel its mass. The ring never rotates on
+        // its own; it only reshapes and brightens with the current programme.
+        repeat(4) { ring ->
+            val radius = .105f + ring * .075f + low * (.014f + ring * .010f) + impact * .025f
+            circle(radius, palette(ring + 1, .13f + low * .27f + mid * .10f), 84, 1f + high * .80f)
+        }
+        repeat(24) { spoke ->
+            val angle = spoke * Tau / 24f + phase * (.035f + low * .12f)
+            val inner = .075f
+            val outer = .22f + low * .115f + mid * .045f + impact * .040f
+            begin()
+            vertex(-.49f + cos(angle) * inner * aspect(), -.13f + sin(angle) * inner)
+            vertex(-.49f + cos(angle) * outer * aspect(), -.13f + sin(angle) * outer)
+            lines(2, palette(spoke, .08f + low * .20f + transient * .10f), .7f + high * .75f)
+        }
+
+        // The waveform display is the actual recent decoded PCM, on one fixed
+        // amplitude scale so it represents signal shape rather than loudness gain.
+        val waveformSamples = 220
+        begin()
+        repeat(waveformSamples) { index ->
+            val x = .02f + index * (.80f / (waveformSamples - 1))
+            val source = index * (AudioWaveformSampleCount - 1) / (waveformSamples - 1)
+            val y = .215f + waveform[source] * .145f
+            vertex(x, y)
+        }
+        lineStrip(waveformSamples, palette(1, .48f + mid * .30f + high * .14f), 1.3f + high * .8f)
+        begin(); vertex(.02f, .215f); vertex(.82f, .215f)
+        lines(2, White.withAlpha(.10f), .7f)
+
+        // Four calibrated EQ faders at the right of the jog wheel. Their height
+        // is the same fixed dBFS-to-display mapping as Signal Deck's band meters.
+        repeat(CalibratedBandCount) { channel ->
+            val x0 = -.02f + channel * .145f
+            val x1 = x0 + .070f
+            val bottom = -.67f
+            val top = -.32f
+            val active = calibratedMeters[channel]
+            begin()
+            repeat(12) { segment ->
+                val y0 = bottom + segment * ((top - bottom) / 12f) + .006f
+                val y1 = y0 + (top - bottom) / 12f - .012f
+                ledCell(x0, x1, y0, y1)
+            }
+            triangles(72, Rgba(.025f, .055f, .085f, .42f))
+            val lit = (active * 12f).toInt().coerceIn(0, 12)
+            if (lit > 0) {
+                begin()
+                repeat(lit) { segment ->
+                    val y0 = bottom + segment * ((top - bottom) / 12f) + .006f
+                    val y1 = y0 + (top - bottom) / 12f - .012f
+                    ledCell(x0, x1, y0, y1)
+                }
+                triangles(lit * 6, palette(channel * 2, .55f + active * .34f))
+            }
+        }
+
+        // Independent left/right master meters retain the real decoded channel
+        // values instead of implying two separate playback decks.
+        val masterXs = floatArrayOf(.58f, .73f)
+        val masterLevels = floatArrayOf(masterLeft, masterRight)
+        masterXs.forEachIndexed { index, x ->
+            val y0 = -.80f
+            val y1 = -.52f
+            begin(); vertex(x, y0); vertex(x, y1)
+            lines(2, White.withAlpha(.14f), 5f)
+            begin(); vertex(x, y0); vertex(x, y0 + (y1 - y0) * masterLevels[index])
+            lines(2, if (index == 0) Cyan.withAlpha(.78f) else palette(3, .78f), 4f)
+        }
     }
 
     private fun meterArc(centerX: Float, centerY: Float, level: Float, peak: Float, colour: Int, scale: Float) {

@@ -16,6 +16,7 @@ enum class IdleVisualizerStyle(val displayName: String, val description: String)
     // Keep the stable enum key so existing saved selections migrate automatically.
     MinimalSpectrum("EQ Spectrum", "Classic 32-band LED analyzer with floating peak caps"),
     VinylPulse("Signal Deck", "Instrument-style meter arcs and peak needles"),
+    DjConsole("DJ Console", "Live broadcast-deck controls driven by decoded PCM"),
 }
 
 data class IdleScreenPreferences(

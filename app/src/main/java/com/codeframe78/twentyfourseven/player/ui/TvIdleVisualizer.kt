@@ -291,6 +291,25 @@ internal fun TvCanvasIdleVisualizer(
                 drawCircle(Color(0xFF05060B), radius = minimum * .105f, center = center)
                 drawCircle(hue(0, .9f), radius = minimum * .038f * (1f + energy), center = center)
             }
+
+            IdleVisualizerStyle.DjConsole -> {
+                val jog = Offset(size.width * .27f, size.height * .57f)
+                repeat(4) { ring ->
+                    drawCircle(hue(ring + 1, .38f + band(ring) * .36f), minimum * (.10f + ring * .065f + energy * .025f), jog, style = Stroke(1.5f + band(ring) * 3f))
+                }
+                val waveform = Path()
+                repeat(160) { index ->
+                    val x = size.width * (.50f + index / 159f * .40f)
+                    val y = size.height * .39f + sin(index * .24f + motion * 8f) * minimum * (.018f + band(index) * .075f)
+                    if (index == 0) waveform.moveTo(x, y) else waveform.lineTo(x, y)
+                }
+                drawPath(waveform, hue(1, .84f), style = Stroke(2.2f))
+                repeat(4) { meter ->
+                    val left = size.width * (.49f + meter * .095f)
+                    val height = minimum * (.12f + band(meter) * .26f)
+                    drawRect(hue(meter * 2, .72f), Offset(left, size.height * .82f - height), Size(size.width * .045f, height))
+                }
+            }
         }
     }
 }
@@ -426,6 +445,21 @@ internal fun TvVisualizerPreview(
                     val meterSize = minimum * .38f
                     drawArc(color(meter * 2, .86f), 25f, 130f, false, Offset(left, size.height * .31f), Size(meterSize, meterSize), style = Stroke(2f))
                     drawLine(Color.White.copy(alpha = .82f), Offset(left + meterSize * .50f, size.height * .50f), Offset(left + meterSize * .66f, size.height * .39f), 1.4f)
+                }
+            }
+
+            IdleVisualizerStyle.DjConsole -> {
+                val jog = Offset(size.width * .28f, size.height * .58f)
+                repeat(3) { ring -> drawCircle(color(ring + 1, .80f), minimum * (.12f + ring * .09f), jog, style = Stroke(2f)) }
+                val waveform = Path()
+                repeat(32) { index ->
+                    val x = size.width * (.52f + index / 31f * .40f)
+                    val y = size.height * .40f + sin(index * .53f) * minimum * .075f
+                    if (index == 0) waveform.moveTo(x, y) else waveform.lineTo(x, y)
+                }
+                drawPath(waveform, color(1, .88f), style = Stroke(2f))
+                repeat(4) { meter ->
+                    drawRect(color(meter * 2, .82f), Offset(size.width * (.52f + meter * .095f), size.height * .70f), Size(size.width * .055f, size.height * (.10f + meter * .035f)))
                 }
             }
         }

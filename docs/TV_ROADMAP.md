@@ -31,7 +31,7 @@ Add D-pad Queue/History, sleep timer, and privacy-safe local diagnostics. Do not
 **Status: In progress.** All five stations' anonymous public Queue/History, D-pad sleep-timer set/cancel and expiry,
 its process-bound policy, and privacy-safe local diagnostics have physical-TV evidence in
 [tv04-queue-history-validation.md](tv04-queue-history-validation.md). The new General Options hierarchy now also
-contains station selection and a persistent twelve-style, decoded-audio idle visualizer; formal 10-minute idle and
+contains station selection and a persistent thirteen-style, decoded-audio idle visualizer; formal 10-minute idle and
 style-by-style physical-TV acceptance evidence remains under TV05.
 
 ## TV05 — TV acceptance
