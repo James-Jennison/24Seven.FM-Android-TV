@@ -212,14 +212,14 @@ private fun TvOpenGlIdleVisualizer(
                 val panelTop = size.height * .055f
                 val panelWidth = size.width * .93f
                 val panelHeight = size.height * .89f
-                val jogCentre = Offset(size.width * .255f, size.height * .565f)
-                val jogRadius = size.height * .270f
+                val jogCentre = Offset(size.width * .255f, size.height * .535f)
+                val jogRadius = size.height * .290f
                 val mixerLeft = size.width * .485f
                 val mixerRight = size.width * .755f
                 val waveformLeft = size.width * .505f
-                val waveformTop = size.height * .260f
+                val waveformTop = size.height * .220f
                 val waveformWidth = size.width * .405f
-                val waveformHeight = size.height * .245f
+                val waveformHeight = size.height * .270f
 
                 // A physical control surface first: a matte faceplate, recessed
                 // displays and hardware details. The animated GL layer above it
@@ -252,8 +252,8 @@ private fun TvOpenGlIdleVisualizer(
 
                 drawRoundRect(
                     color = Color(0x8A07101B),
-                    topLeft = Offset(size.width * .055f, size.height * .220f),
-                    size = Size(size.width * .400f, size.height * .645f),
+                    topLeft = Offset(size.width * .040f, size.height * .185f),
+                    size = Size(size.width * .430f, size.height * .680f),
                     cornerRadius = CornerRadius(size.height * .018f),
                 )
                 drawCircle(Color(0x7202060A), jogRadius, jogCentre)
@@ -1549,7 +1549,7 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
         val high = ((band(6) + band(7)) * .5f).coerceIn(0f, 1f)
         val jogCenterX = -.49f
-        val jogCenterY = -.13f
+        val jogCenterY = -.07f
 
         // Live low-end gives the jog wheel its mass. The ring never rotates on
         // its own; it only reshapes and brightens with the current programme.
@@ -1579,11 +1579,11 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         repeat(waveformSamples) { index ->
             val x = .02f + index * (.80f / (waveformSamples - 1))
             val source = index * (AudioWaveformSampleCount - 1) / (waveformSamples - 1)
-            val y = .215f + waveform[source] * .145f
+            val y = .29f + waveform[source] * .145f
             vertex(x, y)
         }
         lineStrip(waveformSamples, palette(1, .48f + mid * .30f + high * .14f), 1.3f + high * .8f)
-        begin(); vertex(.02f, .215f); vertex(.82f, .215f)
+        begin(); vertex(.02f, .29f); vertex(.82f, .29f)
         lines(2, White.withAlpha(.10f), .7f)
 
         // Four calibrated EQ faders at the right of the jog wheel. Their height
