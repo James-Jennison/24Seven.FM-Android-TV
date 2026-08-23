@@ -212,8 +212,8 @@ private fun TvOpenGlIdleVisualizer(
                 val panelTop = size.height * .055f
                 val panelWidth = size.width * .93f
                 val panelHeight = size.height * .89f
-                val jogCentre = Offset(size.width * .255f, size.height * .575f)
-                val jogRadius = size.height * .250f
+                val jogCentre = Offset(size.width * .255f, size.height * .565f)
+                val jogRadius = size.height * .270f
                 val mixerLeft = size.width * .485f
                 val mixerRight = size.width * .755f
                 val waveformLeft = size.width * .505f
@@ -252,8 +252,8 @@ private fun TvOpenGlIdleVisualizer(
 
                 drawRoundRect(
                     color = Color(0x8A07101B),
-                    topLeft = Offset(size.width * .075f, size.height * .245f),
-                    size = Size(size.width * .360f, size.height * .625f),
+                    topLeft = Offset(size.width * .055f, size.height * .220f),
+                    size = Size(size.width * .400f, size.height * .645f),
                     cornerRadius = CornerRadius(size.height * .018f),
                 )
                 drawCircle(Color(0x7202060A), jogRadius, jogCentre)
@@ -402,9 +402,6 @@ private fun TvOpenGlIdleVisualizer(
                         size.height * .135f,
                         signalDeckLabelPaint,
                     )
-                    signalDeckLabelPaint.textSize = size.height * .018f
-                    signalDeckLabelPaint.alpha = 145
-                    canvas.nativeCanvas.drawText("BROADCAST DJ CONSOLE  •  DECODED PCM", size.width * .070f, size.height * .178f, signalDeckLabelPaint)
                     signalDeckLabelPaint.textAlign = AndroidPaint.Align.CENTER
                     signalDeckLabelPaint.textSize = size.height * .019f
                     signalDeckLabelPaint.alpha = 200
