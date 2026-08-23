@@ -18,6 +18,7 @@ internal class CalibratedPcmMeter(sampleRateHz: Int) {
         val energy: Float,
         val leftDbfs: Float,
         val rightDbfs: Float,
+        val stereoCorrelation: Float,
         val bandDbfs: FloatArray,
         val spectrumLevels: FloatArray,
         val transient: Float,
@@ -40,7 +41,7 @@ internal class CalibratedPcmMeter(sampleRateHz: Int) {
     private var windowSize = 0
     private var waveformWriteIndex = 0
 
-    var reading = Reading(0f, FloorDbfs, FloorDbfs, bandDbfs, spectrumLevels, 0f)
+    var reading = Reading(0f, FloorDbfs, FloorDbfs, 0f, bandDbfs, spectrumLevels, 0f)
         private set
 
     fun configure(sampleRateHz: Int) {
@@ -72,7 +73,7 @@ internal class CalibratedPcmMeter(sampleRateHz: Int) {
         spectrumDbfs.fill(FloorDbfs)
         spectrumLevels.fill(0f)
         previousSpectrumDbfs.fill(FloorDbfs)
-        reading = Reading(0f, FloorDbfs, FloorDbfs, bandDbfs, spectrumLevels, 0f)
+        reading = Reading(0f, FloorDbfs, FloorDbfs, 0f, bandDbfs, spectrumLevels, 0f)
     }
 
     fun waveformSnapshot(): FloatArray = FloatArray(AudioWaveformSampleCount) { index ->
@@ -100,15 +101,22 @@ internal class CalibratedPcmMeter(sampleRateHz: Int) {
         var mixedSquaredTotal = 0f
         var leftSquaredTotal = 0f
         var rightSquaredTotal = 0f
+        var stereoProductTotal = 0f
         repeat(WindowFrames) { index ->
             mixedSquaredTotal += monoWindow[index] * monoWindow[index]
             leftSquaredTotal += leftWindow[index] * leftWindow[index]
             rightSquaredTotal += rightWindow[index] * rightWindow[index]
+            stereoProductTotal += leftWindow[index] * rightWindow[index]
         }
         val mixedDbfs = rmsToDbfs(sqrt(mixedSquaredTotal / WindowFrames))
+        val stereoDenominator = sqrt(leftSquaredTotal * rightSquaredTotal)
+        val stereoCorrelation = if (stereoDenominator > CorrelationDenominatorFloor) {
+            (stereoProductTotal / stereoDenominator).coerceIn(-1f, 1f)
+        } else 0f
         reading = Reading(
             leftDbfs = rmsToDbfs(sqrt(leftSquaredTotal / WindowFrames)),
             rightDbfs = rmsToDbfs(sqrt(rightSquaredTotal / WindowFrames)),
+            stereoCorrelation = stereoCorrelation,
             bandDbfs = bandDbfs,
             energy = dbfsToDisplayUnit(mixedDbfs),
             spectrumLevels = spectrumLevels,
@@ -188,6 +196,7 @@ internal class CalibratedPcmMeter(sampleRateHz: Int) {
         const val WaveformHistoryFrames = 1_024
         const val FloorDbfs = -60f
         const val MinimumRms = .001f
+        const val CorrelationDenominatorFloor = .000_001f
         const val TransientDbfsRange = 12f
         const val OneSidedWindowPowerScale = 2f / (WindowFrames * WindowFrames * .375f)
         val BandRanges = arrayOf(

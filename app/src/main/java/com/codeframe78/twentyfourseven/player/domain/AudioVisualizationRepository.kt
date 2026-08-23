@@ -10,6 +10,8 @@ data class AudioVisualizationState(
     /** RMS dBFS before presentation gain; used only by the calibrated Master meters. */
     val leftDbfs: Float = -60f,
     val rightDbfs: Float = -60f,
+    /** Normalized L/R PCM correlation for the current analysis window (-1 = inverted, +1 = in phase). */
+    val stereoCorrelation: Float = 0f,
     /** Windowed PCM-power dBFS values for SUB, LOW, MID, and HIGH. */
     val calibratedBandDbfs: List<Float> = List(CalibratedBandCount) { -60f },
     val channelCount: Int = 0,

@@ -35,6 +35,17 @@ class CalibratedPcmMeterTest {
     }
 
     @Test
+    fun `stereo correlation reports decoded in-phase and inverted channels`() {
+        val inPhase = CalibratedPcmMeter(SampleRateHz)
+        feedSine(inPhase, bin = 43, leftAmplitude = .25f, rightAmplitude = .25f)
+        assertEquals(1f, inPhase.reading.stereoCorrelation, .001f)
+
+        val inverted = CalibratedPcmMeter(SampleRateHz)
+        feedSine(inverted, bin = 43, leftAmplitude = .25f, rightAmplitude = -.25f)
+        assertEquals(-1f, inverted.reading.stereoCorrelation, .001f)
+    }
+
+    @Test
     fun `all visualizer spectrum levels use the fixed dBFS display range`() {
         val meter = CalibratedPcmMeter(SampleRateHz)
         val amplitude = .25f

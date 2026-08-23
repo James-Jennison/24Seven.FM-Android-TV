@@ -82,6 +82,7 @@ private fun TvOpenGlIdleVisualizer(
     var signalDeckReadings by remember { mutableStateOf(List(4) { "-30 dB" }) }
     var masterReadings by remember { mutableStateOf(listOf("-30 dB", "-30 dB")) }
     var signalDeckStereo by remember { mutableStateOf(false) }
+    var signalDeckCorrelation by remember { mutableStateOf(0f) }
     val signalDeckLabelPaint = remember {
         AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
             color = android.graphics.Color.rgb(220, 235, 255)
@@ -152,6 +153,22 @@ private fun TvOpenGlIdleVisualizer(
                         signalDeckLabelPaint.alpha = 170
                         canvas.nativeCanvas.drawText(label, x + size.width * .035f, size.height * .150f, signalDeckLabelPaint)
                     }
+                    // A real L/R correlation measurement is useful hardware-deck
+                    // information: +1 is mono-compatible, 0 is decorrelated, and
+                    // negative values identify phase-inverted stereo content.
+                    val phaseStart = size.width * .705f
+                    val phaseEnd = size.width * .920f
+                    val phaseY = size.height * .214f
+                    val phaseCentre = (phaseStart + phaseEnd) * .5f
+                    val phaseNeedle = phaseStart + (signalDeckCorrelation.coerceIn(-1f, 1f) + 1f) * .5f * (phaseEnd - phaseStart)
+                    val phaseColour = if (signalDeckCorrelation < 0f) Color(0xFFFF6B87) else Color(0xFF79E9C2)
+                    drawLine(Color(0x506F8DAA), Offset(phaseStart, phaseY), Offset(phaseEnd, phaseY), strokeWidth = size.height * .002f)
+                    drawLine(Color(0x809DB8D0), Offset(phaseCentre, phaseY - size.height * .010f), Offset(phaseCentre, phaseY + size.height * .010f), strokeWidth = size.height * .0015f)
+                    drawCircle(phaseColour.copy(alpha = .30f), radius = size.height * .010f, center = Offset(phaseNeedle, phaseY))
+                    drawCircle(phaseColour, radius = size.height * .0048f, center = Offset(phaseNeedle, phaseY))
+                    signalDeckLabelPaint.textSize = size.height * .014f
+                    signalDeckLabelPaint.alpha = 145
+                    canvas.nativeCanvas.drawText("PHASE ${formatCorrelation(signalDeckCorrelation)}", phaseCentre, size.height * .235f, signalDeckLabelPaint)
                     centres.forEach { centre ->
                         val scaleLabels = arrayOf("-30", "-20", "-10", "0")
                         scaleLabels.forEachIndexed { index, scaleLabel ->
@@ -198,6 +215,7 @@ private fun TvOpenGlIdleVisualizer(
                 signalDeckReadings = audio.calibratedBandDbfs.map(::formatDbfs)
                 masterReadings = listOf(audio.leftDbfs, audio.rightDbfs).map(::formatDbfs)
                 signalDeckStereo = audio.channelCount > 1
+                signalDeckCorrelation = audio.stereoCorrelation
             }
         }
     }
@@ -340,6 +358,8 @@ private fun AndroidPaint.truncateToWidth(text: String, maxWidth: Float): String 
 }
 
 private fun formatDbfs(value: Float) = "${value.coerceIn(MasterMeterFloorDbfs, 0f).toInt()} dBFS"
+
+private fun formatCorrelation(value: Float) = "%+.2f".format(java.util.Locale.US, value.coerceIn(-1f, 1f))
 
 private fun dbfsToMasterMeter(value: Float) =
     ((value.coerceIn(MasterMeterFloorDbfs, 0f) - MasterMeterFloorDbfs) / -MasterMeterFloorDbfs).coerceIn(0f, 1f)

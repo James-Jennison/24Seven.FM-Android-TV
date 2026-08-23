@@ -62,6 +62,7 @@ internal class AudioVisualizationProcessor(
                 rightEnergy = calibratedReading.energy,
                 leftDbfs = calibratedReading.leftDbfs,
                 rightDbfs = calibratedReading.rightDbfs,
+                stereoCorrelation = calibratedReading.stereoCorrelation,
                 calibratedBandDbfs = calibratedReading.bandDbfs.toList(),
                 channelCount = channelCount,
                 waveform = calibratedMeter.waveformSnapshot().toList(),
