@@ -1,13 +1,12 @@
 # Third-party software notices
 
-The 24Seven.FM Player is built with the open-source components below. This
-inventory reflects the resolved `releaseRuntimeClasspath` used for the M23.1
-release-candidate audit on July 15, 2026. Artifact-level versions remain
+24Seven.FM TV is built with the open-source components below. This inventory
+reflects the resolved TV runtime classpath. Artifact-level versions remain
 recorded by Gradle and in the release bundle dependency metadata.
 
 ## Apache License 2.0 components
 
-- AndroidX, including Activity 1.11.0, Browser 1.10.0, Compose UI 1.11.3,
+- AndroidX, including Activity 1.11.0, Compose UI 1.11.3,
   Material icons 1.7.8, Material 3 1.4.0, Core 1.16.0, Lifecycle 2.9.4,
   Media3 1.10.1, Window 1.5.0, and their AndroidX transitive modules
 - Accompanist Drawable Painter 0.37.3

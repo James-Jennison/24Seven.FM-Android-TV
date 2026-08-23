@@ -1,17 +1,10 @@
-# Contributing
+# Contributing to 24Seven.FM TV
 
-Thanks for helping build 24Seven.FM Player.
+24Seven.FM TV is a separate Android TV application and must remain a D-pad-first, anonymous listener experience unless a later TV milestone explicitly expands that scope.
 
-1. Open an issue before beginning a large feature or protocol change.
-2. Create a focused branch from `main`.
-3. Keep UI, domain, data, and playback responsibilities separated.
-4. Add tests for new domain and ViewModel behavior.
-5. Never publish passwords, cookies, tokens, private messages, or unsanitized captures.
-6. Submit a pull request describing the behavior and validation performed.
-
-Ready, same-repository pull requests are automatically enrolled for merge after the
-required Android validation passes and the branch is current with `main`. Draft pull
-requests and pull requests from forks remain manual so they can be reviewed before
-merging.
-
-This is an independent community project; avoid wording or artwork that implies official endorsement.
+1. Start focused work from `main`.
+2. Keep Compose TV UI, ViewModels, repository contracts, and Media3 playback ownership separate.
+3. Add or update tests and TV validation evidence for behavior changes.
+4. Do not add mobile-only features, WebViews, account flows, Chat, requests, commerce, Cast, credentials, or private station data without explicit product authorization.
+5. Do not commit passwords, cookies, tokens, private media, or unsanitized diagnostic captures.
+6. Describe the TV device and acceptance evidence in each pull request.

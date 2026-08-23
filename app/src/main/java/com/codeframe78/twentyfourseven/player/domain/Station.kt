@@ -29,37 +29,6 @@ fun String.toSupportedStationIdOrNull(): StationId? = StationId(this)
     .canonicalized()
     .takeIf(SUPPORTED_STATION_IDS::contains)
 
-data class StationCapabilities(
-    val supportsAuthentication: Boolean = false,
-    val supportsChat: Boolean = false,
-    val supportsFavorites: Boolean = false,
-    val supportsRequests: Boolean = false,
-    val supportsRequestMessages: Boolean = false,
-    val supportsListenerActivity: Boolean = false,
-    val supportsQueue: Boolean = false,
-    val supportsHistory: Boolean = false,
-    val supportsSecondaryContent: Boolean = false,
-)
-
-enum class StationPageKind {
-    Website,
-    Members,
-    Statistics,
-    TopTracks,
-    Contact,
-    Membership,
-    SoundtrackOfTheMonth,
-    Games,
-    Awards,
-}
-
-data class StationPage(
-    val kind: StationPageKind,
-    val title: String,
-    val description: String,
-    val url: String,
-)
-
 data class StreamVariant(
     val url: String,
     val label: String,
@@ -78,6 +47,4 @@ data class Station(
     val logoUrl: String? = null,
     val websiteUrl: String,
     val streams: List<StreamVariant> = emptyList(),
-    val capabilities: StationCapabilities = StationCapabilities(),
-    val secondaryPages: List<StationPage> = emptyList(),
 )

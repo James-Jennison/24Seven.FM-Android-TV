@@ -1,10 +1,10 @@
-24Seven.FM Player — third-party software notices
+24Seven.FM TV — third-party software notices
 
-This inventory reflects the release runtime audited on July 15, 2026.
+This inventory reflects the Android TV release runtime.
 
 APACHE LICENSE 2.0
 
-AndroidX (Activity 1.11.0; Browser 1.10.0; Compose UI 1.11.3; Material icons 1.7.8; Material 3 1.4.0; Core 1.16.0; Lifecycle 2.9.4; Media3 1.10.1; Window 1.5.0; and transitive AndroidX modules), Accompanist Drawable Painter 0.37.3, Coil 3.4.0, Guava 33.3.1-android and FailureAccess 1.0.2, JetBrains Compose/AndroidX transitive modules, Kotlin standard library 2.3.10, kotlinx.coroutines 1.10.2, kotlinx.serialization 1.7.3, OkHttp 4.12.0, Okio 3.16.4, JetBrains Annotations 23.0.0, and jspecify 1.0.0 are provided under the Apache License, Version 2.0.
+AndroidX (Activity 1.11.0; Compose UI 1.11.3; Material icons 1.7.8; Material 3 1.4.0; Core 1.16.0; Lifecycle 2.9.4; Media3 1.10.1; Window 1.5.0; and transitive AndroidX modules), Accompanist Drawable Painter 0.37.3, Coil 3.4.0, Guava 33.3.1-android and FailureAccess 1.0.2, JetBrains Compose/AndroidX transitive modules, Kotlin standard library 2.3.10, kotlinx.coroutines 1.10.2, kotlinx.serialization 1.7.3, OkHttp 4.12.0, Okio 3.16.4, JetBrains Annotations 23.0.0, and jspecify 1.0.0 are provided under the Apache License, Version 2.0.
 
 License: https://www.apache.org/licenses/LICENSE-2.0
 

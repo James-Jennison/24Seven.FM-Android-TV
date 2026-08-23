@@ -23,10 +23,7 @@ import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
- * Listener-only state for Android TV. Keeping it separate from [MainViewModel] prevents TV
- * startup from restoring accounts or observing any authenticated community surface.
- */
+/** Listener-only state for Android TV's anonymous playback surface. */
 data class TvRadioUiState(
     val stations: List<Station> = emptyList(),
     val selectedStation: Station? = null,

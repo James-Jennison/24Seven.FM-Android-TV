@@ -1,13 +1,9 @@
 package com.codeframe78.twentyfourseven.player.data
 
 import com.codeframe78.twentyfourseven.player.domain.Station
-import com.codeframe78.twentyfourseven.player.domain.StationCapabilities
 import com.codeframe78.twentyfourseven.player.domain.StationId
-import com.codeframe78.twentyfourseven.player.domain.StationPage
-import com.codeframe78.twentyfourseven.player.domain.StationPageKind
 import com.codeframe78.twentyfourseven.player.domain.StationRepository
 import com.codeframe78.twentyfourseven.player.domain.LocalStationPreferences
-import com.codeframe78.twentyfourseven.player.domain.PLAYER_CONTACT_EMAIL
 import com.codeframe78.twentyfourseven.player.domain.StationPreferencesRepository
 import com.codeframe78.twentyfourseven.player.domain.StartupStationMode
 import com.codeframe78.twentyfourseven.player.domain.StreamFormat
@@ -30,11 +26,6 @@ class BootstrapStationRepository(
             domain = "streamingsoundtracks.com",
             logoUrl = "https://streamingsoundtracks.com/images/logos/logo-sst-v200x200.png",
             websiteDomain = "www.streamingsoundtracks.com",
-            capabilities = queueCapabilities.copy(
-                supportsRequestMessages = true,
-                supportsListenerActivity = true,
-                supportsSecondaryContent = true,
-            ),
         ),
         station(
             id = "1980s",
@@ -43,7 +34,6 @@ class BootstrapStationRepository(
             description = "Music from the 1980s",
             domain = "1980s.fm",
             logoUrl = "https://1980s.fm/images/logos/1980s_logo-200x200.png",
-            capabilities = queueCapabilities.copy(supportsSecondaryContent = true),
         ),
         station(
             id = "afm",
@@ -52,7 +42,6 @@ class BootstrapStationRepository(
             description = "Classical and light music",
             domain = "adagio.fm",
             logoUrl = "https://adagio.fm/images/logos/logo-afm-200x200.png",
-            capabilities = queueCapabilities.copy(supportsSecondaryContent = true),
         ),
         station(
             id = "dfm",
@@ -61,7 +50,6 @@ class BootstrapStationRepository(
             description = "Extreme metal",
             domain = "death.fm",
             logoUrl = "https://death.fm/images/logos/logo-dfm-200x200.png",
-            capabilities = queueCapabilities.copy(supportsSecondaryContent = true),
         ),
         station(
             id = "efm",
@@ -70,7 +58,6 @@ class BootstrapStationRepository(
             description = "Trance and electronic music",
             domain = "entranced.fm",
             logoUrl = "https://entranced.fm/images/logos/logo-efm-g200x200.png",
-            capabilities = queueCapabilities.copy(supportsSecondaryContent = true),
         ),
     )
     private val selected = MutableStateFlow(resolveStartupStation(preferences.current))
@@ -109,15 +96,6 @@ class BootstrapStationRepository(
     }
 
     private companion object {
-        val queueCapabilities = StationCapabilities(
-            supportsAuthentication = true,
-            supportsChat = true,
-            supportsFavorites = true,
-            supportsQueue = true,
-            supportsHistory = true,
-            supportsRequests = true,
-        )
-
         fun streams(domain: String) = listOf(
             StreamVariant("https://$domain/live", "Live stream", priority = 0, format = StreamFormat.Aac, bitrateKbps = 192),
         )
@@ -130,7 +108,6 @@ class BootstrapStationRepository(
             domain: String,
             logoUrl: String,
             websiteDomain: String = domain,
-            capabilities: StationCapabilities,
         ) = Station(
             id = StationId(id),
             name = name,
@@ -139,21 +116,6 @@ class BootstrapStationRepository(
             logoUrl = logoUrl,
             websiteUrl = "https://$websiteDomain/",
             streams = streams(domain),
-            capabilities = capabilities,
-            secondaryPages = if (capabilities.supportsSecondaryContent) {
-                secondaryPages()
-            } else {
-                emptyList()
-            },
-        )
-
-        fun secondaryPages() = listOf(
-            StationPage(
-                StationPageKind.Contact,
-                "Contact Us",
-                "Email the monitored 24Seven.FM Player contact",
-                "mailto:$PLAYER_CONTACT_EMAIL",
-            ),
         )
     }
 }

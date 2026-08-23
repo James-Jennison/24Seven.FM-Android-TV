@@ -41,7 +41,7 @@ class CurrentTrackArtworkParserTest {
     }
 
     @Test
-    fun `parses current track details for Cast metadata refresh`() {
+    fun `parses current track details for TV metadata refresh`() {
         val response = JSONObject()
             .put("Artist", "Don Davis")
             .put("Album", "Jurassic Park III")

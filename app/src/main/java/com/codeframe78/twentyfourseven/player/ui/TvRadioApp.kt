@@ -259,6 +259,18 @@ internal fun tvNowPlayingTrackArtistLabel(raw: String?): String? {
     }
 }
 
+internal fun formatSleepTimerRemaining(remainingMillis: Long): String {
+    val totalSeconds = (remainingMillis.coerceAtLeast(0L) + 999L) / 1_000L
+    val hours = totalSeconds / 3_600L
+    val minutes = (totalSeconds % 3_600L) / 60L
+    val seconds = totalSeconds % 60L
+    return if (hours > 0L) {
+        "$hours:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
+    } else {
+        "$minutes:${seconds.toString().padStart(2, '0')}"
+    }
+}
+
 @Composable
 private fun TvArtworkBackdrop(artworkUrl: String?, modifier: Modifier = Modifier) {
     var retainedArtwork by remember { mutableStateOf<Painter?>(null) }

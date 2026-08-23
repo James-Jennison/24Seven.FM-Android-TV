@@ -18,7 +18,6 @@ import androidx.media3.session.SessionToken
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import com.codeframe78.twentyfourseven.player.domain.PlaybackController
-import com.codeframe78.twentyfourseven.player.domain.PlaybackRoute
 import com.codeframe78.twentyfourseven.player.domain.PlaybackState
 import com.codeframe78.twentyfourseven.player.domain.PlaybackStatus
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingState
@@ -43,9 +42,7 @@ class Media3PlaybackController(
     private var localAudioOutput = stateFlow.value.audioOutput
     private val audioOutputMonitor = AndroidAudioOutputMonitor(appContext) { output ->
         localAudioOutput = output
-        if (stateFlow.value.route == PlaybackRoute.Local) {
-            stateFlow.value = stateFlow.value.copy(audioOutput = output)
-        }
+        stateFlow.value = stateFlow.value.copy(audioOutput = output)
     }
 
     private var controller: MediaController? = null
@@ -144,7 +141,7 @@ class Media3PlaybackController(
         if (controller != null) setStationMediaItems(station)
     }
 
-    // Live metadata is published by the app's Now Playing repository. TV has no remote Cast route.
+    // Live metadata is published by the app's Now Playing repository.
     override fun updateNowPlaying(nowPlaying: NowPlayingState) = Unit
 
     override fun play() {
@@ -230,8 +227,6 @@ class Media3PlaybackController(
                 stationId = stationId,
                 status = if (playRequested) PlaybackStatus.Connecting else PlaybackStatus.Idle,
                 errorMessage = null,
-                route = PlaybackRoute.Local,
-                castDeviceName = null,
                 audioOutput = localAudioOutput,
             )
             return
@@ -252,8 +247,7 @@ class Media3PlaybackController(
             status = status,
             errorMessage = connected.playerError?.message,
             networkAvailable = networkRecovery.isNetworkUsable,
-            route = PlaybackRoute.Local,
-            castDeviceName = null,
+            audioOutput = localAudioOutput,
         )
     }
 

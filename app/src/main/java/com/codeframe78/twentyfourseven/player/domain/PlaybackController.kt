@@ -20,15 +20,7 @@ data class PlaybackState(
     val networkAvailable: Boolean = false,
     val sleepTimer: SleepTimerState = SleepTimerState(),
     val audioOutput: AudioOutputState = AudioOutputState(),
-    val route: PlaybackRoute = PlaybackRoute.Local,
-    val castDeviceName: String? = null,
 )
-
-enum class PlaybackRoute {
-    Local,
-    CastConnected,
-    Casting,
-}
 
 enum class AudioOutputKind {
     Device,

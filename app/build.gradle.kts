@@ -85,7 +85,6 @@ dependencies {
     androidTestImplementation(composeBom)
     implementation("androidx.activity:activity-compose:1.11.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
-    implementation("androidx.browser:browser:1.10.0")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui")
@@ -97,9 +96,6 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.10.1")
     implementation("androidx.media3:media3-session:1.10.1")
     implementation("androidx.mediarouter:mediarouter:1.8.1")
-    // Legacy mobile Cast classes remain source-compatible during the TV split, but Cast is not
-    // packaged or initialized by the anonymous TV listener application.
-    compileOnly("com.google.android.gms:play-services-cast-framework:22.3.1")
     implementation("org.jsoup:jsoup:1.22.2")
     implementation("io.coil-kt.coil3:coil-compose:3.4.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.4.0")
@@ -107,7 +103,6 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20251224")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
-    testImplementation("com.google.android.gms:play-services-cast-framework:22.3.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.test:core-ktx:1.7.0")
     androidTestImplementation("androidx.test.ext:junit-ktx:1.3.0")
