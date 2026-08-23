@@ -406,29 +406,10 @@ private fun TvIdleScreenSheet(
                 .fillMaxSize()
                 .background(
                     Brush.horizontalGradient(
-                        listOf(TvInk.copy(alpha = .08f), TvInk.copy(alpha = .12f), TvInk.copy(alpha = .72f)),
+                        listOf(TvInk.copy(alpha = .01f), TvInk.copy(alpha = .05f), TvInk.copy(alpha = .72f)),
                     ),
                 ),
         )
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .width(590.dp)
-                .padding(start = 42.dp, bottom = 36.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                previewStyle.displayName,
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = TvCream,
-            )
-            Text(
-                previewStyle.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = TvCream.copy(alpha = .82f),
-            )
-        }
         Column(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
