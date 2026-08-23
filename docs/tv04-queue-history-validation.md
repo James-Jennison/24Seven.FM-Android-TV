@@ -51,15 +51,16 @@ viewport remains 1920×1080 at 320 dpi.
   Death.FM, and Entranced.FM—into their live states. Each station rendered populated anonymous `UP NEXT` and
   `RECENTLY PLAYED` rows. Death.FM's compact public feed remained read-only and rendered without exposing any
   authentication or member data.
-- The sleep timer is currently process-bound: after setting a 15-minute timer, force-stopping and relaunching the
-  app returned its dialog to duration choices with no remaining-time or Cancel action. No test timer remained
-  active after that restart.
+- The confirmed sleep-timer policy is process-bound: it remains active while the app is backgrounded and the
+  playback service remains alive, but a force-stop or process death clears it. After setting a 15-minute timer,
+  force-stopping and relaunching the app returned its dialog to duration choices with no remaining-time or Cancel
+  action. No test timer remained active after that restart.
 - The project owner physically tested the live Streamer resilience path: Ethernet disconnect/reconnect recovered
   playback, and D-pad focus, Back, the hidden `↓ OPTIONS` path, media pause/resume, and sleep-timer expiry continued
   to behave correctly after recovery.
 
 ## Not certified by this pass
 
-- Whether timer continuity across process death is a product requirement, TalkBack, Bluetooth remote input,
-  low-memory behavior, and release acceptance remain open. The Streamer has been checked at its 4K HDMI output but
-  still presents a 1920×1080 logical app viewport, so this is not native-4K UI certification.
+- TalkBack, Bluetooth remote input, low-memory behavior, and release acceptance remain open. The Streamer has been
+  checked at its 4K HDMI output but still presents a 1920×1080 logical app viewport, so this is not native-4K UI
+  certification.

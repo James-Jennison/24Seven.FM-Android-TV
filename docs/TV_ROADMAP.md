@@ -27,10 +27,10 @@ still required.
 
 Add D-pad Queue/History, sleep timer, and privacy-safe local diagnostics. Do not expose authentication or mutations.
 
-**Status: In progress.** All five stations' anonymous public Queue/History, D-pad sleep-timer set/cancel, and
-privacy-safe local diagnostics have physical-TV evidence in
-[tv04-queue-history-validation.md](tv04-queue-history-validation.md). Timer expiry, any desired persistence policy,
-recovery, and remaining TV acceptance evidence remain open.
+**Status: In progress.** All five stations' anonymous public Queue/History, D-pad sleep-timer set/cancel and expiry,
+its process-bound policy, and privacy-safe local diagnostics have physical-TV evidence in
+[tv04-queue-history-validation.md](tv04-queue-history-validation.md). Remaining TV acceptance evidence is tracked
+under TV05.
 
 ## TV05 — TV acceptance
 
