@@ -4,6 +4,10 @@
 
 Establish the TV application ID, product contract, independent roadmap, and disabled inherited mobile delivery paths.
 
+**Status: Complete.** The Android TV application uses its own application ID, product contract,
+repository, CI workflow, roadmap, and delivery boundary. Inherited mobile listener-account,
+community, Cast, web-portal, and mobile release surfaces were removed from this repository.
+
 ## TV02 — Android TV platform foundation
 
 Add the TV-only launcher manifest, banner/icon assets, landscape activity, Compose for TV root, and manifest validation.
