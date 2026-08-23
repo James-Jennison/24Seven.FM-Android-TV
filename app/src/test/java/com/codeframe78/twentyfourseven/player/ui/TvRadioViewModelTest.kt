@@ -2,10 +2,13 @@ package com.codeframe78.twentyfourseven.player.ui
 
 import com.codeframe78.twentyfourseven.player.data.BootstrapStationRepository
 import com.codeframe78.twentyfourseven.player.data.InMemoryStationPreferencesRepository
+import com.codeframe78.twentyfourseven.player.data.InMemoryAudioVisualizationRepository
+import com.codeframe78.twentyfourseven.player.data.InMemoryIdleScreenPreferencesRepository
 import com.codeframe78.twentyfourseven.player.domain.LocalStationPreferences
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingRepository
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingState
 import com.codeframe78.twentyfourseven.player.domain.HistoryTrack
+import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
 import com.codeframe78.twentyfourseven.player.domain.PlaybackController
 import com.codeframe78.twentyfourseven.player.domain.PlaybackState
 import com.codeframe78.twentyfourseven.player.domain.PlaybackStatus
@@ -51,7 +54,10 @@ class TvRadioViewModelTest {
     fun `TV state exposes only selected station playback and matching now playing`() = runTest(dispatcher) {
         val nowPlaying = FakeNowPlayingRepository()
         val playback = FakePlaybackController()
-        val viewModel = TvRadioViewModel(BootstrapStationRepository(), playback, nowPlaying, FakeQueueRepository())
+        val viewModel = TvRadioViewModel(
+            BootstrapStationRepository(), playback, nowPlaying, FakeQueueRepository(),
+            InMemoryIdleScreenPreferencesRepository(), InMemoryAudioVisualizationRepository(),
+        )
         backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()
 
@@ -77,7 +83,10 @@ class TvRadioViewModelTest {
             ),
         )
 
-        TvRadioViewModel(repository, playback, FakeNowPlayingRepository(), FakeQueueRepository())
+        TvRadioViewModel(
+            repository, playback, FakeNowPlayingRepository(), FakeQueueRepository(),
+            InMemoryIdleScreenPreferencesRepository(), InMemoryAudioVisualizationRepository(),
+        )
         advanceUntilIdle()
 
         assertEquals("efm", playback.selectedStation?.id?.value)
@@ -92,6 +101,8 @@ class TvRadioViewModelTest {
             playback,
             FakeNowPlayingRepository(),
             FakeQueueRepository(),
+            InMemoryIdleScreenPreferencesRepository(),
+            InMemoryAudioVisualizationRepository(),
         )
         advanceUntilIdle()
 
@@ -108,6 +119,8 @@ class TvRadioViewModelTest {
             playback,
             FakeNowPlayingRepository(),
             FakeQueueRepository(),
+            InMemoryIdleScreenPreferencesRepository(),
+            InMemoryAudioVisualizationRepository(),
         )
         advanceUntilIdle()
 
@@ -119,6 +132,27 @@ class TvRadioViewModelTest {
     }
 
     @Test
+    fun `TV idle screen exposes all twelve styles and retains the selected visualizer`() = runTest(dispatcher) {
+        val preferences = InMemoryIdleScreenPreferencesRepository()
+        val viewModel = TvRadioViewModel(
+            BootstrapStationRepository(),
+            FakePlaybackController(),
+            FakeNowPlayingRepository(),
+            FakeQueueRepository(),
+            preferences,
+            InMemoryAudioVisualizationRepository(),
+        )
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        assertEquals(12, IdleVisualizerStyle.entries.size)
+        viewModel.selectIdleVisualizer(IdleVisualizerStyle.VinylPulse)
+        advanceUntilIdle()
+
+        assertEquals(IdleVisualizerStyle.VinylPulse, viewModel.uiState.value.idleScreen.visualizer)
+    }
+
+    @Test
     fun `TV diagnostics retain only allowlisted playback transition fields`() = runTest(dispatcher) {
         val playback = FakePlaybackController()
         val viewModel = TvRadioViewModel(
@@ -126,6 +160,8 @@ class TvRadioViewModelTest {
             playback,
             FakeNowPlayingRepository(),
             FakeQueueRepository(),
+            InMemoryIdleScreenPreferencesRepository(),
+            InMemoryAudioVisualizationRepository(),
         )
         backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()
@@ -154,6 +190,8 @@ class TvRadioViewModelTest {
             FakePlaybackController(),
             FakeNowPlayingRepository(),
             queue,
+            InMemoryIdleScreenPreferencesRepository(),
+            InMemoryAudioVisualizationRepository(),
         )
         backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()

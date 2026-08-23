@@ -5,6 +5,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingRepository
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingState
+import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationRepository
+import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState
+import com.codeframe78.twentyfourseven.player.domain.IdleScreenPreferences
+import com.codeframe78.twentyfourseven.player.domain.IdleScreenPreferencesRepository
+import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
 import com.codeframe78.twentyfourseven.player.domain.PlaybackController
 import com.codeframe78.twentyfourseven.player.domain.PlaybackState
 import com.codeframe78.twentyfourseven.player.domain.QueueRepository
@@ -31,6 +36,7 @@ data class TvRadioUiState(
     val nowPlaying: NowPlayingState = NowPlayingState(),
     val queue: QueueState? = null,
     val diagnosticTransitions: List<DiagnosticTransition> = emptyList(),
+    val idleScreen: IdleScreenPreferences = IdleScreenPreferences(),
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -39,6 +45,8 @@ class TvRadioViewModel(
     private val playback: PlaybackController,
     nowPlaying: NowPlayingRepository,
     private val queue: QueueRepository,
+    private val idleScreenPreferences: IdleScreenPreferencesRepository,
+    visualizationRepository: AudioVisualizationRepository,
 ) : ViewModel() {
     private val initialSelectedStation = stations.currentSelectedStation()
     private val initialUiState = TvRadioUiState(
@@ -80,11 +88,17 @@ class TvRadioViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    private val idlePreferences = idleScreenPreferences.preferences
+
+    val visualization: StateFlow<AudioVisualizationState> = visualizationRepository.state
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AudioVisualizationState())
+
     val uiState: StateFlow<TvRadioUiState> = combine(
         listenerContent,
         selectedQueue,
         diagnosticTransitions,
-    ) { content, selectedQueueState, transitions ->
+        idlePreferences,
+    ) { content, selectedQueueState, transitions, idlePreferences ->
         TvRadioUiState(
             stations = content.stations,
             selectedStation = content.selectedStation,
@@ -93,6 +107,7 @@ class TvRadioViewModel(
                 ?: NowPlayingState(stationId = content.selectedStation.id),
             queue = selectedQueueState.takeIf { it.stationId == content.selectedStation.id },
             diagnosticTransitions = transitions,
+            idleScreen = idlePreferences,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initialUiState)
 
@@ -120,15 +135,28 @@ class TvRadioViewModel(
 
     fun cancelSleepTimer() = playback.cancelSleepTimer()
 
+    fun selectIdleVisualizer(style: IdleVisualizerStyle) = viewModelScope.launch {
+        idleScreenPreferences.setVisualizer(style)
+    }
+
     class Factory(
         private val stations: StationRepository,
         private val playback: PlaybackController,
         private val nowPlaying: NowPlayingRepository,
         private val queue: QueueRepository,
+        private val idleScreenPreferences: IdleScreenPreferencesRepository,
+        private val visualization: AudioVisualizationRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            TvRadioViewModel(stations, playback, nowPlaying, queue) as T
+            TvRadioViewModel(
+                stations,
+                playback,
+                nowPlaying,
+                queue,
+                idleScreenPreferences,
+                visualization,
+            ) as T
     }
 }
 

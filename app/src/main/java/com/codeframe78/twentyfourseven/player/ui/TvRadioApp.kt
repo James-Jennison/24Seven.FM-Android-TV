@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -86,9 +87,12 @@ import coil3.request.crossfade
 import com.codeframe78.twentyfourseven.player.R
 import com.codeframe78.twentyfourseven.player.domain.PlaybackStatus
 import com.codeframe78.twentyfourseven.player.domain.QueueLoadStatus
+import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState
+import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
 import com.codeframe78.twentyfourseven.player.domain.StationId
 import com.codeframe78.twentyfourseven.player.ui.theme.stationPalette
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -99,15 +103,31 @@ import kotlin.math.sin
 @Composable
 internal fun TvRadioApp(
     state: TvRadioUiState,
+    visualization: StateFlow<AudioVisualizationState>,
     diagnosticEnvironment: DiagnosticEnvironment,
     onSelectStation: (StationId) -> Unit,
     onPause: () -> Unit,
     onSetSleepTimer: (Long) -> Unit,
     onCancelSleepTimer: () -> Unit,
+    onSelectIdleVisualizer: (IdleVisualizerStyle) -> Unit,
 ) {
     val style = tvStationStyle(state.selectedStation?.id)
-    var showSleepTimer by remember { mutableStateOf(false) }
-    var showDiagnostics by remember { mutableStateOf(false) }
+    var menuDestination by remember { mutableStateOf<TvMenuDestination?>(null) }
+    var idleVisualizerActive by remember { mutableStateOf(false) }
+    var fullScreenPreviewRequested by remember { mutableStateOf(false) }
+    var interactionRevision by remember { mutableStateOf(0) }
+    var consumeMenuOpeningDirectionUp by remember { mutableStateOf(false) }
+    LaunchedEffect(state.playback.status, menuDestination, interactionRevision, fullScreenPreviewRequested) {
+        if (fullScreenPreviewRequested && menuDestination == null) {
+            idleVisualizerActive = true
+        } else if (state.playback.status == PlaybackStatus.Playing && menuDestination == null) {
+            idleVisualizerActive = false
+            delay(TvIdleScreenDelayMillis)
+            idleVisualizerActive = true
+        } else {
+            idleVisualizerActive = false
+        }
+    }
     val nowPlayingMarqueePhase by rememberInfiniteTransition(label = "TV Now Playing marquee")
         .animateFloat(
             initialValue = 0f,
@@ -118,18 +138,52 @@ internal fun TvRadioApp(
             ),
             label = "TV Now Playing marquee phase",
         )
+    androidx.activity.compose.BackHandler(enabled = idleVisualizerActive) {
+        if (fullScreenPreviewRequested) {
+            // A full-screen view entered from the selector is a preview, not
+            // the automatic idle screen. Return it to that selector so a user
+            // can compare styles without reopening General Options.
+            fullScreenPreviewRequested = false
+            menuDestination = TvMenuDestination.IdleScreen
+        } else {
+            idleVisualizerActive = false
+        }
+        interactionRevision += 1
+    }
     MaterialTheme(colorScheme = tvColorScheme(style)) {
         Box(
             modifier = Modifier
-                .padding(horizontal = 48.dp, vertical = 27.dp)
                 .fillMaxSize()
                 .background(TvInk)
                 .onPreviewKeyEvent { event ->
-                    if (event.type == KeyEventType.KeyUp && event.key == Key.Menu) {
-                        showSleepTimer = true
-                        true
-                    } else {
-                        false
+                    if (event.type == KeyEventType.KeyDown) {
+                        interactionRevision += 1
+                        if (idleVisualizerActive) {
+                            idleVisualizerActive = false
+                            fullScreenPreviewRequested = false
+                        }
+                        if (event.key == Key.DirectionDown && menuDestination == null) {
+                            menuDestination = TvMenuDestination.GeneralOptions
+                            consumeMenuOpeningDirectionUp = true
+                            return@onPreviewKeyEvent true
+                        }
+                    }
+                    if (event.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
+                    if (event.key == Key.DirectionDown && consumeMenuOpeningDirectionUp) {
+                        consumeMenuOpeningDirectionUp = false
+                        return@onPreviewKeyEvent true
+                    }
+                    when (event.key) {
+                        Key.Menu -> {
+                            menuDestination = if (menuDestination == null) {
+                                TvMenuDestination.GeneralOptions
+                            } else {
+                                null
+                            }
+                            true
+                        }
+
+                        else -> false
                     }
                 },
         ) {
@@ -142,9 +196,17 @@ internal fun TvRadioApp(
                     .fillMaxSize()
                     .background(TvInk.copy(alpha = 0.42f)),
             )
-            Column(
+            if (idleVisualizerActive) {
+                TvIdleVisualizer(
+                    style = state.idleScreen.visualizer,
+                    audioState = visualization,
+                    stationName = state.selectedStation?.name,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else Column(
                 modifier = Modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .padding(horizontal = 48.dp, vertical = 27.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Row(
@@ -204,34 +266,345 @@ internal fun TvRadioApp(
                     state = state,
                     onSelectStation = onSelectStation,
                     onPause = onPause,
-                    onOpenSleepTimer = { showSleepTimer = true },
                 )
             }
-            if (showSleepTimer) {
+            when (menuDestination) {
+                TvMenuDestination.GeneralOptions -> {
+                    TvGeneralOptionsSheet(
+                        state = state,
+                        onOpenSleepTimer = { menuDestination = TvMenuDestination.SleepTimer },
+                        onOpenIdleScreen = { menuDestination = TvMenuDestination.IdleScreen },
+                        onOpenDiagnostics = { menuDestination = TvMenuDestination.Diagnostics },
+                        onDismiss = { menuDestination = null },
+                    )
+                }
+
+                TvMenuDestination.SleepTimer -> {
                 TvSleepTimerDialog(
                     state = state,
                     onSet = {
                         onSetSleepTimer(it)
-                        showSleepTimer = false
+                        menuDestination = null
                     },
                     onCancel = {
                         onCancelSleepTimer()
-                        showSleepTimer = false
+                        menuDestination = null
                     },
-                    onShowDiagnostics = {
-                        showSleepTimer = false
-                        showDiagnostics = true
-                    },
-                    onDismiss = { showSleepTimer = false },
+                    onDismiss = { menuDestination = TvMenuDestination.GeneralOptions },
                 )
-            }
-            if (showDiagnostics) {
+                }
+
+                TvMenuDestination.IdleScreen -> {
+                TvIdleScreenSheet(
+                        state = state,
+                        visualization = visualization,
+                        onSelectVisualizer = onSelectIdleVisualizer,
+                        onPreviewFullScreen = {
+                            fullScreenPreviewRequested = true
+                            menuDestination = null
+                        },
+                        onDismiss = { menuDestination = TvMenuDestination.GeneralOptions },
+                    )
+                }
+
+                TvMenuDestination.Diagnostics -> {
                 TvDiagnosticsDialog(
                     state = state,
                     environment = diagnosticEnvironment,
-                    onDismiss = { showDiagnostics = false },
+                    onDismiss = { menuDestination = TvMenuDestination.GeneralOptions },
                 )
             }
+
+                null -> Unit
+            }
+        }
+    }
+}
+
+private enum class TvMenuDestination {
+    GeneralOptions,
+    SleepTimer,
+    IdleScreen,
+    Diagnostics,
+}
+
+private const val TvIdleScreenDelayMillis = 10 * 60 * 1_000L
+
+@Composable
+private fun TvGeneralOptionsSheet(
+    state: TvRadioUiState,
+    onOpenSleepTimer: () -> Unit,
+    onOpenIdleScreen: () -> Unit,
+    onOpenDiagnostics: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    TvOptionsSheet(title = "General options", onDismiss = onDismiss) { firstAction ->
+        TvOptionAction(
+            title = "Sleep timer",
+            summary = if (state.playback.sleepTimer.isActive) {
+                "Pauses in ${formatSleepTimerRemaining(state.playback.sleepTimer.remainingMillis)}"
+            } else {
+                "Off"
+            },
+            onClick = onOpenSleepTimer,
+            modifier = Modifier.focusRequester(firstAction),
+        )
+        TvOptionAction(
+            title = "Idle screen",
+            summary = "${state.idleScreen.visualizer.displayName} · starts after 10 minutes",
+            onClick = onOpenIdleScreen,
+        )
+        TvOptionAction(
+            title = "Device status",
+            summary = "Local playback information",
+            onClick = onOpenDiagnostics,
+        )
+        TvOptionAction(title = "Close", summary = "Return to the player", onClick = onDismiss)
+    }
+}
+
+@Composable
+private fun TvIdleScreenSheet(
+    state: TvRadioUiState,
+    visualization: StateFlow<AudioVisualizationState>,
+    onSelectVisualizer: (IdleVisualizerStyle) -> Unit,
+    onPreviewFullScreen: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val selectedAction = remember { FocusRequester() }
+    val previewAction = remember { FocusRequester() }
+    var previewStyle by remember { mutableStateOf(state.idleScreen.visualizer) }
+    androidx.activity.compose.BackHandler(onBack = onDismiss)
+    LaunchedEffect(state.idleScreen.visualizer) {
+        previewStyle = state.idleScreen.visualizer
+    }
+    LaunchedEffect(Unit) { previewAction.requestFocus() }
+    Box(
+        modifier = Modifier.fillMaxSize().background(TvInk),
+    ) {
+        TvIdleVisualizer(
+            style = previewStyle,
+            audioState = visualization,
+            stationName = state.selectedStation?.name,
+            modifier = Modifier.fillMaxSize(),
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(TvInk.copy(alpha = .08f), TvInk.copy(alpha = .12f), TvInk.copy(alpha = .72f)),
+                    ),
+                ),
+        )
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .width(590.dp)
+                .padding(start = 42.dp, bottom = 36.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                previewStyle.displayName,
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = TvCream,
+            )
+            Text(
+                previewStyle.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = TvCream.copy(alpha = .82f),
+            )
+        }
+        Column(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .width(420.dp)
+                .fillMaxHeight()
+                .background(TvInk.copy(alpha = .82f))
+                .border(1.dp, TvCream.copy(alpha = .20f))
+                .padding(horizontal = 22.dp, vertical = 30.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Button(
+                onClick = onPreviewFullScreen,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(36.dp)
+                    .focusRequester(previewAction),
+                contentPadding = PaddingValues(horizontal = 8.dp),
+                colors = ButtonDefaults.colors(
+                    containerColor = Color.Transparent,
+                    contentColor = TvCream,
+                    focusedContainerColor = TvCream.copy(alpha = .12f),
+                    focusedContentColor = TvCream,
+                ),
+                shape = ButtonDefaults.shape(RoundedCornerShape(5.dp)),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Idle visualizer",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        "Preview full screen",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TvCream.copy(alpha = .78f),
+                    )
+                }
+            }
+            Text(
+                "Choose a style to preview",
+                style = MaterialTheme.typography.bodySmall,
+                color = TvCream.copy(alpha = .68f),
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            IdleVisualizerStyle.entries.forEach { style ->
+                TvVisualizerListRow(
+                    style = style,
+                    selected = style == state.idleScreen.visualizer,
+                    onClick = {
+                        previewStyle = style
+                        onSelectVisualizer(style)
+                    },
+                    onPreview = { previewStyle = style },
+                    modifier = if (style == state.idleScreen.visualizer) {
+                        Modifier.focusRequester(selectedAction)
+                    } else {
+                        Modifier
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TvVisualizerListRow(
+    style: IdleVisualizerStyle,
+    selected: Boolean,
+    onClick: () -> Unit,
+    onPreview: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(31.dp)
+            .onFocusChanged { if (it.isFocused) onPreview() },
+        contentPadding = PaddingValues(0.dp),
+        colors = ButtonDefaults.colors(
+            containerColor = Color.Transparent,
+            contentColor = TvCream,
+            focusedContainerColor = TvCream.copy(alpha = .12f),
+            focusedContentColor = TvCream,
+        ),
+        shape = ButtonDefaults.shape(RoundedCornerShape(5.dp)),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .border(
+                    width = if (selected) 1.dp else 0.dp,
+                    color = TvCream.copy(alpha = .74f),
+                    shape = RoundedCornerShape(5.dp),
+                )
+                .padding(horizontal = 7.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(42.dp)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(4.dp)),
+            ) {
+                TvVisualizerPreview(style = style, modifier = Modifier.fillMaxSize())
+            }
+            Box(
+                modifier = Modifier
+                    .size(7.dp)
+                    .background(
+                        if (selected) Color(0xFF7FFFE1) else TvCream.copy(alpha = .30f),
+                        CircleShape,
+                    ),
+            )
+            Text(
+                style.displayName,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TvOptionsSheet(
+    title: String,
+    onDismiss: () -> Unit,
+    content: @Composable (FocusRequester) -> Unit,
+) {
+    val firstAction = remember { FocusRequester() }
+    androidx.activity.compose.BackHandler(onBack = onDismiss)
+    LaunchedEffect(Unit) { firstAction.requestFocus() }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(TvInk.copy(alpha = .86f)),
+        contentAlignment = Alignment.CenterEnd,
+    ) {
+        Column(
+            modifier = Modifier
+                .width(470.dp)
+                .fillMaxHeight()
+                .clip(TvPanelShape)
+                .background(TvInk.copy(alpha = .97f))
+                .border(1.dp, TvCream.copy(alpha = .35f), TvPanelShape)
+                .padding(horizontal = 30.dp, vertical = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp),
+        ) {
+            Text(
+                title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = TvCream,
+                modifier = Modifier.padding(bottom = 10.dp),
+            )
+            content(firstAction)
+        }
+    }
+}
+
+@Composable
+private fun TvOptionAction(
+    title: String,
+    summary: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    selected: Boolean = false,
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        colors = ButtonDefaults.colors(
+            containerColor = if (selected) TvCream.copy(alpha = .16f) else TvCream.copy(alpha = .07f),
+            contentColor = TvCream,
+            focusedContainerColor = TvCream,
+            focusedContentColor = TvInk,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+            verticalArrangement = Arrangement.spacedBy(1.dp),
+        ) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(summary, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -429,7 +802,6 @@ private fun TvStationBanner(
     state: TvRadioUiState,
     onSelectStation: (StationId) -> Unit,
     onPause: () -> Unit,
-    onOpenSleepTimer: () -> Unit,
 ) {
     val livePulse by rememberInfiniteTransition(label = "TV live station pulse")
         .animateFloat(
@@ -441,7 +813,6 @@ private fun TvStationBanner(
             ),
             label = "TV live station pulse phase",
         )
-    val focusElevation = with(LocalDensity.current) { 16.dp.toPx() }
     var showOptionsHint by remember { mutableStateOf(false) }
     var optionsHintGeneration by remember { mutableStateOf(0) }
     LaunchedEffect(optionsHintGeneration) {
@@ -455,15 +826,7 @@ private fun TvStationBanner(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp)
-                .onPreviewKeyEvent { event ->
-                    if (event.type == KeyEventType.KeyUp && event.key == Key.DirectionDown) {
-                        onOpenSleepTimer()
-                        true
-                    } else {
-                        false
-                    }
-                },
+                .padding(10.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -477,16 +840,23 @@ private fun TvStationBanner(
                 animationSpec = tween(180),
                 label = "TV station focus scale ${station.id.value}",
             )
-            val selectorSurfaceColor = if (playing) {
-                palette.accent.copy(alpha = 0.18f + (livePulse * 0.08f))
+            val liveHaloBaseColor = if (station.id.value == "dfm") {
+                Color(0xFFFF5158)
             } else {
-                palette.glow.copy(alpha = 0.10f)
+                palette.secondary
             }
-            val ringColor = if (playing) {
-                palette.accent.copy(alpha = 0.90f + (livePulse * 0.10f))
+            val iconHaloColor = if (playing) {
+                liveHaloBaseColor.copy(
+                    alpha = if (station.id.value == "dfm") {
+                        0.30f + (livePulse * 0.20f)
+                    } else {
+                        0.22f + (livePulse * 0.18f)
+                    },
+                )
             } else {
-                palette.secondary.copy(alpha = 0.72f)
+                palette.glow.copy(alpha = 0.14f)
             }
+            val iconHaloScale = if (playing) 0.94f + (livePulse * 0.12f) else 1f
             Box(
                 modifier = Modifier.size(102.dp),
                 contentAlignment = Alignment.Center,
@@ -494,31 +864,26 @@ private fun TvStationBanner(
                 if (focused) {
                     Box(
                         modifier = Modifier
-                            .size(100.dp)
-                            .background(TvCream.copy(alpha = 0.10f), CircleShape)
-                            .blur(3.dp),
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(96.dp)
-                            .border(2.dp, TvCream.copy(alpha = 0.88f), CircleShape),
+                            .size(62.dp)
+                            .background(TvCream.copy(alpha = 0.12f), TvTrackShape)
                     )
                 }
                 Button(
                     onClick = {
                         if (playing) onPause() else onSelectStation(station.id)
                     },
+                    contentPadding = PaddingValues(0.dp),
                     colors = ButtonDefaults.colors(
-                        containerColor = selectorSurfaceColor,
+                        containerColor = Color.Transparent,
                         contentColor = TvCream,
-                        focusedContainerColor = selectorSurfaceColor.copy(alpha = 0.28f),
+                        focusedContainerColor = Color.Transparent,
                         focusedContentColor = TvCream,
-                        pressedContainerColor = palette.accent.copy(alpha = 0.38f),
+                        pressedContainerColor = Color.Transparent,
                         pressedContentColor = TvInk,
-                        disabledContainerColor = selectorSurfaceColor,
+                        disabledContainerColor = Color.Transparent,
                         disabledContentColor = palette.secondary.copy(alpha = 0.55f),
                     ),
-                    shape = ButtonDefaults.shape(CircleShape),
+                    shape = ButtonDefaults.shape(TvTrackShape),
                     modifier = Modifier
                         .size(90.dp)
                         .onFocusChanged {
@@ -528,16 +893,7 @@ private fun TvStationBanner(
                         .graphicsLayer {
                             scaleX = focusScale
                             scaleY = focusScale
-                            shadowElevation = if (focused) focusElevation else 0f
-                            shape = CircleShape
-                            ambientShadowColor = palette.secondary
-                            spotShadowColor = palette.accent
                         }
-                        .border(
-                            width = if (focused || playing) 2.dp else 1.5.dp,
-                            color = ringColor,
-                            shape = CircleShape,
-                        )
                         .semantics {
                             contentDescription = if (selected) {
                                 if (playing) {
@@ -557,17 +913,20 @@ private fun TvStationBanner(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(56.dp)
-                                    .clip(TvTrackShape)
-                                    .background(TvInk.copy(alpha = 0.58f))
-                                    .border(
-                                        width = 1.dp,
-                                        color = ringColor.copy(alpha = 0.78f),
-                                        shape = TvTrackShape,
-                                    ),
+                                    .size(58.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                val selectorLogoSizePx = with(LocalDensity.current) { 49.dp.roundToPx() }
+                                Box(
+                                    modifier = Modifier
+                                        .size(62.dp)
+                                        .graphicsLayer {
+                                            scaleX = iconHaloScale
+                                            scaleY = iconHaloScale
+                                        }
+                                        .background(iconHaloColor, TvTrackShape)
+                                        .blur(7.dp),
+                                )
+                                val selectorLogoSizePx = with(LocalDensity.current) { 52.dp.roundToPx() }
                                 Image(
                                     bitmap = ImageBitmap.imageResource(
                                         tvStationSelectorLogoResource(station.id, selectorLogoSizePx),
@@ -575,7 +934,7 @@ private fun TvStationBanner(
                                     contentDescription = null,
                                     contentScale = ContentScale.Fit,
                                     filterQuality = FilterQuality.High,
-                                    modifier = Modifier.size(49.dp),
+                                    modifier = Modifier.size(52.dp),
                                 )
                             }
                             if (playing) Text("LIVE", fontWeight = FontWeight.Bold)
@@ -611,7 +970,6 @@ private fun TvSleepTimerDialog(
     state: TvRadioUiState,
     onSet: (Long) -> Unit,
     onCancel: () -> Unit,
-    onShowDiagnostics: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val firstAction = remember { FocusRequester() }
@@ -658,7 +1016,6 @@ private fun TvSleepTimerDialog(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = onShowDiagnostics) { Text("Device status") }
                 if (state.playback.sleepTimer.isActive) {
                     Button(onClick = onCancel) { Text("Cancel timer") }
                 }

@@ -2,10 +2,12 @@ package com.codeframe78.twentyfourseven.player
 
 import android.app.Application
 import com.codeframe78.twentyfourseven.player.data.BootstrapStationRepository
+import com.codeframe78.twentyfourseven.player.data.InMemoryAudioVisualizationRepository
 import com.codeframe78.twentyfourseven.player.data.PersistedNowPlayingRepository
 import com.codeframe78.twentyfourseven.player.data.PlayerQueueRemoteDataSource
 import com.codeframe78.twentyfourseven.player.data.PollingQueueRepository
 import com.codeframe78.twentyfourseven.player.data.SharedPreferencesQueueSnapshotStore
+import com.codeframe78.twentyfourseven.player.data.SharedPreferencesIdleScreenPreferencesRepository
 import com.codeframe78.twentyfourseven.player.data.StationNowPlayingArtworkRepository
 import com.codeframe78.twentyfourseven.player.data.SharedPreferencesStationPreferencesRepository
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingArtworkRepository
@@ -27,6 +29,8 @@ class AppContainer(application: Application) {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val nowPlayingStore = PersistedNowPlayingRepository(application)
     private val stationPreferences = SharedPreferencesStationPreferencesRepository(application)
+    val idleScreenPreferences = SharedPreferencesIdleScreenPreferencesRepository(application)
+    val audioVisualizationRepository = InMemoryAudioVisualizationRepository()
 
     val stationRepository = BootstrapStationRepository(stationPreferences)
     val nowPlayingRepository: NowPlayingRepository = nowPlayingStore

@@ -26,16 +26,20 @@ class MainActivity : AppCompatActivity() {
                     container.playbackController,
                     container.nowPlayingRepository,
                     container.queueRepository,
+                    container.idleScreenPreferences,
+                    container.audioVisualizationRepository,
                 ),
             )
             val state = viewModel.uiState.collectAsStateWithLifecycle().value
             TvRadioApp(
                 state = state,
+                visualization = viewModel.visualization,
                 diagnosticEnvironment = diagnosticEnvironment(),
                 onSelectStation = viewModel::selectStation,
                 onPause = viewModel::pause,
                 onSetSleepTimer = viewModel::setSleepTimer,
                 onCancelSleepTimer = viewModel::cancelSleepTimer,
+                onSelectIdleVisualizer = viewModel::selectIdleVisualizer,
             )
         }
     }

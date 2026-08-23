@@ -218,7 +218,10 @@ class RadioPlaybackService : MediaSessionService() {
             .setUsage(C.USAGE_MEDIA)
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
             .build()
-        player = ExoPlayer.Builder(this)
+        val visualizationProcessor = AudioVisualizationProcessor(
+            (application as RadioApplication).appContainer.audioVisualizationRepository,
+        )
+        player = ExoPlayer.Builder(this, AudioVisualizationRenderersFactory(this, visualizationProcessor))
             .setAudioAttributes(attributes, true)
             .setHandleAudioBecomingNoisy(true)
             .build()
