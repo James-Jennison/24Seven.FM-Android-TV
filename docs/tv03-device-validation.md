@@ -26,6 +26,11 @@ Status: Partial — live playback selection, pause/resume, and real Ethernet rec
 - A real wired-Ethernet interruption was performed, followed by a physical reconnection. The owner
   observed playback resume. ADB reconnected at the same endpoint, and the app's MediaSession again
   reported `PLAYING` with Entranced.FM exposed as live in the accessibility tree.
+- A later read-only Streamer observation found 1980s.FM `PLAYING`. The dashboard's Now Playing card
+  and active MediaSession agreed on `When The Going Gets Tough, The Tough Get Going` by Billy Ocean;
+  its public five-track Up Next and Recently Played columns remained populated in matching snapshots
+  taken 30 seconds apart. This confirms a settled live UI/session metadata state, not audible output
+  or a metadata-change freshness interval.
 
 ## Remaining TV03 acceptance
 
