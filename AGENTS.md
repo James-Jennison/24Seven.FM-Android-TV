@@ -34,4 +34,4 @@
 
 ## Milestones
 
-Keep `docs/MILESTONE_TIME_LEDGER.md` accurate during authorized milestone work. Update roadmap, evidence, and approved Discord milestone communication only after the relevant acceptance gate is complete; never include sensitive details.
+Keep `docs/TV_ROADMAP.md` and the relevant TV validation evidence accurate during authorized milestone work. Update approved Discord milestone communication only after the relevant acceptance gate is complete; never include sensitive details.
