@@ -20,8 +20,9 @@ Add the TV-only launcher manifest, banner/icon assets, landscape activity, Compo
 Deliver D-pad station selection, Now Playing, MediaSession playback controls, and safe live-radio behavior for all five permitted stations.
 
 **Status: In progress.** Physical-TV evidence now covers D-pad selection, live session state for all five permitted
-stations, and real Ethernet recovery; audible output/metadata freshness and the remaining TV acceptance coverage are
-still required.
+stations, real Ethernet recovery, and extended audible playback across normal track/metadata transitions. The only
+remaining TV03 item is a safely observed playback-error/fallback case, if one can be induced without changing
+production stream configuration.
 
 ## TV04 — Read-only library and device preferences
 

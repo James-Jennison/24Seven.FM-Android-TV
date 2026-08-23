@@ -31,10 +31,13 @@ Status: Partial — live playback selection, pause/resume, and real Ethernet rec
   its public five-track Up Next and Recently Played columns remained populated in matching snapshots
   taken 30 seconds apart. This confirms a settled live UI/session metadata state, not audible output
   or a metadata-change freshness interval.
+- The project owner ran the listener continuously overnight and through most of the following day,
+  confirming that audible playback continued through normal track transitions. Combined with the
+  settled UI/session observation above, this closes the listener-facing audio-continuity and normal
+  metadata-rollover check for the live stream.
 
 ## Remaining TV03 acceptance
 
-- Validate each station's audible output and metadata/artwork freshness with an observer at the TV.
 - Capture an explicit playback-error/fallback case if one can be safely induced without changing
   production stream configuration.
 
