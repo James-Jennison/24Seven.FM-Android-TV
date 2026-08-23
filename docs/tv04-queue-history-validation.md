@@ -44,6 +44,9 @@ viewport remains 1920×1080 at 320 dpi.
 - The Streamer's selector uses the network owner's original 500×500 station logos, pre-sized to 128px and 256px
   variants. At its 98px rendered icon size the 128px tier, paired with Compose `FilterQuality.High`, visibly
   removed the previously observed icon aliasing/shimmer.
+- Before live artwork arrives after launch, the Now Playing card renders the selected station's faded logo with the
+  decorative animated waveform. This no-artwork interstitial was visibly observed on the Google TV Streamer during
+  initial stream connection and resolves cleanly to the live cover artwork.
 - A D-pad-only Streamer pass selected all five permitted stations—StreamingSoundtracks.com, 1980s.FM, Adagio.FM,
   Death.FM, and Entranced.FM—into their live states. Each station rendered populated anonymous `UP NEXT` and
   `RECENTLY PLAYED` rows. Death.FM's compact public feed remained read-only and rendered without exposing any
@@ -58,5 +61,3 @@ viewport remains 1920×1080 at 320 dpi.
   TalkBack, Bluetooth remote input, low-memory behavior, and release acceptance remain open. The Streamer has been
   checked at its 4K HDMI output but still presents a 1920×1080 logical app viewport, so this is not native-4K UI
   certification.
-- The implemented no-artwork interstitial (faded selected-station logo plus a decorative, non-audio-reactive
-  animated waveform) awaits validation against a live station promo or blurb with missing artwork.
