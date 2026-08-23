@@ -30,6 +30,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -373,10 +376,13 @@ private fun TvIdleScreenSheet(
 ) {
     val selectedAction = remember { FocusRequester() }
     val previewAction = remember { FocusRequester() }
+    val styles = IdleVisualizerStyle.entries.toList()
+    val selectorListState = rememberLazyListState()
     var previewStyle by remember { mutableStateOf(state.idleScreen.visualizer) }
     androidx.activity.compose.BackHandler(onBack = onDismiss)
     LaunchedEffect(state.idleScreen.visualizer) {
         previewStyle = state.idleScreen.visualizer
+        selectorListState.scrollToItem(styles.indexOf(state.idleScreen.visualizer).coerceAtLeast(0))
     }
     LaunchedEffect(Unit) { previewAction.requestFocus() }
     Box(
@@ -461,21 +467,29 @@ private fun TvIdleScreenSheet(
                 color = TvCream.copy(alpha = .68f),
                 modifier = Modifier.padding(bottom = 8.dp),
             )
-            IdleVisualizerStyle.entries.forEach { style ->
-                TvVisualizerListRow(
-                    style = style,
-                    selected = style == state.idleScreen.visualizer,
-                    onClick = {
-                        previewStyle = style
-                        onSelectVisualizer(style)
-                    },
-                    onPreview = { previewStyle = style },
-                    modifier = if (style == state.idleScreen.visualizer) {
-                        Modifier.focusRequester(selectedAction)
-                    } else {
-                        Modifier
-                    },
-                )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                state = selectorListState,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                items(styles, key = { it.name }) { style ->
+                    TvVisualizerListRow(
+                        style = style,
+                        selected = style == state.idleScreen.visualizer,
+                        onClick = {
+                            previewStyle = style
+                            onSelectVisualizer(style)
+                        },
+                        onPreview = { previewStyle = style },
+                        modifier = if (style == state.idleScreen.visualizer) {
+                            Modifier.focusRequester(selectedAction)
+                        } else {
+                            Modifier
+                        },
+                    )
+                }
             }
         }
     }
