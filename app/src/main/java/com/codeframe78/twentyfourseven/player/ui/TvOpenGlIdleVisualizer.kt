@@ -793,10 +793,15 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     }
 
     private fun currentThemeColor(current: Int): Rgba {
-        val transition = phase * .018f
-        val start = transition.toInt() % CurrentThemes.size
-        val next = (start + 1) % CurrentThemes.size
-        return CurrentThemes[start][current].blend(CurrentThemes[next][current], transition - transition.toInt())
+        // The three trail palettes are frequency assignments, not an autonomous
+        // colour carousel: cool is the stable current, fuchsia follows the middle
+        // detail, and amber arrives with low-end weight and attack energy.
+        val low = (band(current) * .68f + band(current + 1) * .32f).coerceIn(0f, 1f)
+        val mid = ((band(current + 2) + band(current + 3)) * .5f).coerceIn(0f, 1f)
+        val high = ((band(current + 5) + band(current + 6)) * .5f).coerceIn(0f, 1f)
+        return CurrentThemes[0][current]
+            .blend(CurrentThemes[1][current], (mid * .72f + high * .28f).coerceIn(0f, 1f))
+            .blend(CurrentThemes[2][current], (low * .70f + impact * .30f).coerceIn(0f, 1f))
     }
 
     private fun feedbackCurrentRibbon(current: Int, samples: Int, color: Rgba, thickness: Float) {
