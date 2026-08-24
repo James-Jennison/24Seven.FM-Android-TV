@@ -42,6 +42,9 @@ production configuration changes, account features, or stream changes.
 - **Two-device scroll-position cue:** The installed debug build renders a persistent muted track
   and mint position thumb beside the overflowing selector. Physical inspection confirmed it is
   visible on both devices and moves between the top and bottom selector positions.
+- **Two-device picker dismissal:** One physical Back press from the picker returned both devices
+  to General Options. The visible Sleep Timer value remained Off and both MediaSessions remained
+  `PLAYING`.
 - **VoiceView checks:** On the same Fire TV, dashboard queue/history panels no longer enter the
   spoken traversal. General Options opens as an accessibility dialog and transfers VoiceView
   focus to its pane and Idle Screen action rather than reading the underlying Live station.
