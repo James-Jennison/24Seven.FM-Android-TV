@@ -31,8 +31,12 @@ Add D-pad Queue/History, sleep timer, and privacy-safe local diagnostics. Do not
 **Status: In progress.** All five stations' anonymous public Queue/History, D-pad sleep-timer set/cancel and expiry,
 its process-bound policy, and privacy-safe local diagnostics have physical-TV evidence in
 [tv04-queue-history-validation.md](tv04-queue-history-validation.md). The new General Options hierarchy now also
-contains station selection and a persistent thirteen-style, decoded-audio idle visualizer; formal 10-minute idle and
-style-by-style physical-TV acceptance evidence remains under TV05.
+contains the sleep timer, idle-screen controls, and privacy-safe local diagnostics. Station selection remains on the
+listener dashboard, while formal 10-minute idle and style-by-style physical-TV acceptance evidence remains under TV05.
+
+The approved follow-on options and physical-acceptance sequence is recorded in
+[TV_READINESS_ROADMAP.md](TV_READINESS_ROADMAP.md). In particular, station selection remains on the listener
+dashboard rather than in General Options.
 
 ## TV05 — TV acceptance
 
@@ -42,6 +46,9 @@ Certify focus traversal, Back behavior, TalkBack, basic/Bluetooth remote input, 
 background playback, media-key pause/resume, Ethernet recovery, post-recovery hidden-options access, and
 sleep-timer expiry; the API 35 16 KB emulator also cold-launches the debug app. Audible TalkBack, additional
 physical remote, visual-layout, low-memory, and signed-release/Play-split evidence remain open.
+
+The closure order and acceptance evidence for these rows are defined in
+[TV_READINESS_ROADMAP.md](TV_READINESS_ROADMAP.md).
 
 ## TV06 — Play alpha delivery
 
