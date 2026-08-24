@@ -182,6 +182,11 @@ internal fun TvRadioApp(
                 .fillMaxSize()
                 .background(TvInk)
                 .onPreviewKeyEvent { event ->
+                    // The native GL surface receives Back on key-up and delegates it
+                    // to the stateful exit path below.  Do not let the generic
+                    // "any key wakes idle" handling clear preview state on key-down
+                    // first, otherwise the preview cannot return to its picker.
+                    if (event.key == Key.Back) return@onPreviewKeyEvent false
                     if (event.type == KeyEventType.KeyDown) {
                         interactionRevision += 1
                         if (idleVisualizerActive) {
@@ -229,6 +234,16 @@ internal fun TvRadioApp(
                     audioState = visualization,
                     stationName = state.selectedStation?.name,
                     reduceVisualIntensity = state.idleScreen.reduceVisualIntensity,
+                    onExit = {
+                        if (fullScreenPreviewRequested) {
+                            fullScreenPreviewRequested = false
+                            fullScreenPreviewStyle = null
+                            menuDestination = TvMenuDestination.IdleScreen
+                        } else {
+                            idleVisualizerActive = false
+                        }
+                        interactionRevision += 1
+                    },
                     modifier = Modifier.fillMaxSize(),
                 )
                 if (idleNowPlayingOverlayVisible && !fullScreenPreviewRequested) {

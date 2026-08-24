@@ -14,11 +14,16 @@ production configuration changes, account features, or stream changes.
 - **Implemented:** Now Playing overlay (Off, Brief on entry, Always) and Reduce visual intensity
   persist locally. Reduced intensity attenuates visual response only; decoded PCM remains the
   analysis source and calibrated meter inputs stay unmodified.
-- **Streamer check:** D-pad Down opened General Options; Select opened Accessibility & motion;
+- **Streamer checks:** D-pad Down opened General Options; Select opened Accessibility & Motion;
   overlay cycling and reduced-intensity toggling rendered their selected state. The original
-  Brief-overlay/full-intensity state was restored afterward.
-- **Still open:** automatic idle activation/continuity, full remote matrix, audible TalkBack,
-  low-RAM device evidence, safe fallback observation, and release/Play-split verification.
+  Brief-overlay/full-intensity state was restored afterward. A playing session entered its idle
+  visualizer after the configured ten-minute delay while its MediaSession remained `PLAYING`.
+  From a full-screen preview, one Back press now returns visibly to the Idle Visualizer picker;
+  the native GL view maps that key to the Compose preview-exit state instead of allowing it to
+  dismiss the picker.
+- **Still open:** the second remote matrix, audible TalkBack, low-RAM device evidence, safe
+  fallback observation, reduced-intensity preview/idle confirmation, and release/Play-split
+  verification.
 
 ## Product guardrails
 

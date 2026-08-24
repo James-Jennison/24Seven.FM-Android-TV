@@ -66,10 +66,11 @@ internal fun TvIdleVisualizer(
     audioState: StateFlow<AudioVisualizationState>,
     stationName: String? = null,
     reduceVisualIntensity: Boolean = false,
+    onExit: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        TvOpenGlIdleVisualizer(style, audioState, stationName, reduceVisualIntensity, modifier)
+        TvOpenGlIdleVisualizer(style, audioState, stationName, reduceVisualIntensity, onExit, modifier)
     } else {
         TvCanvasIdleVisualizer(style, audioState, reduceVisualIntensity, modifier)
     }
@@ -81,6 +82,7 @@ private fun TvOpenGlIdleVisualizer(
     audioState: StateFlow<AudioVisualizationState>,
     stationName: String?,
     reduceVisualIntensity: Boolean,
+    onExit: (() -> Unit)?,
     modifier: Modifier,
 ) {
     var surface by remember { mutableStateOf<TvVisualizerSurfaceView?>(null) }
@@ -102,8 +104,17 @@ private fun TvOpenGlIdleVisualizer(
     Box(modifier = modifier) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
-            factory = { context -> TvVisualizerSurfaceView(context).also { surface = it; it.updateStyle(style) } },
-            update = { it.updateStyle(style) },
+            factory = { context ->
+                TvVisualizerSurfaceView(context).also {
+                    surface = it
+                    it.updateStyle(style)
+                    it.setOnBackRequested(onExit)
+                }
+            },
+            update = {
+                it.updateStyle(style)
+                it.setOnBackRequested(onExit)
+            },
         )
         if (style == IdleVisualizerStyle.VinylPulse) {
             Canvas(modifier = Modifier.fillMaxSize()) {
@@ -612,6 +623,7 @@ private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context)
             Choreographer.getInstance().postFrameCallback(this)
         }
     }
+    private var onBackRequested: (() -> Unit)? = null
 
     init {
         // The visualizer still has a GLES 2 geometry fallback, but the Streamer and
@@ -624,6 +636,10 @@ private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context)
         renderer.setSupportsEs3(supportsEs3)
         preserveEGLContextOnPause = true
         setRenderer(renderer)
+        // A TV remote routes Back to the focused native GL view before Compose
+        // can observe it. The view delegates that one key to Compose below.
+        isFocusable = true
+        isFocusableInTouchMode = false
         // Continuous mode can outrun the Streamer's compositor and expose two
         // animation frames in one TV refresh.  Rendering from Choreographer keeps
         // each new frame aligned with the display's vsync.
@@ -642,6 +658,18 @@ private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context)
 
     fun updateStyle(style: IdleVisualizerStyle) {
         queueEvent { renderer.setStyle(style.ordinal) }
+    }
+
+    fun setOnBackRequested(onBackRequested: (() -> Unit)?) {
+        this.onBackRequested = onBackRequested
+    }
+
+    override fun onKeyUp(keyCode: Int, event: android.view.KeyEvent): Boolean {
+        if (keyCode == android.view.KeyEvent.KEYCODE_BACK) {
+            onBackRequested?.invoke()
+            return onBackRequested != null
+        }
+        return super.onKeyUp(keyCode, event)
     }
 
     fun updateAudio(audio: AudioVisualizationState, reduceVisualIntensity: Boolean) {
