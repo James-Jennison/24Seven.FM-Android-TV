@@ -46,8 +46,9 @@ Certify focus traversal, Back behavior, TalkBack, basic/Bluetooth remote input, 
 Back-to-home with background playback, media-key pause/resume, Ethernet recovery, post-recovery
 hidden-options access, sleep-timer expiry, VoiceView/TalkBack traversal, the additional physical Fire
 remote, 1080p logical layout on 4K output, and automatic in-app idle activation. The API 35 16 KB
-emulator also cold-launches the debug app. Only explicit Android low-RAM-device evidence and
-signed-release/Play-split evidence remain open.
+emulator also cold-launches the debug app, while a separate temporary emulator with
+`ro.config.low_ram=true` validates the constrained visualizer branch. Only signed-release/Play-
+split evidence remains open.
 
 The closure order and acceptance evidence for these rows are defined in
 [TV_READINESS_ROADMAP.md](TV_READINESS_ROADMAP.md).

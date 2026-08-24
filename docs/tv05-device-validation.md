@@ -40,14 +40,15 @@ only explicit Android low-RAM-device and release evidence remain.
 - Physical review on both displays found the 1920×1080 logical layout within the 4K-output safe area, with no
   observed picker or dashboard edge clipping. The Streamer's richer visualizer tier was subsequently reviewed and
   accepted as smoother; Fire retained its 192 MB compatibility tier.
+- A temporary read-only API 26 emulator booted with `ro.config.low_ram=true`. The debug Player launched,
+  entered the Idle Screen picker, and rendered the constrained full-screen visualizer without fatal, GL,
+  shader, or memory errors during sustained observation. This is an application low-RAM-branch validation,
+  not a CDD-certified low-RAM hardware profile.
 - The protected Linux signing helper's non-secret environment preflight passed. A signed release bundle was
   deliberately not built because the TV has no registered dedicated upload identity yet.
 
 ## Remaining TV05 acceptance
 
-- Low-memory behavior on a device reporting low-RAM status. The Streamer, Fire TV, and Dongle R 4K
-  (384 MB, 192 MB, and 256 MB heap classes respectively) did not expose `ro.config.low_ram`. The
-  16 KB emulator is a page-size check, not low-memory evidence.
 - Signed-release AAB validation and Play-generated split installation after the dedicated TV upload identity
   is created and registered. The 16 KB debug-runtime launch does not prove signed bundle packaging.
 

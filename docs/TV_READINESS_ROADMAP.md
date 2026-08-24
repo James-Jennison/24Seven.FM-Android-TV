@@ -66,11 +66,15 @@ production configuration changes, account features, or stream changes.
   property, so the renderer uses a 256 MB compatibility boundary: Fire and the Dongle receive the
   constrained tier and Streamer the richer tier. The Streamer's richer tier was physically reviewed
   and approved as noticeably smoother.
+- **Explicit low-RAM emulator acceptance:** A temporary, read-only API 26 emulator booted with
+  `ro.config.low_ram=true`, the property Android uses for its low-RAM classification. The debug
+  Player launched, navigated to the Idle Screen picker, and rendered the constrained full-screen
+  visualizer for a sustained observation with no fatal, GL, shader, or memory error. This validates
+  the application's low-RAM branch; it is not a CDD-certified hardware profile.
   Playback-error fallback cannot be physically observed today because every permitted
   station provides exactly one live stream; inducing it would require a prohibited production
   stream configuration change.
-- **Still open:** a device explicitly reporting Android low-RAM classification, plus release/Play-
-  split verification.
+- **Still open:** separately approved release signing and Play-split verification.
 
 ## Product guardrails
 
