@@ -187,10 +187,10 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
    `0.1.0-tv-alpha01` / code `1` from revision `3c742c5f182e4bd0f8997d95feaf1cb5df620714`.
    Privacy and the objective app-content declarations are now saved in Play
    Console. The conservative TV-specific Data Safety declaration is also
-   saved. The IARC rating and the associated **18 and over** target-audience
-   gate are also saved; the store listing is saved. The only remaining external
-   setup gate is the foreground-media declaration's required reviewer-video
-   URL and its final Console save.
+   saved. The store listing and **18 and over** target-audience gate are saved.
+   The foreground-media declaration is saved with a publicly hosted,
+   HTTPS/hash-verified reviewer video. The remaining external setup gate is
+   the blank Content ratings/IARC questionnaire and its final submission.
 2. **Local artifact gate — complete.** The protected helper built and verified the signed AAB/APK
    with resource shrinking, R8, 64-bit, and 16 KB packaging checks; Play accepted the published
    internal-test AAB and its ReTrace mapping attachment.
@@ -203,12 +203,11 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
    privacy policy, app access, ads, target audience,
    government, financial, health, and category/contact. The entered support
    mailbox is provisioned and receipt-verified by the owner after its one-time
-   managed-transport test. Data Safety, the IARC rating, and the corrected
-   **18 and over** target-audience gate are saved. The Media playback use case
-   is selected for the foreground-service declaration and its exact-candidate
-   evidence is publicly hosted and HTTPS/hash verified; pasting that video URL
-   and saving the declaration remains open. Tester-install evidence is
-   complete.
+   managed-transport test. Data Safety and the corrected **18 and over**
+   target-audience gate are saved. The Media playback use case and its
+   exact-candidate video evidence are saved for the foreground-service
+   declaration. Content ratings is currently blank at Step 1 and is the only
+   demonstrated blocking form. Tester-install evidence is complete.
 
 ## Sequencing and completion
 
@@ -218,7 +217,7 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
 | 2 | R2.1 Overlay and comfort | Complete — persistence plus fixed/reduced visualizer physical pass |
 | 3 | R2.2 Style behavior decision | Deferred pending explicit product approval |
 | 4 | R3 Physical-TV closure | Complete for the permitted local scope; fallback configuration remains unchanged |
-| 5 | R4 Release readiness | In progress — published and device-accepted Internal release; store listing saved, with only the foreground-service video URL and Console save open |
+| 5 | R4 Release readiness | In progress — published and device-accepted Internal release; the blank Content ratings/IARC questionnaire is the demonstrated remaining gate |
 
 TV05 is complete. TV06 remains approval-gated and must not be treated as complete from an
 Internal-track publication and device acceptance alone.

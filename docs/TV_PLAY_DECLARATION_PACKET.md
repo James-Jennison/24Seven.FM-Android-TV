@@ -62,11 +62,12 @@ reference was reconciled with the active TV form, and **18 and over** is now
 saved for TV Alpha 01. The active form exposed no further minor-access choice
 for this release.
 
-The IARC questionnaire is saved with **All Other App Types** and the approved
-support contact. It conservatively declares Death.FM's online catalog as
-including violent, sexual, offensive-language, and controlled-substance
-content. It produces 18+ / Adults Only ratings in the displayed territories;
-the saved target audience is therefore **18 and over**.
+The active Console Content ratings workflow is currently blank at Step 1;
+the IARC questionnaire has **not** been submitted. Re-enter **All Other App
+Types** and the approved support contact, accept the IARC terms, then use the
+conservative Death.FM answers below. The intended answers produce 18+ / Adults
+Only ratings in the displayed territories and are consistent with the saved
+**18 and over** target audience.
 
 The classification was based only on these verified facts:
 
