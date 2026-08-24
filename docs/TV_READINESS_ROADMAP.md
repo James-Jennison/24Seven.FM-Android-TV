@@ -26,8 +26,14 @@ production configuration changes, account features, or stream changes.
   restored to its prior full-intensity state afterward. With reduced intensity enabled, a second
   unattended Streamer run entered the visualizer after the fixed ten-minute delay while the
   MediaSession remained `PLAYING`; the setting was then restored to full intensity.
-- **Still open:** the second remote matrix, audible TalkBack, low-RAM device evidence, safe
-  fallback observation, and release/Play-split verification.
+- **Fire TV checks:** On the Insignia Fire TV (AFTDCT31, Fire OS 7 / Android 9), the physical
+  remote's double-Select opened a full-screen preview and Back returned visibly to the picker.
+  The strict Fire OS GLSL compiler is supported by normalizing shader source before compilation.
+  Its 384 MB app-memory class automatically receives the constrained-device tier (30 fps render
+  cadence and quarter-resolution feedback surfaces). Both physical viewers found the result
+  slightly sluggish but acceptable; playback and the visualizer remained functional.
+- **Still open:** audible TalkBack, formal low-RAM classification evidence, safe playback-fallback
+  observation, and release/Play-split verification.
 
 ## Product guardrails
 
