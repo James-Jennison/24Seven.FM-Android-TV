@@ -50,6 +50,9 @@ production configuration changes, account features, or stream changes.
 - **Two-device Home/resume:** After a physical Home action, a ten-second background interval, and
   reopening the app, both devices returned to the 1980s.FM dashboard with the Player activity
   foreground and both MediaSessions still `PLAYING`.
+- **Cross-device artwork treatment:** The artwork backdrop now uses the same clear 1.14× crop on
+  every supported TV rather than an Android 12+-only blur effect. The debug build was installed
+  on both devices and the Streamer result received physical approval.
 - **VoiceView checks:** On the same Fire TV, dashboard queue/history panels no longer enter the
   spoken traversal. General Options opens as an accessibility dialog and transfers VoiceView
   focus to its pane and Idle Screen action rather than reading the underlying Live station.
