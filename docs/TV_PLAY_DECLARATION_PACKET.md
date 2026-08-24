@@ -37,7 +37,7 @@ Play metadata and are also supported by this TV artifact:
 | Financial features | **None** |
 | Health apps | **None** |
 | App category | **Music & Audio** |
-| Public support contact | `24sevenplayer@jamesjennison.net` — entered in Play Console, but mailbox provisioning and receipt verification remain required before any public release |
+| Public support contact | `24sevenplayer@jamesjennison.net` — entered in Play Console and provisioned; a one-time plain-text test was accepted by the managed mail transport on August 24, 2026, pending owner confirmation of mailbox receipt |
 | App access | **All functionality is available without special access.** Do not enter reviewer credentials. |
 
 The mobile Player's existing policy URL must **not** be copied automatically:
@@ -119,9 +119,10 @@ published candidate without exposing tester details or private diagnostics.
    app-access/no-sign-in answer, Ads **No**, Government **No**, Financial
    features **None**, Health **None**, **Music & Audio** category, public
    support contact, and **18 and over** target age in Play Console. The
-   published support mailbox has not yet been provisioned or receipt-verified;
-   do not treat that contact as release-ready until it can receive a test
-   message.
+   published support mailbox is provisioned and its one-time test was accepted
+   by the managed transport, but mailbox receipt is not yet independently
+   verified; do not treat that contact as release-ready until the owner confirms
+   receipt.
 2. Complete the exact active IARC content-rating questionnaire.
 3. Reconcile the current Data Safety form with the direct station/network
    connection-data path and obtain owner attestation.

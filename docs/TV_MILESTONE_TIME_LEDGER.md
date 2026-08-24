@@ -9,6 +9,6 @@ This ledger begins with the independent TV application. Historical Player time i
 | TV03 — Listener-first playback | Complete | August 20, 2026 | All permitted stations, D-pad playback, Ethernet recovery, and normal playback continuity validated; see [tv03-device-validation.md](tv03-device-validation.md) |
 | TV04 — Read-only library and device preferences | Complete | August 20, 2026 | Read-only Queue/History, local sleep timer, and privacy-safe diagnostics physically validated; see [tv04-queue-history-validation.md](tv04-queue-history-validation.md) |
 | TV05 — TV acceptance | Complete | August 20, 2026 | Internal release `1 (0.1.0-tv-alpha01)` Play-generated split installed and physically accepted on the Streamer and Dongle R 4K; see [tv05-device-validation.md](tv05-device-validation.md) |
-| TV06 — Play alpha delivery | In progress | August 23, 2026 | Internal release published and device-accepted by Alpha Testers; 8/11 Play setup tasks are saved, but the entered support mailbox requires provisioning and receipt verification; content rating, Data Safety, and store listing remain |
+| TV06 — Play alpha delivery | In progress | August 23, 2026 | Internal release published and device-accepted by Alpha Testers; 8/11 Play setup tasks are saved, and the provisioned support mailbox test was accepted by the managed transport pending owner receipt confirmation; content rating, Data Safety, and store listing remain |
 
 Active, automated-wait, and user-blocked durations will be recorded prospectively as TV milestones complete.
