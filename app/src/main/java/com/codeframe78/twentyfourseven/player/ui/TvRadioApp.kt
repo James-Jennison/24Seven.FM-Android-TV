@@ -68,6 +68,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -1316,7 +1317,12 @@ private fun TvLibraryPanel(
 ) {
     Column(
         modifier = modifier
-            .padding(12.dp),
+            .padding(12.dp)
+            // Queue and history are supporting visual context. Exposing every text line makes
+            // VoiceView traverse titles, artists, albums, and durations for each station before
+            // the listener can reach station controls or General Options. Keep both panels
+            // visual-only; the current station and Now Playing remain accessible elsewhere.
+            .clearAndSetSemantics { },
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(
