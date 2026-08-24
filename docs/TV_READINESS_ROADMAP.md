@@ -53,6 +53,11 @@ production configuration changes, account features, or stream changes.
 - **Cross-device artwork treatment:** The artwork backdrop now uses the same clear 1.14× crop on
   every supported TV rather than an Android 12+-only blur effect. The debug build was installed
   on both devices and the Streamer result received physical approval.
+- **Fire TV automatic idle acceptance:** With the Fire TV system screensaver disabled, an
+  untouched ten-minute run entered the selected full-screen in-app visualizer while the Player
+  remained foreground and its MediaSession remained `PLAYING`. A concurrent Streamer run is not
+  counted: the device received HDMI-CEC active-source-loss events and paused before idle
+  activation, without an app decoder, network, or sleep-timer error.
 - **VoiceView checks:** On the same Fire TV, dashboard queue/history panels no longer enter the
   spoken traversal. General Options opens as an accessibility dialog and transfers VoiceView
   focus to its pane and Idle Screen action rather than reading the underlying Live station.
