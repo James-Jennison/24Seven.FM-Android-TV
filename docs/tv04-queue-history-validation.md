@@ -7,6 +7,10 @@ Additional device-preference validation was completed Aug 22, 2026 on the wired 
 Streamer (Android API 34). Its physical HDMI output is 3840×2160, while the Android application
 viewport remains 1920×1080 at 320 dpi.
 
+Status: Complete — the read-only library, local sleep timer, and privacy-safe local diagnostics
+are physically validated. The completed low-RAM branch acceptance is recorded under TV05; the
+separate release-delivery evidence remains under TV06.
+
 ## Verified
 
 - The D-pad station strip selects a live stream; when playing, that station becomes the focused `Station - Live`
@@ -65,4 +69,5 @@ viewport remains 1920×1080 at 320 dpi.
   including focus transfer into the dialog and exclusion of background queue/history content. A second physical
   Fire TV remote also completed the picker preview/Back route; its transport was not classified as Bluetooth.
 - The Streamer has been checked at its 4K HDMI output but still presents a 1920×1080 logical app viewport, so this
-  is not native-4K UI certification. Explicit Android low-RAM-device and release acceptance remain open.
+  is not native-4K UI certification. Broader display evidence belongs to TV05; its low-RAM branch acceptance is
+  complete there, while release-delivery evidence belongs to TV06, not this completed TV04 feature milestone.

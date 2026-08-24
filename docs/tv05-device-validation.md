@@ -2,8 +2,8 @@
 
 Date: August 22–23, 2026
 
-Status: Partial — all available physical navigation, visual, idle, and accessibility acceptance passed;
-only explicit Android low-RAM-device and release evidence remain.
+Status: Partial — all available physical navigation, visual, idle, accessibility, and explicit
+Android low-RAM-branch acceptance passed; only Play upload/generated-split evidence remains.
 
 ## Device and build
 

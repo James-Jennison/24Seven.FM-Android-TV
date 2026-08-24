@@ -2,7 +2,9 @@
 
 Date: August 22, 2026
 
-Status: Partial — live playback selection, pause/resume, and real Ethernet recovery passed.
+Status: Complete — live playback selection, pause/resume, real Ethernet recovery, and extended
+audible playback through normal metadata transitions passed. Alternate-stream fallback is not a
+testable requirement while every permitted station exposes only one production stream.
 
 ## Device and build
 

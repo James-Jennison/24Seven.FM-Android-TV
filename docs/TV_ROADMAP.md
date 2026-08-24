@@ -19,7 +19,7 @@ Add the TV-only launcher manifest, banner/icon assets, landscape activity, Compo
 
 Deliver D-pad station selection, Now Playing, MediaSession playback controls, and safe live-radio behavior for all five permitted stations.
 
-**Status: In progress.** Physical-TV evidence now covers D-pad selection, live session state for all five permitted
+**Status: Complete.** Physical-TV evidence covers D-pad selection, live session state for all five permitted
 stations, real Ethernet recovery, and extended audible playback across normal track/metadata transitions. The only
 alternate-stream fallback is not eligible for a physical exercise: every permitted station has one
 configured live stream, and inducing it would require a prohibited production configuration change.
@@ -28,11 +28,11 @@ configured live stream, and inducing it would require a prohibited production co
 
 Add D-pad Queue/History, sleep timer, and privacy-safe local diagnostics. Do not expose authentication or mutations.
 
-**Status: In progress.** All five stations' anonymous public Queue/History, D-pad sleep-timer set/cancel and expiry,
+**Status: Complete.** All five stations' anonymous public Queue/History, D-pad sleep-timer set/cancel and expiry,
 its process-bound policy, and privacy-safe local diagnostics have physical-TV evidence in
 [tv04-queue-history-validation.md](tv04-queue-history-validation.md). The new General Options hierarchy now also
 contains the sleep timer, idle-screen controls, and privacy-safe local diagnostics. Station selection remains on the
-listener dashboard, while formal 10-minute idle and style-by-style physical-TV acceptance evidence remains under TV05.
+listener dashboard. Formal idle-screen and style-by-style physical-TV acceptance is tracked separately under TV05.
 
 The approved follow-on options and physical-acceptance sequence is recorded in
 [TV_READINESS_ROADMAP.md](TV_READINESS_ROADMAP.md). In particular, station selection remains on the listener

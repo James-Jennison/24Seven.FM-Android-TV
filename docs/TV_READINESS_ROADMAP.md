@@ -1,9 +1,9 @@
 # 24Seven.FM TV readiness roadmap
 
-**Status:** In progress. R1 and the R2.1 controls are implemented in the debug TV build; their
-broader idle, remote, accessibility, and release acceptance remains open. This roadmap sequences
-the approved General Options direction with the remaining physical-device and release-acceptance
-work. It does not authorize Play upload,
+**Status:** In progress. R1 and the R2.1 controls are implemented in the debug TV build, and their
+idle, remote, accessibility, and explicit low-RAM-branch acceptance is recorded below. Only the
+external Play upload, listing/disclosure, and generated-split evidence remains open. This roadmap
+does not authorize Play upload,
 production configuration changes, account features, or stream changes.
 
 ## Current progress — 2026-08-23
@@ -89,6 +89,9 @@ production configuration changes, account features, or stream changes.
 
 **Goal:** Make General Options a small, predictable control surface.
 
+**Status: Complete.** The D-pad/Back route, local sleep-timer behavior, and listener-dashboard
+station-selection boundary passed focused checks and physical-TV acceptance.
+
 ### Intended top level
 
 1. **Idle screen** — existing style picker and future visualizer behavior.
@@ -116,6 +119,10 @@ production configuration changes, account features, or stream changes.
 
 ### R2.1 — Overlay and comfort (first)
 
+**Status: Complete.** The overlay and reduced-intensity settings persist locally. Fixed-style
+preview, ten-minute idle activation, and Back-to-selector behavior passed on the Streamer and
+Fire TV without interrupting playback.
+
 - **Now Playing overlay:** Off, Brief on entry (default), or Always.
 - **Reduce visual intensity:** reduces flashes and abrupt bursts while preserving measured audio
   response and the selected visualizer identity.
@@ -124,6 +131,9 @@ production configuration changes, account features, or stream changes.
   traversal alone.
 
 ### R2.2 — Style behavior (after R2.1 acceptance)
+
+**Status: Deferred.** Favorites, rotation cadence, and random selection need an explicit product
+decision; no unapproved style-behavior feature is implied by the completed fixed-style acceptance.
 
 - **Fixed selected style** remains the default and preserves the existing picker.
 - **Rotate favorites** rotates only styles the listener explicitly marks as favorites.
@@ -142,49 +152,59 @@ R2.1 passes its physical-TV acceptance with no idle/remote regressions.
 
 ## R3 — Physical-TV acceptance closure
 
-Run these after each option milestone and record evidence in the existing validation documents.
+**Status: Complete for the locally testable acceptance scope.** Evidence is recorded in
+`tv03-device-validation.md`, `tv04-queue-history-validation.md`, and
+`tv05-device-validation.md`.
 
-1. **Navigation and layout** — verify safe-area layout at the 1080p logical viewport on the 4K
-   Streamer, long labels, no edge clipping, selector scrolling, full-screen preview, and all
-   thirteen visualizer styles.
-2. **Remote coverage** — repeat the key paths using the Google TV remote and one separately
-   identified Bluetooth/basic remote. Cover D-pad, Select, Back, Menu/Options where present, and
-   media play/pause.
-3. **Accessibility** — audibly verify TalkBack traversal from normal viewing distance, including
-   the new options, visualizer picker, selected state, and action descriptions.
-4. **Playback resilience** — retain the completed normal recovery evidence and capture a
-   playback-error/fallback observation only if it can be induced without altering production stream
-   configuration.
-5. **Low-memory evidence** — use a device or emulator explicitly reporting low-RAM behavior;
-   distinguish this from the existing 16 KB page-size emulator check.
-6. **Idle acceptance** — prove the configured idle delay, cancellation/re-entry, and playback
-   continuity without changing the selected station or sleep-timer state.
+1. **Navigation and layout — complete.** The 1080p logical viewport was reviewed on 4K output;
+   dashboard and picker clipping were not observed, and D-pad scrolling reached all thirteen
+   visualizer styles on both physical TVs.
+2. **Remote coverage — complete.** The Google TV Streamer remote and a separate physical Fire TV
+   remote covered D-pad, Select, Back, options, and media play/pause paths. The Fire remote was
+   not classified as Bluetooth.
+3. **Accessibility — complete.** Streamer TalkBack and Fire TV VoiceView traversed the listener
+   dashboard and General Options/Idle Visualizer paths without exposing background Queue/History
+   content behind the dialog.
+4. **Playback resilience — complete within the permitted boundary.** Ethernet recovery and normal
+   playback continuity passed. Alternate-stream fallback cannot be induced because every permitted
+   station has one configured production stream; changing that configuration is prohibited.
+5. **Low-memory evidence — complete.** A temporary API 26 emulator explicitly booted with
+   `ro.config.low_ram=true` and sustained the constrained visualizer branch. This is application
+   branch evidence, not a CDD-certified hardware profile.
+6. **Idle acceptance — complete.** Both physical devices covered the configured ten-minute idle
+   activation, full-screen preview/Back return, and playback continuity; the independent local
+   sleep-timer expiry path also passed.
 
 ## R4 — Release artifact and Play readiness
 
-This phase is in progress under the August 23, 2026 release approval. The dedicated TV Play app exists and the
-first local signed-artifact gate has passed; external Play upload and split evidence remain separately incomplete.
+**Status: In progress — external Play evidence only.** The dedicated TV Play app exists; the exact
+local signed-artifact gate, signing verification, R8/resource shrinking, 64-bit, and 16 KB checks
+passed. Play upload, Play-generated split installation, and track-specific tester evidence remain
+incomplete.
 
-1. Reconcile the exact release commit, release version, privacy/content-rating/listing inputs, and
-   dedicated TV upload identity. The first local artifact is version `0.1.0-tv-alpha01` / code `1` from
-   revision `3c742c5f182e4bd0f8997d95feaf1cb5df620714`.
-2. Build and validate the signed AAB with resource shrinking, R8, 64-bit, and 16 KB packaging
-   checks. The protected helper has completed the signed AAB/APK build and signature verification; retain
-   Play's artifact report as the remaining packaging/distribution evidence.
-3. Upload the first AAB to register its identity, then install the Play-generated split on a physical TV and repeat the core listener and options
-   checks against that exact artifact.
-4. Create tester cases and version-specific release notes only for the actual approved release
-   candidate.
+1. **Local exact-build record — complete.** The first local artifact is version
+   `0.1.0-tv-alpha01` / code `1` from revision `3c742c5f182e4bd0f8997d95feaf1cb5df620714`.
+   Privacy, content-rating, listing, and upload-identity information still require reconciliation
+   in the external Play workflow against that exact artifact.
+2. **Local artifact gate — complete.** The protected helper built and verified the signed AAB/APK
+   with resource shrinking, R8, 64-bit, and 16 KB packaging checks. Play's artifact report remains
+   the outstanding packaging/distribution evidence.
+3. **Play-generated split acceptance — open.** Upload the first AAB, register its identity, install
+   the Play-generated split on a physical TV, and repeat the core listener and options checks against
+   that exact artifact.
+4. **Track material — pending the actual approved release candidate.** Create tester cases and
+   version-specific release notes only when the candidate, version, and track are established.
 
 ## Sequencing and completion
 
 | Order | Milestone | Completion evidence |
 | --- | --- | --- |
-| 1 | R1 General Options foundations | Focused tests, clean static gate, Streamer D-pad/Back pass |
-| 2 | R2.1 Overlay and comfort | Persistence tests and fixed/reduced visualizer physical pass |
-| 3 | R2.2 Style behavior decision | Explicit product approval, then favorites/rotation acceptance |
-| 4 | R3 Physical-TV closure | Updated TV03/TV05 validation evidence for every remaining row |
-| 5 | R4 Release readiness | Exact signed AAB and Play-generated split evidence |
+| 1 | R1 General Options foundations | Complete — focused checks and Streamer D-pad/Back pass |
+| 2 | R2.1 Overlay and comfort | Complete — persistence plus fixed/reduced visualizer physical pass |
+| 3 | R2.2 Style behavior decision | Deferred pending explicit product approval |
+| 4 | R3 Physical-TV closure | Complete for the permitted local scope; fallback configuration remains unchanged |
+| 5 | R4 Release readiness | In progress — Play upload and generated-split evidence |
 
-TV05 remains in progress until R3 and the physical portion of R4 are complete. TV06 remains
-approval-gated and must not be treated as complete from debug-build evidence.
+TV05 remains in progress solely until the Play-generated split is installed and accepted on a
+physical TV. TV06 remains approval-gated and must not be treated as complete from local
+debug/signed-build evidence.
