@@ -947,8 +947,7 @@ private fun TvArtworkBackdrop(artworkUrl: String?, modifier: Modifier = Modifier
                 .graphicsLayer {
                     scaleX = 1.14f
                     scaleY = 1.14f
-                }
-                .blur(26.dp),
+                },
         )
     }
 }
