@@ -8,7 +8,7 @@ This ledger begins with the independent TV application. Historical Player time i
 | TV02 — Android TV platform foundation | Complete | August 20–22, 2026 | TV launcher, banner/icon assets, landscape Compose TV shell, and manifest/device validation |
 | TV03 — Listener-first playback | Complete | August 20, 2026 | All permitted stations, D-pad playback, Ethernet recovery, and normal playback continuity validated; see [tv03-device-validation.md](tv03-device-validation.md) |
 | TV04 — Read-only library and device preferences | Complete | August 20, 2026 | Read-only Queue/History, local sleep timer, and privacy-safe diagnostics physically validated; see [tv04-queue-history-validation.md](tv04-queue-history-validation.md) |
-| TV05 — TV acceptance | In progress | August 20, 2026 | Local/device acceptance is complete; Play-generated split installation and physical acceptance remain; see [tv05-device-validation.md](tv05-device-validation.md) |
-| TV06 — Play alpha delivery | In progress | August 23, 2026 | Play listing/disclosure completion, test-track delivery, and physical Play-split acceptance |
+| TV05 — TV acceptance | In progress | August 20, 2026 | Internal release `1 (0.1.0-tv-alpha01)` is published; Play-generated split installation and physical acceptance remain; see [tv05-device-validation.md](tv05-device-validation.md) |
+| TV06 — Play alpha delivery | In progress | August 23, 2026 | Internal release published to Alpha Testers; listing/disclosure reconciliation, tester opt-in, and physical Play-split acceptance remain |
 
 Active, automated-wait, and user-blocked durations will be recorded prospectively as TV milestones complete.

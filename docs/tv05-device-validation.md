@@ -3,7 +3,7 @@
 Date: August 22–23, 2026
 
 Status: Partial — all available physical navigation, visual, idle, accessibility, and explicit
-Android low-RAM-branch acceptance passed; only Play upload/generated-split evidence remains.
+Android low-RAM-branch acceptance passed; the published Play-generated split remains to be accepted.
 
 ## Device and build
 
@@ -50,13 +50,14 @@ Android low-RAM-branch acceptance passed; only Play upload/generated-split evide
 - The protected Linux signing helper built and independently verified the first signed AAB and release APK from
   committed revision `3c742c5f182e4bd0f8997d95feaf1cb5df620714`. The signed manifest declares package
   `com.codeframe78.twentyfourseven.tv`, version code `1`, version `0.1.0-tv-alpha01`, and that exact build
-  revision. The release AAB signature verified. No signing secret, certificate fingerprint, or artifact hash is
-  recorded here.
+  revision. The release AAB signature verified. Play Console accepted and published that AAB to the Android-TV-only
+  Internal testing track for Alpha Testers with its ReTrace mapping attachment. No signing secret, certificate
+  fingerprint, or artifact hash is recorded here.
 
 ## Remaining TV05 acceptance
 
-- Upload the first signed AAB, register its Play upload identity, and install the Play-generated split on a
-  physical TV for the final listener and options acceptance. The 16 KB debug-runtime launch does not prove
+- Install the published Internal-testing Play-generated split on a physical TV, then repeat final listener and
+  options acceptance against that delivered artifact. The 16 KB debug-runtime launch does not prove
   Play-generated split packaging.
 
 This document combines debug-build device evidence with local signed-artifact evidence. It is not Google Play
