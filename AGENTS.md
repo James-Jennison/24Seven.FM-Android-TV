@@ -29,6 +29,7 @@
 
 - For any 24Seven.FM Player website deployment, verification, or server-side investigation, use only the canonical SSH alias `website-vm-admin`.
 - Do not use `webuzo-production-admin` for this project. Resolve the required alias through the managed SSH configuration before connecting.
+- Start approved canonical-SSH operations in a fresh `bash --noprofile --norc` shell. If the runner rejects SSH before it launches, reset into one fresh no-profile shell and retry the same alias once; treat that as local execution-session state, not a server, credential, or network failure, and never substitute another host or administration route.
 - Discover the live static artifact from the active HTTP and HTTPS `player.jamesjennison.net` virtual-host mappings; both mappings must resolve to the same directory. Do not rely on a stale documented path or infer a target from another site.
 - Build the reviewed `_site/` artifact locally, stage it as a sibling directory, compare file hashes using relative paths, then atomically swap the verified staging directory into place. Retain the previous live directory as the rollback point and run public HTTPS verification before reporting success.
 

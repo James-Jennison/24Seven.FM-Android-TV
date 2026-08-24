@@ -118,8 +118,13 @@ the Media3 playback service while the app is backgrounded.
 > system media controls provide pause, resume, and stop behavior. The service
 > exists only for the active playback session.
 
-Before saving, provide the current Console-required evidence from the exact
-published candidate without exposing tester details or private diagnostics.
+The Console's **Media playback** use case is selected. The corresponding
+current-candidate evidence is publicly hosted at
+`https://player.jamesjennison.net/reviewer-media/24seven-tv-foreground-media-playback-review.mp4`:
+a 21-second Google TV Streamer capture of the native Player with the selected
+station visibly marked `LIVE`. Public HTTPS returned `200`, `video/mp4`, and a
+byte-for-byte match to the reviewed local capture. The link has not yet been
+entered and saved in Play Console, so this declaration remains pending.
 
 ## Console completion gate
 
@@ -129,9 +134,10 @@ published candidate without exposing tester details or private diagnostics.
    support contact, and **18 and over** target age in Play Console. The
    published support mailbox is provisioned and receipt-verified by the owner
    after its one-time managed-transport test.
-2. Save the store-listing copy and approved TV assets through Play Console.
-3. Complete any required foreground-media declaration using current exact
-   candidate evidence.
+2. **Complete:** saved the store-listing copy and approved TV assets through
+   Play Console.
+3. **Pending:** paste the hosted current-candidate video URL into the
+   foreground-media declaration and save it in Play Console.
 
 Only sanitized completion evidence belongs in this repository. Do not commit
 tester identities, reviewer details, Console captures containing private data,
