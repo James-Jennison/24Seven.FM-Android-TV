@@ -36,6 +36,9 @@ production configuration changes, account features, or stream changes.
   Insignia Fire TV both opened the selected full-screen visualizer preview with double-Select and
   returned to the Idle Visualizer picker with one Back press. Post-return captures show the
   expected picker on both devices, and both MediaSessions remained `PLAYING`.
+- **Two-device selector scroll check:** Physical D-pad navigation reached the thirteenth
+  visualizer, DJ Console, on both devices. The picker scrolled it fully into view without edge
+  clipping or activating a new selection; both MediaSessions remained `PLAYING`.
 - **VoiceView checks:** On the same Fire TV, dashboard queue/history panels no longer enter the
   spoken traversal. General Options opens as an accessibility dialog and transfers VoiceView
   focus to its pane and Idle Screen action rather than reading the underlying Live station.
