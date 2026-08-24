@@ -185,8 +185,9 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
 
 1. **Exact-build record — complete.** The first artifact is version
    `0.1.0-tv-alpha01` / code `1` from revision `3c742c5f182e4bd0f8997d95feaf1cb5df620714`.
-   Privacy, content-rating, listing, and upload-identity information still require reconciliation
-   in the external Play workflow against that exact artifact.
+   Privacy and the objective app-content declarations are now saved in Play
+   Console. Content rating, Data Safety, and store listing still require
+   reconciliation in the external Play workflow against that exact artifact.
 2. **Local artifact gate — complete.** The protected helper built and verified the signed AAB/APK
    with resource shrinking, R8, 64-bit, and 16 KB packaging checks; Play accepted the published
    internal-test AAB and its ReTrace mapping attachment.
@@ -194,9 +195,11 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
    Google Play on the Google TV Streamer and Dongle R 4K. Both devices launched the delivered split,
    exposed the expected TV activity, and entered a live `PLAYING` MediaSession; physical acceptance
    was completed on both devices.
-4. **Track material — partially complete.** The Alpha Testers list is assigned and the
-   version-specific internal-test notes were published. The listing/disclosure reconciliation and
-   tester-install evidence remain open.
+4. **Track material — partially complete.** The Alpha Testers list is assigned, the
+   version-specific internal-test notes were published, and eight of eleven Play
+   setup tasks are saved: privacy policy, app access, ads, target audience,
+   government, financial, health, and category/contact. Content rating, Data
+   Safety, and store listing remain open; tester-install evidence is complete.
 
 ## Sequencing and completion
 
@@ -206,7 +209,7 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
 | 2 | R2.1 Overlay and comfort | Complete — persistence plus fixed/reduced visualizer physical pass |
 | 3 | R2.2 Style behavior decision | Deferred pending explicit product approval |
 | 4 | R3 Physical-TV closure | Complete for the permitted local scope; fallback configuration remains unchanged |
-| 5 | R4 Release readiness | In progress — published and device-accepted Internal release; listing/disclosure reconciliation |
+| 5 | R4 Release readiness | In progress — published and device-accepted Internal release; 8/11 setup tasks saved, with content rating, Data Safety, and store listing open |
 
 TV05 is complete. TV06 remains approval-gated and must not be treated as complete from an
 Internal-track publication and device acceptance alone.

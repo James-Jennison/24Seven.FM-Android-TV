@@ -57,5 +57,6 @@ The closure order and acceptance evidence for these rows are defined in
 ## TV06 — Play alpha delivery
 
 **Status: In progress.** Internal testing release `1 (0.1.0-tv-alpha01)` is published to Alpha Testers with
-version-specific release notes. Reconcile rights/privacy/content-rating/listing data against that exact artifact,
-capture tester opt-in and Play-generated-split physical-TV acceptance, then complete the required test lifecycle.
+version-specific release notes. The Play-generated split is physically accepted on the Streamer and Dongle R 4K,
+and eight of eleven setup tasks are saved. Reconcile content rating, Data Safety, and store-listing data against
+that exact artifact, then complete the required test lifecycle.

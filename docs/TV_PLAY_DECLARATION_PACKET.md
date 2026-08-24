@@ -1,9 +1,9 @@
 # 24Seven.FM TV — Play declaration packet
 
 Date: August 24, 2026  
-Status: prepared from the published TV Alpha 01 artifact and the approved
-mobile Player metadata; save or submit only against the active Play Console
-wording and with owner attestation.
+Status: eight of eleven Play setup tasks saved from the published TV Alpha 01
+artifact and the approved mobile Player metadata; the remaining forms require
+their active Console wording and owner attestation.
 
 This packet applies only to `com.codeframe78.twentyfourseven.tv`, version
 `0.1.0-tv-alpha01` (version code `1`), from revision
@@ -30,7 +30,7 @@ for this app is [`PRIVACY.md`](../PRIVACY.md).
 The following values are aligned with the mobile Player's established public
 Play metadata and are also supported by this TV artifact:
 
-| Play Console area | Proposed TV answer |
+| Play Console area | Saved TV answer — August 24, 2026 |
 | --- | --- |
 | Ads | **No** |
 | Government apps | **No** |
@@ -57,11 +57,10 @@ features outside Alpha 01.
 
 ## Target audience and content rating
 
-The mobile Player owner selected **18+** for the mobile app.  That is a useful
-shared product reference, but it is not a completed TV declaration.  Proposed
-TV posture: select **18+ only**, because this release is not designed for
-children and public radio streams may include adult themes.  Confirm the active
-Console question wording and any minor-access setting immediately before saving.
+The mobile Player owner selected **18+** for the mobile app. That shared product
+reference was reconciled with the active TV form, and **18 and over** is now
+saved for TV Alpha 01. The active form exposed no further minor-access choice
+for this release.
 
 For the IARC questionnaire, answer only these verified facts:
 
@@ -116,12 +115,14 @@ published candidate without exposing tester details or private diagnostics.
 
 ## Console completion gate
 
-1. Save the published TV-specific privacy-policy URL in Play Console.
-2. Confirm the 18+ target audience and the exact active IARC answers.
+1. **Complete:** saved the TV-specific public privacy-policy URL, public
+   app-access/no-sign-in answer, Ads **No**, Government **No**, Financial
+   features **None**, Health **None**, **Music & Audio** category, public
+   support contact, and **18 and over** target age in Play Console.
+2. Complete the exact active IARC content-rating questionnaire.
 3. Reconcile the current Data Safety form with the direct station/network
    connection-data path and obtain owner attestation.
-4. Save the objective no-ads/government/financial/health, category, contact,
-   app-access, and store-listing values through Play Console.
+4. Save the store-listing copy and approved TV assets through Play Console.
 5. Complete any required foreground-media declaration using current exact
    candidate evidence.
 
