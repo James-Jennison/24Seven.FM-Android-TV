@@ -182,6 +182,30 @@ class LinuxPlaySigningTest(unittest.TestCase):
             with self.assertRaisesRegex(signing.SigningError, "dirty source tree"):
                 signing.resolve_clean_source_revision(self.root)
 
+    def test_signed_build_invokes_the_gradle_wrapper_through_bash(self) -> None:
+        payload = signing.RecoveryPayload(
+            store_bytes=bytearray(b"synthetic"),
+            store_sha256="A" * 64,
+            store_password="synthetic-store-password",
+            key_alias="synthetic-upload",
+            key_password="synthetic-key-password",
+            certificate_sha256="B" * 64,
+        )
+        with mock.patch.object(signing.subprocess, "run", return_value=mock.Mock(returncode=0)) as run:
+            signing._build_signed_artifacts(
+                repository_root=self.root,
+                android_sdk=self.root / "sdk",
+                keystore_path=self.root / "upload.p12",
+                payload=payload,
+                build_apk=True,
+                source_revision="c" * 40,
+            )
+        payload.clear()
+        command = run.call_args.args[0]
+        self.assertEqual(["/bin/bash", str(self.root / "gradlew")], command[:2])
+        self.assertIn(":app:bundleRelease", command)
+        self.assertIn(":app:assembleRelease", command)
+
     def test_self_signed_upload_certificate_passes_jar_verification(self) -> None:
         bundle = self.root / "self-signed-test.aab"
         with zipfile.ZipFile(bundle, "w") as archive:

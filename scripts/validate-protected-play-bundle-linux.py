@@ -523,7 +523,7 @@ def _build_signed_artifacts(
     if build_apk:
         tasks.append(":app:assembleRelease")
     result = subprocess.run(
-        [str(repository_root / "gradlew"), *tasks, "--no-daemon", "--console=plain"],
+        ["/bin/bash", str(repository_root / "gradlew"), *tasks, "--no-daemon", "--console=plain"],
         cwd=repository_root,
         env=environment,
         check=False,
