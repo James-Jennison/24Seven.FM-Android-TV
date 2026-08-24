@@ -59,8 +59,10 @@ viewport remains 1920×1080 at 320 dpi.
   playback, and D-pad focus, Back, the hidden `↓ OPTIONS` path, media pause/resume, and sleep-timer expiry continued
   to behave correctly after recovery.
 
-## Not certified by this pass
+## Scope boundary
 
-- TalkBack, Bluetooth remote input, low-memory behavior, and release acceptance remain open. The Streamer has been
-  checked at its 4K HDMI output but still presents a 1920×1080 logical app viewport, so this is not native-4K UI
-  certification.
+- Later Fire TV acceptance confirmed VoiceView traversal through General Options and the Idle Visualizer picker,
+  including focus transfer into the dialog and exclusion of background queue/history content. A second physical
+  Fire TV remote also completed the picker preview/Back route; its transport was not classified as Bluetooth.
+- The Streamer has been checked at its 4K HDMI output but still presents a 1920×1080 logical app viewport, so this
+  is not native-4K UI certification. Explicit Android low-RAM-device and release acceptance remain open.

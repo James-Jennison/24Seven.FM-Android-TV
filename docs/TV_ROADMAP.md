@@ -42,10 +42,12 @@ dashboard rather than in General Options.
 
 Certify focus traversal, Back behavior, TalkBack, basic/Bluetooth remote input, emulator and physical TV playback, network recovery, 1080p/4K layout, low-memory behavior, 64-bit/16 KB packaging, and all five stations.
 
-**Status: In progress.** The Google TV Streamer pass confirms D-pad focus, Back-to-home with
-background playback, media-key pause/resume, Ethernet recovery, post-recovery hidden-options access, and
-sleep-timer expiry; the API 35 16 KB emulator also cold-launches the debug app. Audible TalkBack, additional
-physical remote, visual-layout, low-memory, and signed-release/Play-split evidence remain open.
+**Status: In progress.** The Google TV Streamer and Insignia Fire TV passes now cover D-pad focus,
+Back-to-home with background playback, media-key pause/resume, Ethernet recovery, post-recovery
+hidden-options access, sleep-timer expiry, VoiceView/TalkBack traversal, the additional physical Fire
+remote, 1080p logical layout on 4K output, and automatic in-app idle activation. The API 35 16 KB
+emulator also cold-launches the debug app. Only explicit Android low-RAM-device evidence and
+signed-release/Play-split evidence remain open.
 
 The closure order and acceptance evidence for these rows are defined in
 [TV_READINESS_ROADMAP.md](TV_READINESS_ROADMAP.md).
