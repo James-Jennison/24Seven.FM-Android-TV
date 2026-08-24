@@ -62,12 +62,12 @@ reference was reconciled with the active TV form, and **18 and over** is now
 saved for TV Alpha 01. The active form exposed no further minor-access choice
 for this release.
 
-The active Console Content ratings workflow is currently blank at Step 1;
-the IARC questionnaire has **not** been submitted. Re-enter **All Other App
-Types** and the approved support contact, accept the IARC terms, then use the
-conservative Death.FM answers below. The intended answers produce 18+ / Adults
-Only ratings in the displayed territories and are consistent with the saved
-**18 and over** target audience.
+The IARC questionnaire was submitted on August 24, 2026 using **All Other App
+Types**, the approved support contact, and the conservative Death.FM answers
+below. The generated territory ratings are Brazil **16+**, ESRB **Teen**, PEGI
+**Parental Guidance**, USK **16+**, and **12+** in the generic territories.
+Those IARC outcomes are distinct from the saved **18 and over** target-audience
+gate; do not claim that IARC returned an Adults Only rating.
 
 The classification was based only on these verified facts:
 
@@ -124,8 +124,9 @@ current-candidate evidence is publicly hosted at
 `https://player.jamesjennison.net/reviewer-media/24seven-tv-foreground-media-playback-review.mp4`:
 a 21-second Google TV Streamer capture of the native Player with the selected
 station visibly marked `LIVE`. Public HTTPS returned `200`, `video/mp4`, and a
-byte-for-byte match to the reviewed local capture. The link has not yet been
-entered and saved in Play Console, so this declaration remains pending.
+byte-for-byte match to the reviewed local capture. The link is entered and
+saved in Play Console for the selected **Media playback** use case; no PIP or
+Other use case is selected.
 
 ## Console completion gate
 
@@ -137,8 +138,16 @@ entered and saved in Play Console, so this declaration remains pending.
    after its one-time managed-transport test.
 2. **Complete:** saved the store-listing copy and approved TV assets through
    Play Console.
-3. **Pending:** paste the hosted current-candidate video URL into the
-   foreground-media declaration and save it in Play Console.
+3. **Complete:** submitted the IARC questionnaire and saved the generated
+   territory ratings. The Content ratings declaration appears on the App
+   content Actioned tab.
+4. **Complete:** pasted and saved the hosted current-candidate video URL in
+   the foreground-media declaration.
+5. **Blocked externally:** App content's Need attention tab is empty and the
+   store listing reports all required information, but Publishing overview
+   continues to disable **Send app for review** after reload with its generic
+   dashboard-required-steps message. The Dashboard only reports the distinct
+   future production closed-test requirement.
 
 Only sanitized completion evidence belongs in this repository. Do not commit
 tester identities, reviewer details, Console captures containing private data,

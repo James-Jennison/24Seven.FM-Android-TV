@@ -177,7 +177,7 @@ R2.1 passes its physical-TV acceptance with no idle/remote regressions.
 
 ## R4 — Release artifact and Play readiness
 
-**Status: In progress — listing/disclosure lifecycle.** Internal testing release
+**Status: In progress — Console review-control lifecycle.** Internal testing release
 `1 (0.1.0-tv-alpha01)` is published to Alpha Testers. The exact local signed-artifact gate, signing
 verification, R8/resource shrinking, 64-bit, and 16 KB checks passed, and Play accepted the AAB with
 its ReTrace mapping attachment. The Play-generated split was installed and physically accepted on the
@@ -189,8 +189,11 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
    Console. The conservative TV-specific Data Safety declaration is also
    saved. The store listing and **18 and over** target-audience gate are saved.
    The foreground-media declaration is saved with a publicly hosted,
-   HTTPS/hash-verified reviewer video. The remaining external setup gate is
-   the blank Content ratings/IARC questionnaire and its final submission.
+   HTTPS/hash-verified reviewer video. The IARC questionnaire is submitted,
+   and App content records Content ratings as Actioned. Publishing overview
+   still disables **Send app for review** after reload with its generic
+   dashboard-required-steps message, while App content's Need attention tab
+   is empty.
 2. **Local artifact gate — complete.** The protected helper built and verified the signed AAB/APK
    with resource shrinking, R8, 64-bit, and 16 KB packaging checks; Play accepted the published
    internal-test AAB and its ReTrace mapping attachment.
@@ -206,8 +209,10 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
    managed-transport test. Data Safety and the corrected **18 and over**
    target-audience gate are saved. The Media playback use case and its
    exact-candidate video evidence are saved for the foreground-service
-   declaration. Content ratings is currently blank at Step 1 and is the only
-   demonstrated blocking form. Tester-install evidence is complete.
+   declaration. Content ratings is Actioned; its generated ratings are Brazil
+   16+, ESRB Teen, PEGI Parental Guidance, USK 16+, and generic-territory 12+.
+   The demonstrated blocker is the disabled Publishing overview review control,
+   not an incomplete declaration. Tester-install evidence is complete.
 
 ## Sequencing and completion
 
@@ -217,7 +222,7 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
 | 2 | R2.1 Overlay and comfort | Complete — persistence plus fixed/reduced visualizer physical pass |
 | 3 | R2.2 Style behavior decision | Deferred pending explicit product approval |
 | 4 | R3 Physical-TV closure | Complete for the permitted local scope; fallback configuration remains unchanged |
-| 5 | R4 Release readiness | In progress — published and device-accepted Internal release; the blank Content ratings/IARC questionnaire is the demonstrated remaining gate |
+| 5 | R4 Release readiness | In progress — published and device-accepted Internal release; all App content declarations are actioned, but Publishing overview keeps the review control disabled |
 
 TV05 is complete. TV06 remains approval-gated and must not be treated as complete from an
 Internal-track publication and device acceptance alone.
