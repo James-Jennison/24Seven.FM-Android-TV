@@ -39,6 +39,9 @@ production configuration changes, account features, or stream changes.
 - **Two-device selector scroll check:** Physical D-pad navigation reached the thirteenth
   visualizer, DJ Console, on both devices. The picker scrolled it fully into view without edge
   clipping or activating a new selection; both MediaSessions remained `PLAYING`.
+- **Two-device scroll-position cue:** The installed debug build renders a persistent muted track
+  and mint position thumb beside the overflowing selector. Physical inspection confirmed it is
+  visible on both devices and moves between the top and bottom selector positions.
 - **VoiceView checks:** On the same Fire TV, dashboard queue/history panels no longer enter the
   spoken traversal. General Options opens as an accessibility dialog and transfers VoiceView
   focus to its pane and Idle Screen action rather than reading the underlying Live station.
