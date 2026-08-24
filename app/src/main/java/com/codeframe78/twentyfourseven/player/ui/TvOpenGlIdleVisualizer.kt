@@ -616,10 +616,19 @@ private fun dbfsToMasterMeter(value: Float) =
 
 private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context) {
     private val renderer = TvGeometryVisualizerRenderer()
+    private val compatibilityRendering = (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).let {
+        // Old TV devices can advertise GLES 3 while still having too little GPU/heap
+        // headroom for a 60 fps feedback scene. Keep the rich path on current hardware,
+        // but use a stable presentation tier when Android classifies the device as
+        // low-RAM or supplies the 384 MB heap class used by the Fire TV test device.
+        it.isLowRamDevice || it.memoryClass <= CompatibilityMemoryClassMb
+    }
+    private var renderEveryOtherVsync = false
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (!isAttachedToWindow) return
-            requestRender()
+            if (!compatibilityRendering || renderEveryOtherVsync) requestRender()
+            renderEveryOtherVsync = !renderEveryOtherVsync
             Choreographer.getInstance().postFrameCallback(this)
         }
     }
@@ -634,6 +643,7 @@ private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context)
             .deviceConfigurationInfo.reqGlEsVersion >= 0x30000
         setEGLContextClientVersion(if (supportsEs3) 3 else 2)
         renderer.setSupportsEs3(supportsEs3)
+        renderer.setCompatibilityRendering(compatibilityRendering)
         preserveEGLContextOnPause = true
         setRenderer(renderer)
         // A TV remote routes Back to the focused native GL view before Compose
@@ -780,6 +790,7 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     private var deepWarpTravel = 0f
     private var frameNumber = 0L
     private var supportsEs3 = false
+    private var compatibilityRendering = false
 
     init {
         repeat(ParticleCount) { index ->
@@ -798,6 +809,12 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
 
     fun setSupportsEs3(supportsEs3: Boolean) {
         this.supportsEs3 = supportsEs3
+    }
+
+    fun setCompatibilityRendering(compatibilityRendering: Boolean) {
+        if (this.compatibilityRendering == compatibilityRendering) return
+        this.compatibilityRendering = compatibilityRendering
+        if (width > 1 && usesFeedback()) createFeedbackBuffers()
     }
 
     fun setAudioTarget(
@@ -2002,8 +2019,9 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
      */
     private fun createFeedbackBuffers() {
         releaseFeedbackBuffers()
-        feedbackWidth = (width * FeedbackResolutionFraction).toInt().coerceAtLeast(MinFeedbackWidth)
-        feedbackHeight = (height * FeedbackResolutionFraction).toInt().coerceAtLeast(MinFeedbackHeight)
+        val feedbackScale = if (compatibilityRendering) CompatibilityFeedbackResolutionFraction else FeedbackResolutionFraction
+        feedbackWidth = (width * feedbackScale).toInt().coerceAtLeast(MinFeedbackWidth)
+        feedbackHeight = (height * feedbackScale).toInt().coerceAtLeast(MinFeedbackHeight)
         GLES20.glGenTextures(2, feedbackTextures, 0)
         GLES20.glGenFramebuffers(2, feedbackFramebuffers, 0)
         repeat(2) { index ->
@@ -2178,8 +2196,10 @@ private const val LightTrailGroupCount = 4
 private const val SlashesPerColour = 2
 // One-third is the feedback tier that remains smooth on the Streamer.
 private const val FeedbackResolutionFraction = .33333334f
+private const val CompatibilityFeedbackResolutionFraction = .25f
 private const val MinFeedbackWidth = 320
 private const val MinFeedbackHeight = 180
+private const val CompatibilityMemoryClassMb = 384
 private const val AudioSmoothing = 16f
 private const val MasterMeterFloorDbfs = -30f
 private const val MasterAttackPerSecond = 12f
