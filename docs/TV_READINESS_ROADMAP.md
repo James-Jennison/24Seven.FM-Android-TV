@@ -29,7 +29,7 @@ production configuration changes, account features, or stream changes.
 - **Fire TV checks:** On the Insignia Fire TV (AFTDCT31, Fire OS 7 / Android 9), the physical
   remote's double-Select opened a full-screen preview and Back returned visibly to the picker.
   The strict Fire OS GLSL compiler is supported by normalizing shader source before compilation.
-  Its 384 MB app-memory class automatically receives the constrained-device tier (30 fps render
+  Its verified 192 MB app-memory class automatically receives the constrained-device tier (30 fps render
   cadence and quarter-resolution feedback surfaces). Both physical viewers found the result
   slightly sluggish but acceptable; playback and the visualizer remained functional.
 - **Two-device physical route check:** Using the physical remotes, the Google TV Streamer and
@@ -61,8 +61,14 @@ production configuration changes, account features, or stream changes.
 - **VoiceView checks:** On the same Fire TV, dashboard queue/history panels no longer enter the
   spoken traversal. General Options opens as an accessibility dialog and transfers VoiceView
   focus to its pane and Idle Screen action rather than reading the underlying Live station.
-- **Still open:** formal low-RAM classification evidence, safe playback-fallback observation, and
-  release/Play-split verification.
+- **Runtime tier verification:** The Fire TV reports a 192 MB heap class; the Google TV Streamer
+  reports 384 MB. Neither device reports Android's `isLowRamDevice` property, so the renderer uses
+  a 256 MB compatibility boundary: Fire receives the constrained tier and Streamer the richer
+  tier. Playback-error fallback cannot be physically observed today because every permitted
+  station provides exactly one live stream; inducing it would require a prohibited production
+  stream configuration change.
+- **Still open:** a device explicitly reporting Android low-RAM classification, plus release/Play-
+  split verification.
 
 ## Product guardrails
 

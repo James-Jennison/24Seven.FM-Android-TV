@@ -21,8 +21,8 @@ Deliver D-pad station selection, Now Playing, MediaSession playback controls, an
 
 **Status: In progress.** Physical-TV evidence now covers D-pad selection, live session state for all five permitted
 stations, real Ethernet recovery, and extended audible playback across normal track/metadata transitions. The only
-remaining TV03 item is a safely observed playback-error/fallback case, if one can be induced without changing
-production stream configuration.
+alternate-stream fallback is not eligible for a physical exercise: every permitted station has one
+configured live stream, and inducing it would require a prohibited production configuration change.
 
 ## TV04 — Read-only library and device preferences
 

@@ -36,9 +36,11 @@ Status: Partial — live playback selection, pause/resume, and real Ethernet rec
   settled UI/session observation above, this closes the listener-facing audio-continuity and normal
   metadata-rollover check for the live stream.
 
-## Remaining TV03 acceptance
+## Playback-fallback boundary
 
-- Capture an explicit playback-error/fallback case if one can be safely induced without changing
-  production stream configuration.
+Every permitted station currently provides exactly one configured live stream. An explicit
+alternate-stream fallback cannot be observed without changing production stream configuration,
+which is outside this debug-device acceptance scope. Normal network recovery remains covered by
+the existing device evidence.
 
 This is debug-build device evidence only. It is not signed-release or Google Play delivery evidence.

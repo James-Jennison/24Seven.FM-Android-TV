@@ -620,7 +620,8 @@ private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context)
         // Old TV devices can advertise GLES 3 while still having too little GPU/heap
         // headroom for a 60 fps feedback scene. Keep the rich path on current hardware,
         // but use a stable presentation tier when Android classifies the device as
-        // low-RAM or supplies the 384 MB heap class used by the Fire TV test device.
+        // low-RAM or supplies the 192 MB heap class used by the Fire TV test device.
+        // The 384 MB Google TV Streamer has enough headroom for the richer scene.
         it.isLowRamDevice || it.memoryClass <= CompatibilityMemoryClassMb
     }
     private var renderEveryOtherVsync = false
@@ -2199,7 +2200,7 @@ private const val FeedbackResolutionFraction = .33333334f
 private const val CompatibilityFeedbackResolutionFraction = .25f
 private const val MinFeedbackWidth = 320
 private const val MinFeedbackHeight = 180
-private const val CompatibilityMemoryClassMb = 384
+private const val CompatibilityMemoryClassMb = 256
 private const val AudioSmoothing = 16f
 private const val MasterMeterFloorDbfs = -30f
 private const val MasterAttackPerSecond = 12f
