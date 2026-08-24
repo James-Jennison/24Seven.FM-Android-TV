@@ -32,8 +32,11 @@ production configuration changes, account features, or stream changes.
   Its 384 MB app-memory class automatically receives the constrained-device tier (30 fps render
   cadence and quarter-resolution feedback surfaces). Both physical viewers found the result
   slightly sluggish but acceptable; playback and the visualizer remained functional.
-- **Still open:** audible TalkBack, formal low-RAM classification evidence, safe playback-fallback
-  observation, and release/Play-split verification.
+- **VoiceView checks:** On the same Fire TV, dashboard queue/history panels no longer enter the
+  spoken traversal. General Options opens as an accessibility dialog and transfers VoiceView
+  focus to its pane and Idle Screen action rather than reading the underlying Live station.
+- **Still open:** formal low-RAM classification evidence, safe playback-fallback observation, and
+  release/Play-split verification.
 
 ## Product guardrails
 
