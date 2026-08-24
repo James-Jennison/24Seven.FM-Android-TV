@@ -32,6 +32,10 @@ production configuration changes, account features, or stream changes.
   Its 384 MB app-memory class automatically receives the constrained-device tier (30 fps render
   cadence and quarter-resolution feedback surfaces). Both physical viewers found the result
   slightly sluggish but acceptable; playback and the visualizer remained functional.
+- **Two-device physical route check:** Using the physical remotes, the Google TV Streamer and
+  Insignia Fire TV both opened the selected full-screen visualizer preview with double-Select and
+  returned to the Idle Visualizer picker with one Back press. Post-return captures show the
+  expected picker on both devices, and both MediaSessions remained `PLAYING`.
 - **VoiceView checks:** On the same Fire TV, dashboard queue/history panels no longer enter the
   spoken traversal. General Options opens as an accessibility dialog and transfers VoiceView
   focus to its pane and Idle Screen action rather than reading the underlying Live station.
