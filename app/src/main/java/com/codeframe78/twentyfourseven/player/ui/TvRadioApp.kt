@@ -552,18 +552,26 @@ private fun TvIdleScreenSheet(
     onDismiss: () -> Unit,
 ) {
     val selectedAction = remember { FocusRequester() }
-    val previewAction = remember { FocusRequester() }
     val styles = IdleVisualizerStyle.entries.toList()
     val selectorListState = rememberLazyListState()
     var previewStyle by remember { mutableStateOf(state.idleScreen.visualizer) }
     var lastActivatedStyle by remember { mutableStateOf<IdleVisualizerStyle?>(null) }
     var lastActivatedAtMillis by remember { mutableStateOf(0L) }
+    var selectorInteractive by remember { mutableStateOf(false) }
     androidx.activity.compose.BackHandler(onBack = onDismiss)
     LaunchedEffect(state.idleScreen.visualizer) {
         previewStyle = state.idleScreen.visualizer
         selectorListState.scrollToItem(styles.indexOf(state.idleScreen.visualizer).coerceAtLeast(0))
     }
-    LaunchedEffect(Unit) { previewAction.requestFocus() }
+    LaunchedEffect(Unit) {
+        // The Select key that opens this screen ends after composition. Leave the
+        // picker non-interactive for that single inherited gesture, then place
+        // focus on the selected style. A listener's next Select is therefore
+        // always an intentional first half of the double-press preview gesture.
+        delay(120)
+        selectorInteractive = true
+        selectedAction.requestFocus()
+    }
     Box(
         modifier = Modifier.fillMaxSize().background(TvInk),
     ) {
@@ -612,37 +620,14 @@ private fun TvIdleScreenSheet(
                 .padding(horizontal = 22.dp, vertical = 30.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Button(
-                onClick = { onPreviewFullScreen(previewStyle) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(36.dp)
-                    .focusRequester(previewAction),
-                contentPadding = PaddingValues(horizontal = 8.dp),
-                colors = ButtonDefaults.colors(
-                    containerColor = Color.Transparent,
-                    contentColor = TvCream,
-                    focusedContainerColor = TvCream.copy(alpha = .12f),
-                    focusedContentColor = TvCream,
-                ),
-                shape = ButtonDefaults.shape(RoundedCornerShape(5.dp)),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Idle Visualizer",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        "Preview full screen",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = TvCream.copy(alpha = .78f),
-                    )
-                }
-            }
             Text(
-                "Choose a style to preview",
+                "Idle Visualizer",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = TvCream,
+            )
+            Text(
+                "Choose a style to preview · press Select twice for full screen",
                 style = MaterialTheme.typography.bodySmall,
                 color = TvCream.copy(alpha = .68f),
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -658,6 +643,7 @@ private fun TvIdleScreenSheet(
                     TvVisualizerListRow(
                         style = style,
                         selected = style == state.idleScreen.visualizer,
+                        enabled = selectorInteractive,
                         onClick = {
                             previewStyle = style
                             onSelectVisualizer(style)
@@ -690,12 +676,14 @@ private fun TvIdleScreenSheet(
 private fun TvVisualizerListRow(
     style: IdleVisualizerStyle,
     selected: Boolean,
+    enabled: Boolean,
     onClick: () -> Unit,
     onPreview: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier
             .fillMaxWidth()
             .height(31.dp)

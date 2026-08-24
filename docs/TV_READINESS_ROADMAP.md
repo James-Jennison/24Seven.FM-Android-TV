@@ -20,7 +20,9 @@ production configuration changes, account features, or stream changes.
   visualizer after the configured ten-minute delay while its MediaSession remained `PLAYING`.
   From a full-screen preview, one Back press now returns visibly to the Idle Visualizer picker;
   the native GL view maps that key to the Compose preview-exit state instead of allowing it to
-  dismiss the picker.
+  dismiss the picker. The picker now opens visibly from General Options on one Select and labels
+  the intentional double-Select gesture for full-screen preview. Reduced visual intensity also
+  persisted across a Streamer relaunch and remained visible in General Options.
 - **Still open:** the second remote matrix, audible TalkBack, low-RAM device evidence, safe
   fallback observation, reduced-intensity preview/idle confirmation, and release/Play-split
   verification.
