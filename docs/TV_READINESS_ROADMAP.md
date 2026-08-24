@@ -45,6 +45,8 @@ production configuration changes, account features, or stream changes.
 - **Two-device picker dismissal:** One physical Back press from the picker returned both devices
   to General Options. The visible Sleep Timer value remained Off and both MediaSessions remained
   `PLAYING`.
+- **Two-device options dismissal:** One further physical Back press returned both devices to the
+  listener dashboard with 1980s.FM still selected. Both MediaSessions remained `PLAYING`.
 - **VoiceView checks:** On the same Fire TV, dashboard queue/history panels no longer enter the
   spoken traversal. General Options opens as an accessibility dialog and transfers VoiceView
   focus to its pane and Idle Screen action rather than reading the underlying Live station.
