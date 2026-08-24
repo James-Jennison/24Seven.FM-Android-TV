@@ -22,10 +22,12 @@ production configuration changes, account features, or stream changes.
   the native GL view maps that key to the Compose preview-exit state instead of allowing it to
   dismiss the picker. The picker now opens visibly from General Options on one Select and labels
   the intentional double-Select gesture for full-screen preview. Reduced visual intensity also
-  persisted across a Streamer relaunch and remained visible in General Options.
+  persisted across a Streamer relaunch, passed the deliberate preview/Back cycle, and was
+  restored to its prior full-intensity state afterward. With reduced intensity enabled, a second
+  unattended Streamer run entered the visualizer after the fixed ten-minute delay while the
+  MediaSession remained `PLAYING`; the setting was then restored to full intensity.
 - **Still open:** the second remote matrix, audible TalkBack, low-RAM device evidence, safe
-  fallback observation, reduced-intensity preview/idle confirmation, and release/Play-split
-  verification.
+  fallback observation, and release/Play-split verification.
 
 ## Product guardrails
 
