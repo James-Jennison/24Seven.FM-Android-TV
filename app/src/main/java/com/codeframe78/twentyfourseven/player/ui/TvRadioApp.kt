@@ -398,15 +398,15 @@ private fun TvGeneralOptionsSheet(
     onOpenAboutAndSupport: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    TvOptionsSheet(title = "General options", onDismiss = onDismiss) { firstAction ->
+    TvOptionsSheet(title = "General Options", onDismiss = onDismiss) { firstAction ->
         TvOptionAction(
-            title = "Idle screen",
+            title = "Idle Screen",
             summary = "${state.idleScreen.visualizer.displayName} · starts after 10 minutes",
             onClick = onOpenIdleScreen,
             modifier = Modifier.focusRequester(firstAction),
         )
         TvOptionAction(
-            title = "Sleep timer",
+            title = "Sleep Timer",
             summary = if (state.playback.sleepTimer.isActive) {
                 "Pauses in ${formatSleepTimerRemaining(state.playback.sleepTimer.remainingMillis)}"
             } else {
@@ -415,7 +415,7 @@ private fun TvGeneralOptionsSheet(
             onClick = onOpenSleepTimer,
         )
         TvOptionAction(
-            title = "Accessibility & motion",
+            title = "Accessibility & Motion",
             summary = if (state.idleScreen.reduceVisualIntensity) {
                 "Reduced visual intensity · ${state.idleScreen.nowPlayingOverlay.displayName} overlay"
             } else {
@@ -439,9 +439,9 @@ private fun TvAccessibilityAndMotionSheet(
     onSetReduceVisualIntensity: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    TvOptionsSheet(title = "Accessibility & motion", onDismiss = onDismiss) { firstAction ->
+    TvOptionsSheet(title = "Accessibility & Motion", onDismiss = onDismiss) { firstAction ->
         TvOptionAction(
-            title = "Now Playing overlay",
+            title = "Now Playing Overlay",
             summary = preferences.nowPlayingOverlay.displayName,
             onClick = {
                 val next = NowPlayingOverlayMode.entries[
@@ -452,7 +452,7 @@ private fun TvAccessibilityAndMotionSheet(
             modifier = Modifier.focusRequester(firstAction),
         )
         TvOptionAction(
-            title = "Reduce visual intensity",
+            title = "Reduce Visual Intensity",
             summary = if (preferences.reduceVisualIntensity) {
                 "On · softens visual response while preserving PCM analysis"
             } else {
@@ -473,7 +473,7 @@ private fun TvAboutAndSupportSheet(
 ) {
     TvOptionsSheet(title = "About & Support", onDismiss = onDismiss) { firstAction ->
         TvOptionInfo(
-            title = "App version",
+            title = "App Version",
             summary = "${environment.appVersion} (${environment.versionCode}) · ${environment.buildType}",
         )
         TvOptionInfo(
@@ -481,11 +481,11 @@ private fun TvAboutAndSupportSheet(
             summary = "Anonymous listening; local diagnostics exclude accounts, URLs, identifiers, and logs",
         )
         TvOptionInfo(
-            title = "Open-source licenses",
+            title = "Open-Source Licenses",
             summary = "Available in Android system app information",
         )
         TvOptionAction(
-            "Device status",
+            "Device Status",
             "Local playback information",
             onOpenDiagnostics,
             modifier = Modifier.focusRequester(firstAction),
@@ -614,7 +614,7 @@ private fun TvIdleScreenSheet(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "Idle visualizer",
+                        "Idle Visualizer",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -1197,7 +1197,7 @@ private fun TvSleepTimerDialog(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                "Sleep timer",
+                "Sleep Timer",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = TvCream,
@@ -1269,7 +1269,7 @@ private fun TvDiagnosticsDialog(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                "Device status",
+                "Device Status",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = TvCream,
