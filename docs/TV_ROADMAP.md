@@ -58,6 +58,6 @@ The closure order and acceptance evidence for these rows are defined in
 
 **Status: In progress.** Internal testing release `1 (0.1.0-tv-alpha01)` is published to Alpha Testers with
 version-specific release notes. The Play-generated split is physically accepted on the Streamer and Dongle R 4K,
-and nine of eleven setup tasks are saved. The provisioned support mailbox is receipt-verified and the conservative
-TV Data Safety declaration is saved; complete the active IARC questionnaire and store listing against that exact
-artifact before completing the required test lifecycle.
+and ten of eleven setup tasks are saved. The provisioned support mailbox is receipt-verified; the conservative TV
+Data Safety declaration, IARC 18+ rating, and **18 and over** audience gate are saved. Complete the store listing
+against that exact artifact before completing the required test lifecycle.

@@ -1,9 +1,9 @@
 # 24Seven.FM TV — Play declaration packet
 
 Date: August 24, 2026  
-Status: nine of eleven Play setup tasks saved from the published TV Alpha 01
-artifact and the approved mobile Player metadata. The active IARC programming
-questionnaire and the store listing remain open.
+Status: ten of eleven Play setup tasks saved from the published TV Alpha 01
+artifact and the approved mobile Player metadata. Only the store listing
+remains open.
 
 This packet applies only to `com.codeframe78.twentyfourseven.tv`, version
 `0.1.0-tv-alpha01` (version code `1`), from revision
@@ -62,15 +62,21 @@ reference was reconciled with the active TV form, and **18 and over** is now
 saved for TV Alpha 01. The active form exposed no further minor-access choice
 for this release.
 
-For the IARC questionnaire, answer only these verified facts:
+The IARC questionnaire is saved with **All Other App Types** and the approved
+support contact. It conservatively declares Death.FM's online catalog as
+including violent, sexual, offensive-language, and controlled-substance
+content. It produces 18+ / Adults Only ratings in the displayed territories;
+the saved target audience is therefore **18 and over**.
+
+The classification was based only on these verified facts:
 
 - Music & Audio radio is the core purpose; there is no game, social, dating,
   gambling, commerce, advertising, or user-generated-content surface.
 - The app presents public station audio, song titles, artwork, Queue, and
   Recently Played data; it has no user image/video upload or public text entry.
-- Do not infer frequency or intensity of mature station programming from the
-  mobile Player. Answer the active rating questions conservatively from the
-  stations' actual public programming.
+- Death.FM publicly presents an extreme, black, brutal, technical, and death
+  metal catalog; its published playlist includes explicit, violent, and sexual
+  themes. The app does not itself create or curate user-generated content.
 
 ## Data safety and privacy gate
 
@@ -123,10 +129,8 @@ published candidate without exposing tester details or private diagnostics.
    support contact, and **18 and over** target age in Play Console. The
    published support mailbox is provisioned and receipt-verified by the owner
    after its one-time managed-transport test.
-2. Complete the exact active IARC content-rating questionnaire using the
-   stations' actual programming policy for its mature-content questions.
-3. Save the store-listing copy and approved TV assets through Play Console.
-4. Complete any required foreground-media declaration using current exact
+2. Save the store-listing copy and approved TV assets through Play Console.
+3. Complete any required foreground-media declaration using current exact
    candidate evidence.
 
 Only sanitized completion evidence belongs in this repository. Do not commit

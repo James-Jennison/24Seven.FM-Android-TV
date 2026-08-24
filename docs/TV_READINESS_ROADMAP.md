@@ -187,8 +187,9 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
    `0.1.0-tv-alpha01` / code `1` from revision `3c742c5f182e4bd0f8997d95feaf1cb5df620714`.
    Privacy and the objective app-content declarations are now saved in Play
    Console. The conservative TV-specific Data Safety declaration is also
-   saved; content rating and store listing remain open in the external Play
-   workflow against that exact artifact.
+   saved. The IARC rating and the associated **18 and over** target-audience
+   gate are also saved; only the store listing remains open in the external
+   Play workflow against that exact artifact.
 2. **Local artifact gate — complete.** The protected helper built and verified the signed AAB/APK
    with resource shrinking, R8, 64-bit, and 16 KB packaging checks; Play accepted the published
    internal-test AAB and its ReTrace mapping attachment.
@@ -197,13 +198,13 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
    exposed the expected TV activity, and entered a live `PLAYING` MediaSession; physical acceptance
    was completed on both devices.
 4. **Track material — partially complete.** The Alpha Testers list is assigned, the
-   version-specific internal-test notes were published, and nine of eleven Play
+   version-specific internal-test notes were published, and ten of eleven Play
    setup tasks are saved: privacy policy, app access, ads, target audience,
    government, financial, health, and category/contact. The entered support
    mailbox is provisioned and receipt-verified by the owner after its one-time
-   managed-transport test. Data Safety is saved. The active IARC programming
-   questionnaire and store listing remain open; tester-install evidence is
-   complete.
+   managed-transport test. Data Safety, the IARC rating, and the corrected
+   **18 and over** target-audience gate are saved. Only the store listing
+   remains open; tester-install evidence is complete.
 
 ## Sequencing and completion
 
@@ -213,7 +214,7 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
 | 2 | R2.1 Overlay and comfort | Complete — persistence plus fixed/reduced visualizer physical pass |
 | 3 | R2.2 Style behavior decision | Deferred pending explicit product approval |
 | 4 | R3 Physical-TV closure | Complete for the permitted local scope; fallback configuration remains unchanged |
-| 5 | R4 Release readiness | In progress — published and device-accepted Internal release; 9/11 setup tasks saved, with the active IARC questionnaire and store listing open |
+| 5 | R4 Release readiness | In progress — published and device-accepted Internal release; 10/11 setup tasks saved, with only the store listing open |
 
 TV05 is complete. TV06 remains approval-gated and must not be treated as complete from an
 Internal-track publication and device acceptance alone.
