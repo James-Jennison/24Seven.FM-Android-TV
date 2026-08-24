@@ -70,6 +70,8 @@ import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -79,6 +81,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.MaterialTheme
@@ -746,31 +750,43 @@ private fun TvOptionsSheet(
 ) {
     val firstAction = remember { FocusRequester() }
     androidx.activity.compose.BackHandler(onBack = onDismiss)
-    LaunchedEffect(Unit) { firstAction.requestFocus() }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(TvInk.copy(alpha = .86f)),
-        contentAlignment = Alignment.CenterEnd,
+    LaunchedEffect(title) { firstAction.requestFocus() }
+    // A visual overlay leaves VoiceView's accessibility focus on the station tile beneath it.
+    // A real dialog creates the modal window boundary that Android accessibility services use to
+    // announce the pane and traverse only its actions.
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .width(470.dp)
-                .fillMaxHeight()
-                .clip(TvPanelShape)
-                .background(TvInk.copy(alpha = .97f))
-                .border(1.dp, TvCream.copy(alpha = .35f), TvPanelShape)
-                .padding(horizontal = 30.dp, vertical = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(9.dp),
+                .fillMaxSize()
+                .background(TvInk.copy(alpha = .86f))
+                .semantics {
+                    paneTitle = title
+                    isTraversalGroup = true
+                },
+            contentAlignment = Alignment.CenterEnd,
         ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = TvCream,
-                modifier = Modifier.padding(bottom = 10.dp),
-            )
-            content(firstAction)
+            Column(
+                modifier = Modifier
+                    .width(470.dp)
+                    .fillMaxHeight()
+                    .clip(TvPanelShape)
+                    .background(TvInk.copy(alpha = .97f))
+                    .border(1.dp, TvCream.copy(alpha = .35f), TvPanelShape)
+                    .padding(horizontal = 30.dp, vertical = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(9.dp),
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TvCream,
+                    modifier = Modifier.padding(bottom = 10.dp),
+                )
+                content(firstAction)
+            }
         }
     }
 }
