@@ -473,7 +473,7 @@ def check_environment(repository_root: Path) -> Path:
         raise SigningError("Run the helper from the 24Seven.FM Android TV repository checkout.")
     if not Path("/dev/shm").is_dir():
         raise SigningError("Memory-backed /dev/shm storage is unavailable.")
-    for command in ("findmnt", "java", "keytool", "jarsigner"):
+    for command in ("findmnt", "git", "java", "keytool", "jarsigner"):
         if shutil.which(command) is None:
             raise SigningError(f"Required command '{command}' is unavailable.")
     memory_filesystem = _run_captured(["findmnt", "-n", "-o", "FSTYPE", "/dev/shm"]).strip()
@@ -482,12 +482,30 @@ def check_environment(repository_root: Path) -> Path:
     return resolve_android_sdk()
 
 
+def resolve_clean_source_revision(repository_root: Path) -> str:
+    """Return the exact committed source revision accepted for a signed artifact."""
+    status = _run_captured(
+        ["git", "-C", str(repository_root), "status", "--porcelain"]
+    )
+    if status.strip():
+        raise SigningError(
+            "Refusing to sign from a dirty source tree. Commit or remove only the intended changes first."
+        )
+    revision = _run_captured(
+        ["git", "-C", str(repository_root), "rev-parse", "--verify", "HEAD"]
+    ).strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", revision):
+        raise SigningError("Unable to resolve an exact Git source revision for the signed build.")
+    return revision
+
+
 def _build_signed_artifacts(
     repository_root: Path,
     android_sdk: Path,
     keystore_path: Path,
     payload: RecoveryPayload,
     build_apk: bool,
+    source_revision: str,
 ) -> None:
     environment = os.environ.copy()
     environment.update(
@@ -498,6 +516,7 @@ def _build_signed_artifacts(
             "TWENTYFOURSEVEN_UPLOAD_STORE_PASSWORD": payload.store_password,
             "TWENTYFOURSEVEN_UPLOAD_KEY_ALIAS": payload.key_alias,
             "TWENTYFOURSEVEN_UPLOAD_KEY_PASSWORD": payload.key_password,
+            "TWENTYFOURSEVEN_SOURCE_REVISION": source_revision,
         }
     )
     tasks = [":app:bundleRelease"]
@@ -612,6 +631,7 @@ def main() -> int:
                 "--create-replacement-recovery-package is used."
             )
         _assert_external_package(arguments.recovery_package, repository_root)
+        source_revision = resolve_clean_source_revision(repository_root)
         if arguments.accept_first_upload_identity and arguments.expected_upload_certificate:
             raise SigningError(
                 "Specify either --accept-first-upload-identity or --expected-upload-certificate, not both."
@@ -639,6 +659,7 @@ def main() -> int:
                     keystore_path,
                     payload,
                     arguments.build_apk,
+                    source_revision,
                 )
             bundle_sha256, bundle_certificate_sha256 = _verify_signed_bundle(
                 repository_root, certificate_sha256

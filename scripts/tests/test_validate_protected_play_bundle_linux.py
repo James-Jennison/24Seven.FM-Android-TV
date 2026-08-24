@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -170,6 +171,16 @@ class LinuxPlaySigningTest(unittest.TestCase):
     def test_incomplete_android_sdk_is_rejected(self) -> None:
         with self.assertRaisesRegex(signing.SigningError, "could not be located"):
             signing.resolve_android_sdk(environment={}, home=self.root / "missing-home")
+
+    def test_clean_source_revision_is_embedded_from_git_head(self) -> None:
+        revision = "a" * 40
+        with mock.patch.object(signing, "_run_captured", side_effect=["", f"{revision}\n"]):
+            self.assertEqual(revision, signing.resolve_clean_source_revision(self.root))
+
+    def test_dirty_source_tree_is_rejected_before_signing(self) -> None:
+        with mock.patch.object(signing, "_run_captured", return_value=" M app/build.gradle.kts\n"):
+            with self.assertRaisesRegex(signing.SigningError, "dirty source tree"):
+                signing.resolve_clean_source_revision(self.root)
 
     def test_self_signed_upload_certificate_passes_jar_verification(self) -> None:
         bundle = self.root / "self-signed-test.aab"
