@@ -1,9 +1,9 @@
 # 24Seven.FM TV — Play declaration packet
 
 Date: August 24, 2026  
-Status: eight of eleven Play setup tasks saved from the published TV Alpha 01
-artifact and the approved mobile Player metadata; the remaining forms require
-their active Console wording and owner attestation.
+Status: nine of eleven Play setup tasks saved from the published TV Alpha 01
+artifact and the approved mobile Player metadata. The active IARC programming
+questionnaire and the store listing remain open.
 
 This packet applies only to `com.codeframe78.twentyfourseven.tv`, version
 `0.1.0-tv-alpha01` (version code `1`), from revision
@@ -91,11 +91,13 @@ The TV-specific facts are:
   access/security, but it does not establish retention, linkage, location
   inference, or processor details for this TV release.
 
-Whether the active Data Safety form treats that direct station/network
-transmission as app-collected user data must be reconciled against its current
-question wording before any answer is saved. Do not claim **No data collected**,
-end-to-end ephemeral processing, a deletion mechanism, or all-data-encrypted
-in-transit without that reconciliation and the owner attestation.
+The owner approved the active-form reconciliation and it is saved in Play
+Console: approximate location is declared as collected and shared, required
+for app functionality and fraud/security purposes, and not processed
+ephemerally. The saved form declares no account creation, no external-account
+login, no data-deletion mechanism, and not all data encrypted in transit. This
+is a conservative declaration for direct station/network connection data, not
+a claim that the TV app itself retains location data.
 
 ## Foreground-service declaration
 
@@ -121,11 +123,10 @@ published candidate without exposing tester details or private diagnostics.
    support contact, and **18 and over** target age in Play Console. The
    published support mailbox is provisioned and receipt-verified by the owner
    after its one-time managed-transport test.
-2. Complete the exact active IARC content-rating questionnaire.
-3. Reconcile the current Data Safety form with the direct station/network
-   connection-data path and obtain owner attestation.
-4. Save the store-listing copy and approved TV assets through Play Console.
-5. Complete any required foreground-media declaration using current exact
+2. Complete the exact active IARC content-rating questionnaire using the
+   stations' actual programming policy for its mature-content questions.
+3. Save the store-listing copy and approved TV assets through Play Console.
+4. Complete any required foreground-media declaration using current exact
    candidate evidence.
 
 Only sanitized completion evidence belongs in this repository. Do not commit
