@@ -58,6 +58,5 @@ The closure order and acceptance evidence for these rows are defined in
 
 **Status: In progress.** Internal testing release `1 (0.1.0-tv-alpha01)` is published to Alpha Testers with
 version-specific release notes. The Play-generated split is physically accepted on the Streamer and Dongle R 4K,
-and eight of eleven setup tasks are saved. The one-time support-mailbox test was accepted by the managed transport;
-confirm receipt, then reconcile content rating, Data Safety, and store-listing data against that exact artifact before
-completing the required test lifecycle.
+and eight of eleven setup tasks are saved. The provisioned support mailbox is receipt-verified; reconcile content
+rating, Data Safety, and store-listing data against that exact artifact before completing the required test lifecycle.

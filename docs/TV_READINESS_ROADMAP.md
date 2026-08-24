@@ -199,9 +199,9 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
    version-specific internal-test notes were published, and eight of eleven Play
    setup tasks are saved: privacy policy, app access, ads, target audience,
    government, financial, health, and category/contact. The entered support
-   mailbox is provisioned and its one-time test was accepted by the managed
-   transport, pending owner receipt confirmation. Content rating, Data Safety,
-   and store listing remain open; tester-install evidence is complete.
+   mailbox is provisioned and receipt-verified by the owner after its one-time
+   managed-transport test. Content rating, Data Safety, and store listing remain
+   open; tester-install evidence is complete.
 
 ## Sequencing and completion
 
