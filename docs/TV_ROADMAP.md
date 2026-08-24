@@ -58,5 +58,5 @@ The closure order and acceptance evidence for these rows are defined in
 
 **Status: In progress.** Internal testing release `1 (0.1.0-tv-alpha01)` is published to Alpha Testers with
 version-specific release notes. The Play-generated split is physically accepted on the Streamer and Dongle R 4K,
-and eight of eleven setup tasks are saved. Reconcile content rating, Data Safety, and store-listing data against
-that exact artifact, then complete the required test lifecycle.
+and eight of eleven setup tasks are saved. Provision and verify the entered support mailbox, then reconcile content
+rating, Data Safety, and store-listing data against that exact artifact before completing the required test lifecycle.

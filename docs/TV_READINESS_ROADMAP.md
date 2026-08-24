@@ -198,8 +198,10 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
 4. **Track material — partially complete.** The Alpha Testers list is assigned, the
    version-specific internal-test notes were published, and eight of eleven Play
    setup tasks are saved: privacy policy, app access, ads, target audience,
-   government, financial, health, and category/contact. Content rating, Data
-   Safety, and store listing remain open; tester-install evidence is complete.
+   government, financial, health, and category/contact. The entered support
+   mailbox still requires provisioning and receipt verification. Content rating,
+   Data Safety, and store listing remain open; tester-install evidence is
+   complete.
 
 ## Sequencing and completion
 
