@@ -42,8 +42,9 @@ Play metadata and are also supported by this TV artifact:
 
 The mobile Player's existing policy URL must **not** be copied automatically:
 its contents describe account, community, and other mobile-only behavior that
-this TV alpha excludes. Publish a public HTTPS page whose contents accurately
-match this repository's `PRIVACY.md`, then use that TV-specific URL in Play
+this TV alpha excludes. The TV-specific public HTTPS policy is now published
+at `https://player.jamesjennison.net/privacy/tv/` and was verified at both the
+origin and public endpoint on August 24, 2026. Use that exact URL in Play
 Console.
 
 ## Store listing
@@ -115,7 +116,7 @@ published candidate without exposing tester details or private diagnostics.
 
 ## Console completion gate
 
-1. Publish a TV-specific public HTTPS privacy-policy page matching `PRIVACY.md`.
+1. Save the published TV-specific privacy-policy URL in Play Console.
 2. Confirm the 18+ target audience and the exact active IARC answers.
 3. Reconcile the current Data Safety form with the direct station/network
    connection-data path and obtain owner attestation.
