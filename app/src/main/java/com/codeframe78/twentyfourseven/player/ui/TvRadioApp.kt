@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -637,43 +638,105 @@ private fun TvIdleScreenSheet(
                 color = TvCream.copy(alpha = .68f),
                 modifier = Modifier.padding(bottom = 8.dp),
             )
-            LazyColumn(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                state = selectorListState,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                items(styles, key = { it.name }) { style ->
-                    TvVisualizerListRow(
-                        style = style,
-                        selected = style == state.idleScreen.visualizer,
-                        enabled = selectorInteractive,
-                        onClick = {
-                            previewStyle = style
-                            onSelectVisualizer(style)
-                            val now = android.os.SystemClock.elapsedRealtime()
-                            val isDoubleActivation = lastActivatedStyle == style &&
-                                now - lastActivatedAtMillis <= TvVisualizerDoubleActivateWindowMillis
-                            if (isDoubleActivation) {
-                                lastActivatedStyle = null
-                                lastActivatedAtMillis = 0L
-                                onPreviewFullScreen(style)
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(end = 10.dp),
+                    state = selectorListState,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    items(styles, key = { it.name }) { style ->
+                        TvVisualizerListRow(
+                            style = style,
+                            selected = style == state.idleScreen.visualizer,
+                            enabled = selectorInteractive,
+                            onClick = {
+                                previewStyle = style
+                                onSelectVisualizer(style)
+                                val now = android.os.SystemClock.elapsedRealtime()
+                                val isDoubleActivation = lastActivatedStyle == style &&
+                                    now - lastActivatedAtMillis <= TvVisualizerDoubleActivateWindowMillis
+                                if (isDoubleActivation) {
+                                    lastActivatedStyle = null
+                                    lastActivatedAtMillis = 0L
+                                    onPreviewFullScreen(style)
+                                } else {
+                                    lastActivatedStyle = style
+                                    lastActivatedAtMillis = now
+                                }
+                            },
+                            onPreview = { previewStyle = style },
+                            modifier = if (style == state.idleScreen.visualizer) {
+                                Modifier.focusRequester(selectedAction)
                             } else {
-                                lastActivatedStyle = style
-                                lastActivatedAtMillis = now
-                            }
-                        },
-                        onPreview = { previewStyle = style },
-                        modifier = if (style == state.idleScreen.visualizer) {
-                            Modifier.focusRequester(selectedAction)
-                        } else {
-                            Modifier
-                        },
-                    )
+                                Modifier
+                            },
+                        )
+                    }
                 }
+                TvVisualizerScrollIndicator(
+                    state = selectorListState,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight()
+                        .padding(vertical = 2.dp),
+                )
             }
         }
+    }
+}
+
+/** A persistent, non-focusable cue that the TV selector continues beyond its viewport. */
+@Composable
+private fun TvVisualizerScrollIndicator(
+    state: LazyListState,
+    modifier: Modifier = Modifier,
+) {
+    val layoutInfo = state.layoutInfo
+    val visibleItems = layoutInfo.visibleItemsInfo
+    val viewportHeight = (layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset).coerceAtLeast(1)
+    val averageItemHeight = visibleItems
+        .takeIf { it.isNotEmpty() }
+        ?.map { it.size }
+        ?.average()
+        ?.toFloat()
+        ?: return
+    val itemCount = layoutInfo.totalItemsCount
+    if (itemCount == 0 || (!state.canScrollBackward && !state.canScrollForward)) return
+
+    val itemSpacing = with(LocalDensity.current) { 4.dp.toPx() }
+    val contentHeight = (averageItemHeight * itemCount) + (itemSpacing * (itemCount - 1))
+    val thumbFraction = (viewportHeight / contentHeight).coerceIn(.18f, .92f)
+    val scrollRange = (contentHeight - viewportHeight).coerceAtLeast(1f)
+    val scrollOffset = (state.firstVisibleItemIndex * (averageItemHeight + itemSpacing)) +
+        state.firstVisibleItemScrollOffset
+    val scrollFraction = (scrollOffset / scrollRange).coerceIn(0f, 1f)
+
+    BoxWithConstraints(
+        modifier = modifier.width(7.dp),
+    ) {
+        val thumbHeight = maxHeight * thumbFraction
+        val thumbOffset = (maxHeight - thumbHeight) * scrollFraction
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .width(2.dp)
+                .fillMaxHeight()
+                .background(TvCream.copy(alpha = .22f), CircleShape),
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = thumbOffset)
+                .width(5.dp)
+                .height(thumbHeight)
+                .background(Color(0xFF7FFFE1).copy(alpha = .88f), CircleShape),
+        )
     }
 }
 
