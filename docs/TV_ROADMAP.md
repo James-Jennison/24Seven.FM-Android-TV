@@ -42,14 +42,14 @@ dashboard rather than in General Options.
 
 Certify focus traversal, Back behavior, TalkBack, basic/Bluetooth remote input, emulator and physical TV playback, network recovery, 1080p/4K layout, low-memory behavior, 64-bit/16 KB packaging, and all five stations.
 
-**Status: In progress.** The Google TV Streamer and Insignia Fire TV passes now cover D-pad focus,
+**Status: Complete.** The Google TV Streamer and Insignia Fire TV passes cover D-pad focus,
 Back-to-home with background playback, media-key pause/resume, Ethernet recovery, post-recovery
 hidden-options access, sleep-timer expiry, VoiceView/TalkBack traversal, the additional physical Fire
 remote, 1080p logical layout on 4K output, and automatic in-app idle activation. The API 35 16 KB
 emulator also cold-launches the debug app, while a separate temporary emulator with
 `ro.config.low_ram=true` validates the constrained visualizer branch. The signed AAB/APK gate passed and
-Internal testing release `1 (0.1.0-tv-alpha01)` is published to Alpha Testers. Play-generated-split
-installation and physical-TV acceptance remain open.
+Internal testing release `1 (0.1.0-tv-alpha01)` is published to Alpha Testers. Its Play-generated split
+was installed and physically accepted on the Google TV Streamer and Dongle R 4K.
 
 The closure order and acceptance evidence for these rows are defined in
 [TV_READINESS_ROADMAP.md](TV_READINESS_ROADMAP.md).

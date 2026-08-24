@@ -2,8 +2,8 @@
 
 Date: August 22–23, 2026
 
-Status: Partial — all available physical navigation, visual, idle, accessibility, and explicit
-Android low-RAM-branch acceptance passed; the published Play-generated split remains to be accepted.
+Status: Complete — physical navigation, visual, idle, accessibility, explicit Android low-RAM-branch,
+and published Play-generated-split acceptance passed.
 
 ## Device and build
 
@@ -53,12 +53,10 @@ Android low-RAM-branch acceptance passed; the published Play-generated split rem
   revision. The release AAB signature verified. Play Console accepted and published that AAB to the Android-TV-only
   Internal testing track for Alpha Testers with its ReTrace mapping attachment. No signing secret, certificate
   fingerprint, or artifact hash is recorded here.
+- The Play-delivered package, installed by `com.android.vending`, was verified on the Google TV Streamer and
+  Dongle R 4K as version code `1` / `0.1.0-tv-alpha01` with base, ABI, language, and density splits. Each device
+  launched the visible TV `MainActivity` and reported the app's live MediaSession in `PLAYING`; the project owner
+  completed physical acceptance of both delivered builds.
 
-## Remaining TV05 acceptance
-
-- Install the published Internal-testing Play-generated split on a physical TV, then repeat final listener and
-  options acceptance against that delivered artifact. The 16 KB debug-runtime launch does not prove
-  Play-generated split packaging.
-
-This document combines debug-build device evidence with local signed-artifact evidence. It is not Google Play
-delivery evidence.
+This document combines debug-build device evidence, local signed-artifact evidence, and Play-delivered split
+acceptance. It is not production-release evidence.
