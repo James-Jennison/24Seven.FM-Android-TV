@@ -2148,7 +2148,10 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     private fun palette(index: Int, alpha: Float) = Palette[index % Palette.size].withAlpha(alpha)
 
     private fun compileShader(type: Int, source: String): Int = GLES20.glCreateShader(type).also { shader ->
-        GLES20.glShaderSource(shader, source); GLES20.glCompileShader(shader)
+        // Kotlin raw strings begin with a newline when the opening delimiter occupies its own
+        // line. Most drivers accept that before a GLSL #version directive, but Fire OS 7's
+        // compiler requires the directive to be the very first source line.
+        GLES20.glShaderSource(shader, source.trimStart()); GLES20.glCompileShader(shader)
         val status = IntArray(1); GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, status, 0)
         check(status[0] == GLES20.GL_TRUE) { "TV visualizer shader compilation failed: ${GLES20.glGetShaderInfoLog(shader)}" }
     }
