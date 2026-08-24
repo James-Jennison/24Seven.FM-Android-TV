@@ -64,7 +64,8 @@ production configuration changes, account features, or stream changes.
 - **Runtime tier verification:** The Fire TV reports a 192 MB heap class; the Google TV Streamer
   reports 384 MB. Neither device reports Android's `isLowRamDevice` property, so the renderer uses
   a 256 MB compatibility boundary: Fire receives the constrained tier and Streamer the richer
-  tier. Playback-error fallback cannot be physically observed today because every permitted
+  tier. The Streamer's richer tier was physically reviewed and approved as noticeably smoother.
+  Playback-error fallback cannot be physically observed today because every permitted
   station provides exactly one live stream; inducing it would require a prohibited production
   stream configuration change.
 - **Still open:** a device explicitly reporting Android low-RAM classification, plus release/Play-
