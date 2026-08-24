@@ -143,11 +143,14 @@ Other use case is selected.
    content Actioned tab.
 4. **Complete:** pasted and saved the hosted current-candidate video URL in
    the foreground-media declaration.
-5. **Blocked externally:** App content's Need attention tab is empty and the
+5. **Escalated externally:** App content's Need attention tab is empty and the
    store listing reports all required information, but Publishing overview
    continues to disable **Send app for review** after reload with its generic
    dashboard-required-steps message. The Dashboard only reports the distinct
-   future production closed-test requirement.
+   future production closed-test requirement. The owner submitted the prepared
+   Play Console App releases/App publishing support case on August 24, 2026;
+   await Google's response before changing declarations or creating a
+   production release.
 
 Only sanitized completion evidence belongs in this repository. Do not commit
 tester identities, reviewer details, Console captures containing private data,
