@@ -47,12 +47,14 @@ Back-to-home with background playback, media-key pause/resume, Ethernet recovery
 hidden-options access, sleep-timer expiry, VoiceView/TalkBack traversal, the additional physical Fire
 remote, 1080p logical layout on 4K output, and automatic in-app idle activation. The API 35 16 KB
 emulator also cold-launches the debug app, while a separate temporary emulator with
-`ro.config.low_ram=true` validates the constrained visualizer branch. Only signed-release/Play-
-split evidence remains open.
+`ro.config.low_ram=true` validates the constrained visualizer branch. The signed AAB/APK gate now passes from
+the exact committed revision; only Play-upload/generated-split evidence remains open.
 
 The closure order and acceptance evidence for these rows are defined in
 [TV_READINESS_ROADMAP.md](TV_READINESS_ROADMAP.md).
 
 ## TV06 — Play alpha delivery
 
-After explicit approval: reconcile rights/privacy/content-rating/listing data against the exact signed build, create TV assets and tester cases, then complete internal/closed testing and Play-generated split verification.
+**Status: In progress.** The dedicated TV Play application and first locally verified signed artifact now exist.
+Reconcile rights/privacy/content-rating/listing data against that exact signed build, create TV assets and tester
+cases, then complete internal/closed testing and Play-generated split verification.

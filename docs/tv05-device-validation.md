@@ -44,12 +44,20 @@ only explicit Android low-RAM-device and release evidence remain.
   entered the Idle Screen picker, and rendered the constrained full-screen visualizer without fatal, GL,
   shader, or memory errors during sustained observation. This is an application low-RAM-branch validation,
   not a CDD-certified low-RAM hardware profile.
-- The protected Linux signing helper's non-secret environment preflight passed. A signed release bundle was
-  deliberately not built because the TV has no registered dedicated upload identity yet.
+- The dedicated `24Seven.FM TV` Play application was created for
+  `com.codeframe78.twentyfourseven.tv`. Its upload identity is retained only as an encrypted local recovery
+  package outside this repository.
+- The protected Linux signing helper built and independently verified the first signed AAB and release APK from
+  committed revision `3c742c5f182e4bd0f8997d95feaf1cb5df620714`. The signed manifest declares package
+  `com.codeframe78.twentyfourseven.tv`, version code `1`, version `0.1.0-tv-alpha01`, and that exact build
+  revision. The release AAB signature verified. No signing secret, certificate fingerprint, or artifact hash is
+  recorded here.
 
 ## Remaining TV05 acceptance
 
-- Signed-release AAB validation and Play-generated split installation after the dedicated TV upload identity
-  is created and registered. The 16 KB debug-runtime launch does not prove signed bundle packaging.
+- Upload the first signed AAB, register its Play upload identity, and install the Play-generated split on a
+  physical TV for the final listener and options acceptance. The 16 KB debug-runtime launch does not prove
+  Play-generated split packaging.
 
-This is debug-build device evidence only. It is not signed-release or Google Play delivery evidence.
+This document combines debug-build device evidence with local signed-artifact evidence. It is not Google Play
+delivery evidence.

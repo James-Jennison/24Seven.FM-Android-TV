@@ -74,7 +74,7 @@ production configuration changes, account features, or stream changes.
   Playback-error fallback cannot be physically observed today because every permitted
   station provides exactly one live stream; inducing it would require a prohibited production
   stream configuration change.
-- **Still open:** separately approved release signing and Play-split verification.
+- **Still open:** Play upload, listing/disclosure completion, and Play-split verification.
 
 ## Product guardrails
 
@@ -162,13 +162,16 @@ Run these after each option milestone and record evidence in the existing valida
 
 ## R4 — Release artifact and Play readiness
 
-This phase begins only with separate release approval.
+This phase is in progress under the August 23, 2026 release approval. The dedicated TV Play app exists and the
+first local signed-artifact gate has passed; external Play upload and split evidence remain separately incomplete.
 
 1. Reconcile the exact release commit, release version, privacy/content-rating/listing inputs, and
-   dedicated TV upload identity.
+   dedicated TV upload identity. The first local artifact is version `0.1.0-tv-alpha01` / code `1` from
+   revision `3c742c5f182e4bd0f8997d95feaf1cb5df620714`.
 2. Build and validate the signed AAB with resource shrinking, R8, 64-bit, and 16 KB packaging
-   checks.
-3. Install the Play-generated split on a physical TV and repeat the core listener and options
+   checks. The protected helper has completed the signed AAB/APK build and signature verification; retain
+   Play's artifact report as the remaining packaging/distribution evidence.
+3. Upload the first AAB to register its identity, then install the Play-generated split on a physical TV and repeat the core listener and options
    checks against that exact artifact.
 4. Create tester cases and version-specific release notes only for the actual approved release
    candidate.
