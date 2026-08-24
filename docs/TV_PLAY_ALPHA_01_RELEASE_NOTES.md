@@ -35,4 +35,7 @@ accessibility, or visualizer issues without including personal information or lo
 - It makes no rights, availability, pricing, performance, endorsement, or unsupported privacy claims.
 - Complete the Play Console Data safety and content-rating questionnaires from the current app and
   [PRIVACY.md](../PRIVACY.md); do not infer answers from this copy alone.
+- Use [`TV_PLAY_DECLARATION_PACKET.md`](TV_PLAY_DECLARATION_PACKET.md) for the
+  TV-specific evidence ledger. The mobile Player's declarations are not
+  automatically applicable to this separate anonymous TV app.
 - Do not publish a public track from this alpha material.
