@@ -45,9 +45,9 @@ only explicit Android low-RAM-device and release evidence remain.
 
 ## Remaining TV05 acceptance
 
-- Low-memory behavior on a device reporting low-RAM status. This Streamer did not expose a configured
-  low-RAM mode through `ro.config.low_ram`; the Fire TV also did not report that property. The 16 KB emulator is a
-  page-size check, not low-memory evidence.
+- Low-memory behavior on a device reporting low-RAM status. The Streamer, Fire TV, and Dongle R 4K
+  (384 MB, 192 MB, and 256 MB heap classes respectively) did not expose `ro.config.low_ram`. The
+  16 KB emulator is a page-size check, not low-memory evidence.
 - Signed-release AAB validation and Play-generated split installation after the dedicated TV upload identity
   is created and registered. The 16 KB debug-runtime launch does not prove signed bundle packaging.
 

@@ -61,10 +61,11 @@ production configuration changes, account features, or stream changes.
 - **VoiceView checks:** On the same Fire TV, dashboard queue/history panels no longer enter the
   spoken traversal. General Options opens as an accessibility dialog and transfers VoiceView
   focus to its pane and Idle Screen action rather than reading the underlying Live station.
-- **Runtime tier verification:** The Fire TV reports a 192 MB heap class; the Google TV Streamer
-  reports 384 MB. Neither device reports Android's `isLowRamDevice` property, so the renderer uses
-  a 256 MB compatibility boundary: Fire receives the constrained tier and Streamer the richer
-  tier. The Streamer's richer tier was physically reviewed and approved as noticeably smoother.
+- **Runtime tier verification:** The Fire TV reports a 192 MB heap class; the Dongle R 4K reports
+  256 MB; and the Google TV Streamer reports 384 MB. None reports Android's `isLowRamDevice`
+  property, so the renderer uses a 256 MB compatibility boundary: Fire and the Dongle receive the
+  constrained tier and Streamer the richer tier. The Streamer's richer tier was physically reviewed
+  and approved as noticeably smoother.
   Playback-error fallback cannot be physically observed today because every permitted
   station provides exactly one live stream; inducing it would require a prohibited production
   stream configuration change.
