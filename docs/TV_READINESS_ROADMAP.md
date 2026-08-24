@@ -47,6 +47,9 @@ production configuration changes, account features, or stream changes.
   `PLAYING`.
 - **Two-device options dismissal:** One further physical Back press returned both devices to the
   listener dashboard with 1980s.FM still selected. Both MediaSessions remained `PLAYING`.
+- **Two-device Home/resume:** After a physical Home action, a ten-second background interval, and
+  reopening the app, both devices returned to the 1980s.FM dashboard with the Player activity
+  foreground and both MediaSessions still `PLAYING`.
 - **VoiceView checks:** On the same Fire TV, dashboard queue/history panels no longer enter the
   spoken traversal. General Options opens as an accessibility dialog and transfers VoiceView
   focus to its pane and Idle Screen action rather than reading the underlying Live station.
