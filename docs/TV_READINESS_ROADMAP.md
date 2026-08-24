@@ -1,8 +1,24 @@
 # 24Seven.FM TV readiness roadmap
 
-**Status:** Planned. This roadmap sequences the approved General Options direction with the
-remaining physical-device and release-acceptance work. It does not authorize Play upload,
+**Status:** In progress. R1 and the R2.1 controls are implemented in the debug TV build; their
+broader idle, remote, accessibility, and release acceptance remains open. This roadmap sequences
+the approved General Options direction with the remaining physical-device and release-acceptance
+work. It does not authorize Play upload,
 production configuration changes, account features, or stream changes.
+
+## Current progress — 2026-08-23
+
+- **Implemented:** General Options now groups Idle screen, Sleep timer, Accessibility & motion,
+  and About & support. Device Status moved under About & support; station selection remains on the
+  listener dashboard.
+- **Implemented:** Now Playing overlay (Off, Brief on entry, Always) and Reduce visual intensity
+  persist locally. Reduced intensity attenuates visual response only; decoded PCM remains the
+  analysis source and calibrated meter inputs stay unmodified.
+- **Streamer check:** D-pad Down opened General Options; Select opened Accessibility & motion;
+  overlay cycling and reduced-intensity toggling rendered their selected state. The original
+  Brief-overlay/full-intensity state was restored afterward.
+- **Still open:** automatic idle activation/continuity, full remote matrix, audible TalkBack,
+  low-RAM device evidence, safe fallback observation, and release/Play-split verification.
 
 ## Product guardrails
 

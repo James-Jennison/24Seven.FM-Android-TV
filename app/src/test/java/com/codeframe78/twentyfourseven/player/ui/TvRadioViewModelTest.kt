@@ -9,6 +9,7 @@ import com.codeframe78.twentyfourseven.player.domain.NowPlayingRepository
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingState
 import com.codeframe78.twentyfourseven.player.domain.HistoryTrack
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
+import com.codeframe78.twentyfourseven.player.domain.NowPlayingOverlayMode
 import com.codeframe78.twentyfourseven.player.domain.PlaybackController
 import com.codeframe78.twentyfourseven.player.domain.PlaybackState
 import com.codeframe78.twentyfourseven.player.domain.PlaybackStatus
@@ -150,6 +151,28 @@ class TvRadioViewModelTest {
         advanceUntilIdle()
 
         assertEquals(IdleVisualizerStyle.DjConsole, viewModel.uiState.value.idleScreen.visualizer)
+    }
+
+    @Test
+    fun `TV idle comfort preferences persist in immutable UI state`() = runTest(dispatcher) {
+        val preferences = InMemoryIdleScreenPreferencesRepository()
+        val viewModel = TvRadioViewModel(
+            BootstrapStationRepository(),
+            FakePlaybackController(),
+            FakeNowPlayingRepository(),
+            FakeQueueRepository(),
+            preferences,
+            InMemoryAudioVisualizationRepository(),
+        )
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        viewModel.setNowPlayingOverlay(NowPlayingOverlayMode.Always)
+        viewModel.setReduceVisualIntensity(true)
+        advanceUntilIdle()
+
+        assertEquals(NowPlayingOverlayMode.Always, viewModel.uiState.value.idleScreen.nowPlayingOverlay)
+        assertTrue(viewModel.uiState.value.idleScreen.reduceVisualIntensity)
     }
 
     @Test

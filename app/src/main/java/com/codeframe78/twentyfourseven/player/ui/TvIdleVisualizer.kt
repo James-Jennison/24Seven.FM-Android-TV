@@ -35,11 +35,13 @@ import kotlin.math.sin
 internal fun TvCanvasIdleVisualizer(
     style: IdleVisualizerStyle,
     audioState: StateFlow<AudioVisualizationState>,
+    reduceVisualIntensity: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val audio by audioState.collectAsState()
-    val energy = audio.energy
-    val bands = audio.bands
+    val responseGain = if (reduceVisualIntensity) .68f else 1f
+    val energy = audio.energy * responseGain
+    val bands = audio.bands.map { it * responseGain }
     val motion by rememberInfiniteTransition(label = "TV idle visualizer motion")
         .animateFloat(
             initialValue = 0f,

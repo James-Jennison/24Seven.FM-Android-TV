@@ -10,6 +10,7 @@ import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState
 import com.codeframe78.twentyfourseven.player.domain.IdleScreenPreferences
 import com.codeframe78.twentyfourseven.player.domain.IdleScreenPreferencesRepository
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
+import com.codeframe78.twentyfourseven.player.domain.NowPlayingOverlayMode
 import com.codeframe78.twentyfourseven.player.domain.PlaybackController
 import com.codeframe78.twentyfourseven.player.domain.PlaybackState
 import com.codeframe78.twentyfourseven.player.domain.QueueRepository
@@ -137,6 +138,14 @@ class TvRadioViewModel(
 
     fun selectIdleVisualizer(style: IdleVisualizerStyle) = viewModelScope.launch {
         idleScreenPreferences.setVisualizer(style)
+    }
+
+    fun setNowPlayingOverlay(mode: NowPlayingOverlayMode) = viewModelScope.launch {
+        idleScreenPreferences.setNowPlayingOverlay(mode)
+    }
+
+    fun setReduceVisualIntensity(enabled: Boolean) = viewModelScope.launch {
+        idleScreenPreferences.setReduceVisualIntensity(enabled)
     }
 
     class Factory(

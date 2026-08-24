@@ -40,6 +40,8 @@ class MainActivity : AppCompatActivity() {
                 onSetSleepTimer = viewModel::setSleepTimer,
                 onCancelSleepTimer = viewModel::cancelSleepTimer,
                 onSelectIdleVisualizer = viewModel::selectIdleVisualizer,
+                onSetNowPlayingOverlay = viewModel::setNowPlayingOverlay,
+                onSetReduceVisualIntensity = viewModel::setReduceVisualIntensity,
             )
         }
     }

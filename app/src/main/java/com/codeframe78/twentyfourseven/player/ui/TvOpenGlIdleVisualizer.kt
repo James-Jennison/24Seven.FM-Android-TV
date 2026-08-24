@@ -65,10 +65,14 @@ internal fun TvIdleVisualizer(
     style: IdleVisualizerStyle,
     audioState: StateFlow<AudioVisualizationState>,
     stationName: String? = null,
+    reduceVisualIntensity: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) TvOpenGlIdleVisualizer(style, audioState, stationName, modifier)
-    else TvCanvasIdleVisualizer(style, audioState, modifier)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        TvOpenGlIdleVisualizer(style, audioState, stationName, reduceVisualIntensity, modifier)
+    } else {
+        TvCanvasIdleVisualizer(style, audioState, reduceVisualIntensity, modifier)
+    }
 }
 
 @Composable
@@ -76,6 +80,7 @@ private fun TvOpenGlIdleVisualizer(
     style: IdleVisualizerStyle,
     audioState: StateFlow<AudioVisualizationState>,
     stationName: String?,
+    reduceVisualIntensity: Boolean,
     modifier: Modifier,
 ) {
     var surface by remember { mutableStateOf<TvVisualizerSurfaceView?>(null) }
@@ -431,12 +436,12 @@ private fun TvOpenGlIdleVisualizer(
             }
         }
     }
-    LaunchedEffect(surface, audioState, style) {
+    LaunchedEffect(surface, audioState, style, reduceVisualIntensity) {
         val activeSurface = surface ?: return@LaunchedEffect
         var lastSignalDeckReadoutAt = 0L
         var lastDjDeckCanvasAt = 0L
         audioState.collect { audio ->
-            activeSurface.updateAudio(audio)
+            activeSurface.updateAudio(audio, reduceVisualIntensity)
             val now = SystemClock.elapsedRealtime()
             if ((style == IdleVisualizerStyle.VinylPulse || style == IdleVisualizerStyle.DjConsole) && now - lastSignalDeckReadoutAt >= 125L) {
                 lastSignalDeckReadoutAt = now
@@ -639,21 +644,23 @@ private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context)
         queueEvent { renderer.setStyle(style.ordinal) }
     }
 
-    fun updateAudio(audio: AudioVisualizationState) {
+    fun updateAudio(audio: AudioVisualizationState, reduceVisualIntensity: Boolean) {
+        val responseGain = if (reduceVisualIntensity) .68f else 1f
+        val transientGain = if (reduceVisualIntensity) .46f else 1f
         val compact = FloatArray(BandCount) { group ->
             val start = group * audio.bands.size / BandCount
             val end = ((group + 1) * audio.bands.size / BandCount).coerceAtLeast(start + 1)
             var total = 0f
             for (index in start until end) total += audio.bands[index]
-            total / (end - start)
+            total / (end - start) * responseGain
         }
-        val rawSpectrum = FloatArray(AudioVisualizationBandCount) { audio.bands.getOrElse(it) { 0f } }
-        val rawWaveform = FloatArray(AudioWaveformSampleCount) { audio.waveform.getOrElse(it) { 0f } }
+        val rawSpectrum = FloatArray(AudioVisualizationBandCount) { audio.bands.getOrElse(it) { 0f } * responseGain }
+        val rawWaveform = FloatArray(AudioWaveformSampleCount) { audio.waveform.getOrElse(it) { 0f } * responseGain }
         queueEvent {
             renderer.setAudioTarget(
-                energy = audio.energy,
+                energy = audio.energy * responseGain,
                 bands = compact,
-                transient = audio.transient,
+                transient = audio.transient * transientGain,
                 rawSpectrum = rawSpectrum,
                 leftMeterLevel = dbfsToMasterMeter(audio.leftDbfs),
                 rightMeterLevel = dbfsToMasterMeter(audio.rightDbfs),

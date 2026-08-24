@@ -19,12 +19,24 @@ enum class IdleVisualizerStyle(val displayName: String, val description: String)
     DjConsole("DJ Console", "Live broadcast-deck controls driven by decoded PCM"),
 }
 
+enum class NowPlayingOverlayMode(val displayName: String) {
+    Off("Off"),
+    Brief("Brief on entry"),
+    Always("Always"),
+}
+
 data class IdleScreenPreferences(
     val visualizer: IdleVisualizerStyle = IdleVisualizerStyle.NeonKaleidoscope,
+    val nowPlayingOverlay: NowPlayingOverlayMode = NowPlayingOverlayMode.Brief,
+    val reduceVisualIntensity: Boolean = false,
 )
 
 interface IdleScreenPreferencesRepository {
     val preferences: StateFlow<IdleScreenPreferences>
 
     suspend fun setVisualizer(style: IdleVisualizerStyle)
+
+    suspend fun setNowPlayingOverlay(mode: NowPlayingOverlayMode)
+
+    suspend fun setReduceVisualIntensity(enabled: Boolean)
 }

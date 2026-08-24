@@ -92,6 +92,7 @@ import com.codeframe78.twentyfourseven.player.domain.PlaybackStatus
 import com.codeframe78.twentyfourseven.player.domain.QueueLoadStatus
 import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
+import com.codeframe78.twentyfourseven.player.domain.NowPlayingOverlayMode
 import com.codeframe78.twentyfourseven.player.domain.StationId
 import com.codeframe78.twentyfourseven.player.ui.theme.stationPalette
 import kotlinx.coroutines.delay
@@ -113,12 +114,15 @@ internal fun TvRadioApp(
     onSetSleepTimer: (Long) -> Unit,
     onCancelSleepTimer: () -> Unit,
     onSelectIdleVisualizer: (IdleVisualizerStyle) -> Unit,
+    onSetNowPlayingOverlay: (NowPlayingOverlayMode) -> Unit,
+    onSetReduceVisualIntensity: (Boolean) -> Unit,
 ) {
     val style = tvStationStyle(state.selectedStation?.id)
     var menuDestination by remember { mutableStateOf<TvMenuDestination?>(null) }
     var idleVisualizerActive by remember { mutableStateOf(false) }
     var fullScreenPreviewRequested by remember { mutableStateOf(false) }
     var fullScreenPreviewStyle by remember { mutableStateOf<IdleVisualizerStyle?>(null) }
+    var idleNowPlayingOverlayVisible by remember { mutableStateOf(false) }
     var interactionRevision by remember { mutableStateOf(0) }
     var consumeMenuOpeningDirectionUp by remember { mutableStateOf(false) }
     LaunchedEffect(state.playback.status, menuDestination, interactionRevision, fullScreenPreviewRequested) {
@@ -130,6 +134,23 @@ internal fun TvRadioApp(
             idleVisualizerActive = true
         } else {
             idleVisualizerActive = false
+        }
+    }
+    LaunchedEffect(
+        idleVisualizerActive,
+        fullScreenPreviewRequested,
+        state.idleScreen.nowPlayingOverlay,
+    ) {
+        idleNowPlayingOverlayVisible = false
+        if (!idleVisualizerActive || fullScreenPreviewRequested) return@LaunchedEffect
+        when (state.idleScreen.nowPlayingOverlay) {
+            NowPlayingOverlayMode.Off -> Unit
+            NowPlayingOverlayMode.Always -> idleNowPlayingOverlayVisible = true
+            NowPlayingOverlayMode.Brief -> {
+                idleNowPlayingOverlayVisible = true
+                delay(TvNowPlayingOverlayBriefDurationMillis)
+                idleNowPlayingOverlayVisible = false
+            }
         }
     }
     val nowPlayingMarqueePhase by rememberInfiniteTransition(label = "TV Now Playing marquee")
@@ -207,8 +228,17 @@ internal fun TvRadioApp(
                     style = fullScreenPreviewStyle ?: state.idleScreen.visualizer,
                     audioState = visualization,
                     stationName = state.selectedStation?.name,
+                    reduceVisualIntensity = state.idleScreen.reduceVisualIntensity,
                     modifier = Modifier.fillMaxSize(),
                 )
+                if (idleNowPlayingOverlayVisible && !fullScreenPreviewRequested) {
+                    TvIdleNowPlayingOverlay(
+                        state = state,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(start = 42.dp, bottom = 36.dp),
+                    )
+                }
             } else Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -280,7 +310,8 @@ internal fun TvRadioApp(
                         state = state,
                         onOpenSleepTimer = { menuDestination = TvMenuDestination.SleepTimer },
                         onOpenIdleScreen = { menuDestination = TvMenuDestination.IdleScreen },
-                        onOpenDiagnostics = { menuDestination = TvMenuDestination.Diagnostics },
+                        onOpenAccessibilityAndMotion = { menuDestination = TvMenuDestination.AccessibilityAndMotion },
+                        onOpenAboutAndSupport = { menuDestination = TvMenuDestination.AboutAndSupport },
                         onDismiss = { menuDestination = null },
                     )
                 }
@@ -314,6 +345,23 @@ internal fun TvRadioApp(
                     )
                 }
 
+                TvMenuDestination.AccessibilityAndMotion -> {
+                    TvAccessibilityAndMotionSheet(
+                        preferences = state.idleScreen,
+                        onSetNowPlayingOverlay = onSetNowPlayingOverlay,
+                        onSetReduceVisualIntensity = onSetReduceVisualIntensity,
+                        onDismiss = { menuDestination = TvMenuDestination.GeneralOptions },
+                    )
+                }
+
+                TvMenuDestination.AboutAndSupport -> {
+                    TvAboutAndSupportSheet(
+                        environment = diagnosticEnvironment,
+                        onOpenDiagnostics = { menuDestination = TvMenuDestination.Diagnostics },
+                        onDismiss = { menuDestination = TvMenuDestination.GeneralOptions },
+                    )
+                }
+
                 TvMenuDestination.Diagnostics -> {
                 TvDiagnosticsDialog(
                     state = state,
@@ -332,10 +380,13 @@ private enum class TvMenuDestination {
     GeneralOptions,
     SleepTimer,
     IdleScreen,
+    AccessibilityAndMotion,
+    AboutAndSupport,
     Diagnostics,
 }
 
 private const val TvIdleScreenDelayMillis = 10 * 60 * 1_000L
+private const val TvNowPlayingOverlayBriefDurationMillis = 5_000L
 private const val TvVisualizerDoubleActivateWindowMillis = 650L
 
 @Composable
@@ -343,10 +394,17 @@ private fun TvGeneralOptionsSheet(
     state: TvRadioUiState,
     onOpenSleepTimer: () -> Unit,
     onOpenIdleScreen: () -> Unit,
-    onOpenDiagnostics: () -> Unit,
+    onOpenAccessibilityAndMotion: () -> Unit,
+    onOpenAboutAndSupport: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     TvOptionsSheet(title = "General options", onDismiss = onDismiss) { firstAction ->
+        TvOptionAction(
+            title = "Idle screen",
+            summary = "${state.idleScreen.visualizer.displayName} · starts after 10 minutes",
+            onClick = onOpenIdleScreen,
+            modifier = Modifier.focusRequester(firstAction),
+        )
         TvOptionAction(
             title = "Sleep timer",
             summary = if (state.playback.sleepTimer.isActive) {
@@ -355,19 +413,118 @@ private fun TvGeneralOptionsSheet(
                 "Off"
             },
             onClick = onOpenSleepTimer,
+        )
+        TvOptionAction(
+            title = "Accessibility & motion",
+            summary = if (state.idleScreen.reduceVisualIntensity) {
+                "Reduced visual intensity · ${state.idleScreen.nowPlayingOverlay.displayName} overlay"
+            } else {
+                state.idleScreen.nowPlayingOverlay.displayName + " overlay"
+            },
+            onClick = onOpenAccessibilityAndMotion,
+        )
+        TvOptionAction(
+            title = "About & support",
+            summary = "Version, privacy, licenses, and device status",
+            onClick = onOpenAboutAndSupport,
+        )
+        TvOptionAction(title = "Close", summary = "Return to the player", onClick = onDismiss)
+    }
+}
+
+@Composable
+private fun TvAccessibilityAndMotionSheet(
+    preferences: com.codeframe78.twentyfourseven.player.domain.IdleScreenPreferences,
+    onSetNowPlayingOverlay: (NowPlayingOverlayMode) -> Unit,
+    onSetReduceVisualIntensity: (Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    TvOptionsSheet(title = "Accessibility & motion", onDismiss = onDismiss) { firstAction ->
+        TvOptionAction(
+            title = "Now Playing overlay",
+            summary = preferences.nowPlayingOverlay.displayName,
+            onClick = {
+                val next = NowPlayingOverlayMode.entries[
+                    (preferences.nowPlayingOverlay.ordinal + 1) % NowPlayingOverlayMode.entries.size
+                ]
+                onSetNowPlayingOverlay(next)
+            },
             modifier = Modifier.focusRequester(firstAction),
         )
         TvOptionAction(
-            title = "Idle screen",
-            summary = "${state.idleScreen.visualizer.displayName} · starts after 10 minutes",
-            onClick = onOpenIdleScreen,
+            title = "Reduce visual intensity",
+            summary = if (preferences.reduceVisualIntensity) {
+                "On · softens visual response while preserving PCM analysis"
+            } else {
+                "Off · uses the full visual response"
+            },
+            onClick = { onSetReduceVisualIntensity(!preferences.reduceVisualIntensity) },
+            selected = preferences.reduceVisualIntensity,
+        )
+        TvOptionAction("Back", "Return to General options", onDismiss)
+    }
+}
+
+@Composable
+private fun TvAboutAndSupportSheet(
+    environment: DiagnosticEnvironment,
+    onOpenDiagnostics: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    TvOptionsSheet(title = "About & support", onDismiss = onDismiss) { firstAction ->
+        TvOptionInfo(
+            title = "App version",
+            summary = "${environment.appVersion} (${environment.versionCode}) · ${environment.buildType}",
+        )
+        TvOptionInfo(
+            title = "Privacy",
+            summary = "Anonymous listening; local diagnostics exclude accounts, URLs, identifiers, and logs",
+        )
+        TvOptionInfo(
+            title = "Open-source licenses",
+            summary = "Available in Android system app information",
         )
         TvOptionAction(
-            title = "Device status",
-            summary = "Local playback information",
-            onClick = onOpenDiagnostics,
+            "Device status",
+            "Local playback information",
+            onOpenDiagnostics,
+            modifier = Modifier.focusRequester(firstAction),
         )
-        TvOptionAction(title = "Close", summary = "Return to the player", onClick = onDismiss)
+        TvOptionAction("Back", "Return to General options", onDismiss)
+    }
+}
+
+@Composable
+private fun TvIdleNowPlayingOverlay(state: TvRadioUiState, modifier: Modifier = Modifier) {
+    val title = state.nowPlaying.displayTitle ?: state.selectedStation?.name ?: "Live radio"
+    val subtitle = state.nowPlaying.artist?.takeIf { it.isNotBlank() }
+        ?: state.selectedStation?.name?.takeIf { it != title }
+    Column(
+        modifier = modifier
+            .width(590.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(TvInk.copy(alpha = .72f))
+            .border(1.dp, TvCream.copy(alpha = .24f), RoundedCornerShape(10.dp))
+            .padding(horizontal = 18.dp, vertical = 13.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Text(
+            title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = TvCream,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        subtitle?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodyMedium,
+                color = TvCream.copy(alpha = .78f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -399,6 +556,7 @@ private fun TvIdleScreenSheet(
             style = previewStyle,
             audioState = visualization,
             stationName = state.selectedStation?.name,
+            reduceVisualIntensity = state.idleScreen.reduceVisualIntensity,
             modifier = Modifier.fillMaxSize(),
         )
         Box(
@@ -638,6 +796,21 @@ private fun TvOptionAction(
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(summary, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
+    }
+}
+
+@Composable
+private fun TvOptionInfo(title: String, summary: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(TvCream.copy(alpha = .05f))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(1.dp),
+    ) {
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TvCream)
+        Text(summary, style = MaterialTheme.typography.bodySmall, color = TvCream.copy(alpha = .74f))
     }
 }
 
