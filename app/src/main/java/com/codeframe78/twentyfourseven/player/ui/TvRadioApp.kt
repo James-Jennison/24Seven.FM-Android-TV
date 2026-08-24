@@ -37,6 +37,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +68,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -124,6 +126,7 @@ internal fun TvRadioApp(
     onSetReduceVisualIntensity: (Boolean) -> Unit,
 ) {
     val style = tvStationStyle(state.selectedStation?.id)
+    val hostView = LocalView.current
     var menuDestination by remember { mutableStateOf<TvMenuDestination?>(null) }
     var idleVisualizerActive by remember { mutableStateOf(false) }
     var fullScreenPreviewRequested by remember { mutableStateOf(false) }
@@ -131,6 +134,14 @@ internal fun TvRadioApp(
     var idleNowPlayingOverlayVisible by remember { mutableStateOf(false) }
     var interactionRevision by remember { mutableStateOf(0) }
     var consumeMenuOpeningDirectionUp by remember { mutableStateOf(false) }
+    DisposableEffect(hostView, state.playback.status) {
+        // Fire TV can launch its system dream well before the Player's ten-minute
+        // in-app idle timer. While live audio is playing in the visible Player,
+        // reserve the screen for the audio-reactive idle visualizer. Leaving the
+        // app or stopping playback restores normal system screensaver behavior.
+        hostView.keepScreenOn = state.playback.status == PlaybackStatus.Playing
+        onDispose { hostView.keepScreenOn = false }
+    }
     LaunchedEffect(state.playback.status, menuDestination, interactionRevision, fullScreenPreviewRequested) {
         if (fullScreenPreviewRequested && menuDestination == null) {
             idleVisualizerActive = true
