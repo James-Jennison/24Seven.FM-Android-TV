@@ -424,7 +424,7 @@ private fun TvGeneralOptionsSheet(
             onClick = onOpenAccessibilityAndMotion,
         )
         TvOptionAction(
-            title = "About & support",
+            title = "About & Support",
             summary = "Version, privacy, licenses, and device status",
             onClick = onOpenAboutAndSupport,
         )
@@ -471,7 +471,7 @@ private fun TvAboutAndSupportSheet(
     onOpenDiagnostics: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    TvOptionsSheet(title = "About & support", onDismiss = onDismiss) { firstAction ->
+    TvOptionsSheet(title = "About & Support", onDismiss = onDismiss) { firstAction ->
         TvOptionInfo(
             title = "App version",
             summary = "${environment.appVersion} (${environment.versionCode}) · ${environment.buildType}",
