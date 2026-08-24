@@ -177,7 +177,7 @@ R2.1 passes its physical-TV acceptance with no idle/remote regressions.
 
 ## R4 — Release artifact and Play readiness
 
-**Status: In progress — Console support response pending.** Internal testing release
+**Status: In progress — Google Play review.** Internal testing release
 `1 (0.1.0-tv-alpha01)` is published to Alpha Testers. The exact local signed-artifact gate, signing
 verification, R8/resource shrinking, 64-bit, and 16 KB checks passed, and Play accepted the AAB with
 its ReTrace mapping attachment. The Play-generated split was installed and physically accepted on the
@@ -187,15 +187,16 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
    `0.1.0-tv-alpha01` / code `1` from revision `3c742c5f182e4bd0f8997d95feaf1cb5df620714`.
    Privacy and the objective app-content declarations are now saved in Play
    Console. The conservative TV-specific Data Safety declaration is also
-   saved. The store listing and **18 and over** target-audience gate are saved.
+   saved. The store listing and Teen-compatible target-audience bands
+   (**13–15**, **16–17**, and **18 and over**) are saved with the optional
+   minor-user restriction left off.
    The foreground-media declaration is saved with a publicly hosted,
    HTTPS/hash-verified reviewer video. The IARC questionnaire is submitted,
    and App content records Content ratings as Actioned. Publishing overview
-   still disables **Send app for review** after reload with its generic
-   dashboard-required-steps message, while App content's Need attention tab
-   is empty. The owner submitted the prepared Play Console App releases/App
-   publishing support case on August 24, 2026; do not alter compliant
-   declarations while that case is pending.
+   now shows the saved metadata plus the TV Closed rollout as **Changes in
+   review**. The authoritative Internal track remains Active and available to
+   internal testers; the earlier dashboard Inactive aggregate did not reflect
+   the actual track state.
 2. **Local artifact gate — complete.** The protected helper built and verified the signed AAB/APK
    with resource shrinking, R8, 64-bit, and 16 KB packaging checks; Play accepted the published
    internal-test AAB and its ReTrace mapping attachment.
@@ -208,8 +209,8 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
    privacy policy, app access, ads, target audience,
    government, financial, health, and category/contact. The entered support
    mailbox is provisioned and receipt-verified by the owner after its one-time
-   managed-transport test. Data Safety and the corrected **18 and over**
-   target-audience gate are saved. The Media playback use case and its
+   managed-transport test. Data Safety and the corrected Teen-compatible
+   target-audience bands are saved. The Media playback use case and its
    exact-candidate video evidence are saved for the foreground-service
    declaration. Content ratings is Actioned; its generated ratings are Brazil
    16+, ESRB Teen, PEGI Parental Guidance, USK 16+, and generic-territory 12+.
@@ -224,7 +225,7 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
 | 2 | R2.1 Overlay and comfort | Complete — persistence plus fixed/reduced visualizer physical pass |
 | 3 | R2.2 Style behavior decision | Deferred pending explicit product approval |
 | 4 | R3 Physical-TV closure | Complete for the permitted local scope; fallback configuration remains unchanged |
-| 5 | R4 Release readiness | In progress — published and device-accepted Internal release; all App content declarations are actioned, and Play support escalation is awaiting response for the disabled review control |
+| 5 | R4 Release readiness | In progress — Internal release is active and device-accepted; all App content declarations are actioned and the TV Closed rollout plus metadata are in Google Play review |
 
 TV05 is complete. TV06 remains approval-gated and must not be treated as complete from an
 Internal-track publication and device acceptance alone.

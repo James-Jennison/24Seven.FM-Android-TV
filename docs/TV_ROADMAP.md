@@ -56,12 +56,14 @@ The closure order and acceptance evidence for these rows are defined in
 
 ## TV06 — Play alpha delivery
 
-**Status: In progress — Play Console support escalation pending.** Internal testing release
+**Status: In progress — Google Play review.** Internal testing release
 `1 (0.1.0-tv-alpha01)` is published to Alpha Testers with version-specific release notes. The Play-generated
 split is physically accepted on the Streamer and Dongle R 4K. The store listing, TV-specific Data Safety
-declaration, **18 and over** audience gate, foreground-service declaration, and IARC questionnaire are saved.
+declaration, Teen-compatible target-audience bands (**13–15**, **16–17**, and **18 and over**) with the optional
+minor-user restriction left off, foreground-service declaration, and IARC questionnaire are saved.
 The Console generated the submitted IARC ratings (Brazil 16+, ESRB Teen, PEGI Parental Guidance, USK 16+, and
-12+ in the generic territories). App content's Need attention tab is empty, but Publishing overview still disables
-**Send app for review** with its generic dashboard-required-steps message. A Play Console App releases/App
-publishing support case for that disabled control was submitted by the owner on August 24, 2026. Production
-closed-test eligibility is separate from this internal release and is not a substitute completion gate.
+12+ in the generic territories). The authoritative Internal testing track is **Active**, with version code 1
+available to internal testers; the dashboard's earlier Inactive aggregate label was stale. The dedicated
+**TV Closed (Android TV)** track has version code 1, both approved tester lists, and 177 target countries/regions.
+Publishing overview now records the configuration and rollout changes as **Changes in review**. A support case was
+submitted before the track-level check; it is not a remaining release gate.

@@ -133,7 +133,8 @@ Other use case is selected.
 1. **Complete:** saved the TV-specific public privacy-policy URL, public
    app-access/no-sign-in answer, Ads **No**, Government **No**, Financial
    features **None**, Health **None**, **Music & Audio** category, public
-   support contact, and **18 and over** target age in Play Console. The
+   support contact, and the **13–15**, **16–17**, and **18 and over** target
+   age bands with the optional minor-user restriction off in Play Console. The
    published support mailbox is provisioned and receipt-verified by the owner
    after its one-time managed-transport test.
 2. **Complete:** saved the store-listing copy and approved TV assets through
@@ -143,14 +144,12 @@ Other use case is selected.
    content Actioned tab.
 4. **Complete:** pasted and saved the hosted current-candidate video URL in
    the foreground-media declaration.
-5. **Escalated externally:** App content's Need attention tab is empty and the
-   store listing reports all required information, but Publishing overview
-   continues to disable **Send app for review** after reload with its generic
-   dashboard-required-steps message. The Dashboard only reports the distinct
-   future production closed-test requirement. The owner submitted the prepared
-   Play Console App releases/App publishing support case on August 24, 2026;
-   await Google's response before changing declarations or creating a
-   production release.
+5. **In review:** Publishing overview now shows the app configuration and
+   dedicated Android TV closed-track rollout as **Changes in review**. The
+   active Internal track remains available to its internal testers. The
+   dedicated **TV Closed** track has version code 1, its approved tester lists,
+   and country targeting configured. A support case was submitted before this
+   track-level verification; it is not a remaining release gate.
 
 Only sanitized completion evidence belongs in this repository. Do not commit
 tester identities, reviewer details, Console captures containing private data,
