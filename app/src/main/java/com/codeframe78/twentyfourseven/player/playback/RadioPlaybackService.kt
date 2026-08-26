@@ -3,9 +3,14 @@ package com.codeframe78.twentyfourseven.player.playback
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
+import java.io.ByteArrayOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.ForwardingPlayer
@@ -39,6 +44,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @androidx.annotation.OptIn(markerClass = [UnstableApi::class])
 class RadioPlaybackService : MediaSessionService() {
@@ -52,6 +58,7 @@ class RadioPlaybackService : MediaSessionService() {
     }
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var detailsJob: Job? = null
+    private var sessionArtworkJob: Job? = null
     private var sleepTimerJob: Job? = null
     private var sleepTimerButtonVisible = false
     private var activeNowPlaying: NowPlayingState? = null
@@ -249,18 +256,45 @@ class RadioPlaybackService : MediaSessionService() {
         val currentItem = player.currentMediaItem ?: return
         val displayTitle = nowPlaying.displayTitle ?: return
         val artworkUri = nowPlaying.artworkUrl?.let(Uri::parse)
-        if (currentItem.mediaMetadata.title == displayTitle && currentItem.mediaMetadata.artworkUri == artworkUri) return
-        player.replaceMediaItem(
-            index,
-            currentItem.buildUpon()
-                .setMediaMetadata(
-                    currentItem.mediaMetadata.withNowPlayingTitle(displayTitle)
-                        .buildUpon()
-                        .setArtworkUri(artworkUri)
-                        .build(),
-                )
-                .build(),
-        )
+        if (currentItem.mediaMetadata.title != displayTitle || currentItem.mediaMetadata.artworkUri != artworkUri) {
+            player.replaceMediaItem(
+                index,
+                currentItem.buildUpon()
+                    .setMediaMetadata(
+                        currentItem.mediaMetadata.withNowPlayingTitle(displayTitle)
+                            .buildUpon()
+                            .setArtworkUri(artworkUri)
+                            .setArtworkData(null, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+                            .build(),
+                    )
+                    .build(),
+            )
+        }
+        loadSessionArtwork(artworkUri, player.currentMediaItem?.mediaId)
+    }
+
+    /**
+     * Some TV launchers render a rich Now Playing card only when the active MediaSession includes
+     * compact artwork data. The URI stays available to controllers that can load a larger image.
+     */
+    private fun loadSessionArtwork(artworkUri: Uri?, mediaId: String?) {
+        sessionArtworkJob?.cancel()
+        if (artworkUri?.scheme != "https" || mediaId == null) return
+        sessionArtworkJob = serviceScope.launch {
+            val artworkData = withContext(Dispatchers.IO) { artworkUri.loadSessionArtwork() } ?: return@launch
+            val currentItem = player.currentMediaItem ?: return@launch
+            if (currentItem.mediaId != mediaId || currentItem.mediaMetadata.artworkUri != artworkUri) return@launch
+            player.replaceMediaItem(
+                player.currentMediaItemIndex,
+                currentItem.buildUpon()
+                    .setMediaMetadata(
+                        currentItem.mediaMetadata.buildUpon()
+                            .setArtworkData(artworkData, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+                            .build(),
+                    )
+                    .build(),
+            )
+        }
     }
 
     private fun startSleepTimer(durationMillis: Long) {
@@ -344,6 +378,7 @@ class RadioPlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        sessionArtworkJob?.cancel()
         sleepTimerJob?.cancel()
         player.removeListener(fallbackListener)
         player.removeListener(metadataListener)
@@ -359,6 +394,75 @@ internal const val SLEEP_TIMER_PREFERENCES_NAME = "playback_sleep_timer"
 private const val KEY_ELAPSED_REALTIME_DEADLINE = "elapsed_realtime_deadline"
 private const val KEY_EPOCH_DEADLINE = "epoch_deadline"
 private const val SLEEP_TIMER_UPDATE_INTERVAL_MILLIS = 1_000L
+private const val MAX_SESSION_ARTWORK_DOWNLOAD_BYTES = 2 * 1024 * 1024
+private const val MAX_SESSION_ARTWORK_DECODE_DIMENSION = 1_024
+private const val MAX_SESSION_ARTWORK_DIMENSION = 512
+private const val SESSION_ARTWORK_JPEG_QUALITY = 85
+
+private fun Uri.loadSessionArtwork(): ByteArray? {
+    val connection = (URL(toString()).openConnection() as? HttpURLConnection) ?: return null
+    return try {
+        connection.connectTimeout = 5_000
+        connection.readTimeout = 5_000
+        connection.instanceFollowRedirects = true
+        connection.inputStream.use { input ->
+            val source = input.readBounded(MAX_SESSION_ARTWORK_DOWNLOAD_BYTES) ?: return null
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(source, 0, source.size, bounds)
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+            val bitmap = BitmapFactory.decodeByteArray(
+                source,
+                0,
+                source.size,
+                BitmapFactory.Options().apply {
+                    inSampleSize = sessionArtworkSampleSize(bounds.outWidth, bounds.outHeight)
+                },
+            ) ?: return null
+            val scaled = bitmap.scaleForSessionArtwork()
+            try {
+                ByteArrayOutputStream().use { output ->
+                    if (!scaled.compress(Bitmap.CompressFormat.JPEG, SESSION_ARTWORK_JPEG_QUALITY, output)) return null
+                    output.toByteArray()
+                }
+            } finally {
+                if (scaled !== bitmap) scaled.recycle()
+                bitmap.recycle()
+            }
+        }
+    } catch (_: Exception) {
+        null
+    } finally {
+        connection.disconnect()
+    }
+}
+
+private fun java.io.InputStream.readBounded(maxBytes: Int): ByteArray? {
+    val output = ByteArrayOutputStream()
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    while (true) {
+        val count = read(buffer)
+        if (count < 0) return output.toByteArray()
+        if (output.size() + count > maxBytes) return null
+        output.write(buffer, 0, count)
+    }
+}
+
+private fun Bitmap.scaleForSessionArtwork(): Bitmap {
+    val largestDimension = maxOf(width, height)
+    if (largestDimension <= MAX_SESSION_ARTWORK_DIMENSION) return this
+    val scale = MAX_SESSION_ARTWORK_DIMENSION.toFloat() / largestDimension
+    return Bitmap.createScaledBitmap(this, (width * scale).toInt(), (height * scale).toInt(), true)
+}
+
+private fun sessionArtworkSampleSize(width: Int, height: Int): Int {
+    var sampleSize = 1
+    var largestDimension = maxOf(width, height)
+    while (largestDimension > MAX_SESSION_ARTWORK_DECODE_DIMENSION) {
+        sampleSize *= 2
+        largestDimension = (largestDimension + 1) / 2
+    }
+    return sampleSize
+}
 
 private fun MediaItem.stationId(): StationId? = mediaId
     .substringBefore(':')
@@ -421,6 +525,7 @@ internal fun MediaMetadata.withNowPlayingTitle(displayTitle: String): MediaMetad
         .setTitle(displayTitle)
         .setArtist(stationName)
         .setAlbumTitle(stationName)
+        .setDisplayTitle(displayTitle)
         .setSubtitle("24seven.FM")
         .build()
 }

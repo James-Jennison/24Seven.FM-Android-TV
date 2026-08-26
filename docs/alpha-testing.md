@@ -9,7 +9,7 @@ The TV alpha is an anonymous listener dashboard for StreamingSoundtracks.com, 19
 1. Open the app and confirm the last-selected station resumes automatically.
 2. Move focus across all five selector icons and select a station; confirm its own live stream, palette, metadata, Queue, and Recently Played data appear.
 3. Press D-pad Down from a focused selector, set and cancel the local sleep timer, then use Back to return to the dashboard.
-4. Use the hardware media key to pause and resume playback; press Back to verify background MediaSession playback.
+4. Use the hardware media key to pause and resume playback; press Back to verify background MediaSession playback and the launcher Now Playing card includes the current artwork, title, and station. Launcher layout is device-controlled; report its model and software version if the card is absent or incomplete.
 5. Disconnect and reconnect the network while playing; confirm recovery and usable focus/navigation.
 6. Confirm long library labels truncate cleanly and no UI is clipped at the screen edges.
 7. When artwork is briefly unavailable, confirm the selected-station faded-logo and animated-waveform fallback appears and resolves to live artwork.
