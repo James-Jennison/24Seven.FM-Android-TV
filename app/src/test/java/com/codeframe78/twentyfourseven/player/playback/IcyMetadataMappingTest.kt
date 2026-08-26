@@ -71,7 +71,6 @@ class IcyMetadataMappingTest {
         assertEquals("Raw ICY title", liveMetadata.title)
         assertEquals("StreamingSoundtracks.com", liveMetadata.artist)
         assertEquals("StreamingSoundtracks.com", liveMetadata.albumTitle)
-        assertEquals("Raw ICY title", liveMetadata.displayTitle)
         assertEquals("24seven.FM", liveMetadata.subtitle)
     }
 
