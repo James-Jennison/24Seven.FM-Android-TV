@@ -132,8 +132,10 @@ Fire TV without interrupting playback.
 
 ### R2.2 — Style behavior (after R2.1 acceptance)
 
-**Status: Deferred.** Favorites, rotation cadence, and random selection need an explicit product
-decision; no unapproved style-behavior feature is implied by the completed fixed-style acceptance.
+**Status: Deferred by product decision (Aug 28, 2026).** The alpha retains fixed selected style.
+Favorites, rotation cadence, and random selection are not in scope for this release and require a
+future explicit product decision; no style-behavior feature is implied by the completed fixed-style
+acceptance.
 
 - **Fixed selected style** remains the default and preserves the existing picker.
 - **Rotate favorites** rotates only styles the listener explicitly marks as favorites.
