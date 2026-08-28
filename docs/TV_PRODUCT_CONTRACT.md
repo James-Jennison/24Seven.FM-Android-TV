@@ -18,7 +18,7 @@ The sleep timer remains active while the app is backgrounded and the playback se
 It is intentionally process-bound: a force-stop or process death clears any active countdown, and a
 later launch starts without a residual timer.
 
-It excludes sign-in, Favorites, Chat, requests, reporting/contact handoffs, browser flows, account management, notifications, commerce, and Cast. Queue/History display only public track titles; member identifiers and messages are not shown. A later milestone must explicitly authorize and certify each excluded surface before it is exposed.
+It excludes sign-in, Favorites, Chat, requests, reporting/contact handoffs, browser flows, account management, notifications, commerce, and Cast. Queue/History display only public track metadata (title, artist, and album); member identifiers and messages are not shown. A later milestone must explicitly authorize and certify each excluded surface before it is exposed.
 
 ## Release boundary
 

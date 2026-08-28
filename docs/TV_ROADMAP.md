@@ -34,6 +34,10 @@ its process-bound policy, and privacy-safe local diagnostics have physical-TV ev
 contains the sleep timer, idle-screen controls, and privacy-safe local diagnostics. Station selection remains on the
 listener dashboard. Formal idle-screen and style-by-style physical-TV acceptance is tracked separately under TV05.
 
+The current source now enforces the documented process-bound timer policy by removing persisted timer restoration.
+The exact force-stop/relaunch scenario must be re-run on a supported TV device before the historical TV04 evidence is
+used to claim physical acceptance for this source revision.
+
 The approved follow-on options and physical-acceptance sequence is recorded in
 [TV_READINESS_ROADMAP.md](TV_READINESS_ROADMAP.md). In particular, station selection remains on the listener
 dashboard rather than in General Options.

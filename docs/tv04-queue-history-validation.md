@@ -59,6 +59,9 @@ separate release-delivery evidence remains under TV06.
   playback service remains alive, but a force-stop or process death clears it. After setting a 15-minute timer,
   force-stopping and relaunching the app returned its dialog to duration choices with no remaining-time or Cancel
   action. No test timer remained active after that restart.
+- Current-source revalidation is pending: the persisted timer-restoration path was removed after this evidence was
+  recorded so the implementation matches the confirmed policy. Re-run the same force-stop/relaunch case on a
+  supported TV device before treating this historical observation as acceptance for the new source revision.
 - The project owner physically tested the live Streamer resilience path: Ethernet disconnect/reconnect recovered
   playback, and D-pad focus, Back, the hidden `↓ OPTIONS` path, media pause/resume, and sleep-timer expiry continued
   to behave correctly after recovery.

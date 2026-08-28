@@ -51,7 +51,6 @@ class RadioPlaybackServiceTest {
 
     @Test
     fun customCommandStartsTimerAndManualStopCancelsIt() {
-        context.getSharedPreferences(SLEEP_TIMER_PREFERENCES_NAME, Context.MODE_PRIVATE).edit().clear().commit()
         val controller = connectController()
         try {
             var supportsTimerCommands = false
@@ -76,15 +75,12 @@ class RadioPlaybackServiceTest {
             assertTrue(awaitTimerState(controller) { !it.isActive })
         } finally {
             InstrumentationRegistry.getInstrumentation().runOnMainSync { controller.release() }
-            context.getSharedPreferences(SLEEP_TIMER_PREFERENCES_NAME, Context.MODE_PRIVATE).edit().clear().commit()
         }
     }
 
     @Test
-    fun activeTimerRestoresWhenPlaybackServiceIsRecreated() {
+    fun activeTimerDoesNotRestoreWhenPlaybackServiceIsRecreated() {
         val serviceIntent = Intent(context, RadioPlaybackService::class.java)
-        val preferences = context.getSharedPreferences(SLEEP_TIMER_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        preferences.edit().clear().commit()
         assertNotNull(context.startService(serviceIntent))
         val firstController = connectController()
         try {
@@ -106,21 +102,14 @@ class RadioPlaybackServiceTest {
 
         val restoredController = connectController()
         try {
-            assertTrue(awaitTimerState(restoredController) { it.isActive && it.remainingMillis <= 60_000L })
-            InstrumentationRegistry.getInstrumentation().runOnMainSync {
-                restoredController.sendCustomCommand(SleepTimerSessionContract.cancelCommand, Bundle.EMPTY)
-            }
             assertTrue(awaitTimerState(restoredController) { !it.isActive })
         } finally {
             InstrumentationRegistry.getInstrumentation().runOnMainSync { restoredController.release() }
-            preferences.edit().clear().commit()
         }
     }
 
     @Test
     fun timerExpiryPublishesExpiryAndClearsActiveState() {
-        val preferences = context.getSharedPreferences(SLEEP_TIMER_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        preferences.edit().clear().commit()
         val expired = CountDownLatch(1)
         val controller = connectController(
             object : MediaController.Listener {
@@ -151,7 +140,6 @@ class RadioPlaybackServiceTest {
             assertTrue(awaitTimerState(controller) { !it.isActive })
         } finally {
             InstrumentationRegistry.getInstrumentation().runOnMainSync { controller.release() }
-            preferences.edit().clear().commit()
         }
     }
 

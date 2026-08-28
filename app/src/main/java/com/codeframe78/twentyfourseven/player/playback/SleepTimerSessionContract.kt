@@ -4,8 +4,6 @@ import android.os.Bundle
 import androidx.core.os.bundleOf
 import androidx.media3.session.SessionCommand
 import com.codeframe78.twentyfourseven.player.domain.SleepTimerState
-import kotlin.math.abs
-import kotlin.math.min
 
 internal object SleepTimerSessionContract {
     const val MINIMUM_DURATION_MILLIS = 60_000L
@@ -38,26 +36,5 @@ internal object SleepTimerSessionContract {
             endsAtElapsedRealtimeMillis = deadline.takeIf { remaining > 0L },
             remainingMillis = remaining.takeIf { deadline != null } ?: 0L,
         )
-    }
-}
-
-internal data class PersistedSleepTimer(
-    val elapsedRealtimeDeadlineMillis: Long,
-    val epochDeadlineMillis: Long,
-) {
-    fun restoredRemainingMillis(
-        elapsedRealtimeMillis: Long,
-        epochMillis: Long,
-        clockToleranceMillis: Long = DEFAULT_CLOCK_TOLERANCE_MILLIS,
-    ): Long? {
-        val elapsedRemaining = elapsedRealtimeDeadlineMillis - elapsedRealtimeMillis
-        val epochRemaining = epochDeadlineMillis - epochMillis
-        if (elapsedRemaining <= 0L || epochRemaining <= 0L) return 0L
-        if (abs(elapsedRemaining - epochRemaining) > clockToleranceMillis) return null
-        return min(elapsedRemaining, epochRemaining)
-    }
-
-    companion object {
-        const val DEFAULT_CLOCK_TOLERANCE_MILLIS = 5L * 60L * 1_000L
     }
 }
