@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
+import com.codeframe78.twentyfourseven.player.domain.LavaLampPalette
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.PI
 import kotlin.math.cos
@@ -37,6 +38,7 @@ internal fun TvCanvasIdleVisualizer(
     style: IdleVisualizerStyle,
     audioState: StateFlow<AudioVisualizationState>,
     reduceVisualIntensity: Boolean = false,
+    lavaLampPalette: LavaLampPalette = LavaLampPalette.Neon,
     modifier: Modifier = Modifier,
 ) {
     val audio by audioState.collectAsState()
@@ -315,6 +317,10 @@ internal fun TvCanvasIdleVisualizer(
             }
 
             IdleVisualizerStyle.PsychedelicScene -> {
+                drawCircle(Color(0xFF2B075D), radius = minimum * .62f, center = center)
+                repeat(4) { ring ->
+                    drawCircle(hue(ring * 2 + 1, .58f), radius = minimum * (.13f + ring * .10f), center = center, style = Stroke(1.8f))
+                }
                 repeat(10) { petal ->
                     val path = Path()
                     repeat(28) { index ->
@@ -324,19 +330,95 @@ internal fun TvCanvasIdleVisualizer(
                         val point = polar(angle, radius)
                         if (index == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
                     }
-                    drawPath(path, hue(petal, .82f), style = Stroke(2.4f))
+                    drawPath(path, hue(petal, .98f), style = Stroke(3.1f))
                 }
-                drawCircle(Color.White.copy(alpha = .36f), radius = minimum * .09f, center = center)
+                drawCircle(Color.White.copy(alpha = .72f), radius = minimum * .09f, center = center)
             }
 
             IdleVisualizerStyle.LavaLamp -> {
-                drawRoundRect(Color(0xFF18042C), Offset(size.width * .25f, size.height * .04f), Size(size.width * .50f, size.height * .92f), CornerRadius(minimum * .07f))
-                repeat(6) { blob ->
-                    val x = size.width * (.34f + (blob * 37 % 53) / 100f)
-                    val y = size.height * (.18f + (blob * 41 % 67) / 100f)
-                    val radius = minimum * (.075f + (blob % 3) * .035f)
-                    drawCircle(hue(blob + 2, .68f), radius, Offset(x, y))
-                    drawCircle(Color.White.copy(alpha = .18f), radius * .45f, Offset(x - radius * .20f, y - radius * .22f))
+                val colours = lavaPalette(lavaLampPalette)
+                drawRoundRect(colours[0].copy(alpha = .48f), Offset(size.width * .25f, size.height * .04f), Size(size.width * .50f, size.height * .92f), CornerRadius(minimum * .07f))
+                repeat(12) { blob ->
+                    val x = size.width * (.31f + (blob % 4) * .125f)
+                    val y = size.height * (.16f + (blob / 4) * .29f)
+                    val radius = minimum * (.110f + (blob % 3) * .030f)
+                    drawCircle(colours[blob % colours.size].copy(alpha = .92f), radius, Offset(x, y))
+                    drawCircle(Color.White.copy(alpha = .38f), radius * .38f, Offset(x - radius * .20f, y - radius * .22f))
+                }
+            }
+
+            // Pre-O fallback keeps every later style available, with its distinct
+            // scene signature represented without the GLES renderer's richer geometry.
+            IdleVisualizerStyle.SignalRain,
+            IdleVisualizerStyle.ContourIslands,
+            IdleVisualizerStyle.RibbonReactor,
+            IdleVisualizerStyle.PrismGarden,
+            IdleVisualizerStyle.MoonlitTides,
+            IdleVisualizerStyle.PulseQuilt,
+            IdleVisualizerStyle.EchoReef,
+            IdleVisualizerStyle.VelvetVortex,
+            IdleVisualizerStyle.LanternDrift -> {
+                when (style) {
+                    IdleVisualizerStyle.SignalRain -> repeat(14) { index ->
+                        val x = size.width * (.07f + index * .066f)
+                        val height = minimum * (.18f + band(index) * .60f)
+                        drawLine(hue(index, .72f), Offset(x, size.height * .84f), Offset(x, size.height * .84f - height), 1.5f + band(index) * 4f)
+                    }
+                    IdleVisualizerStyle.ContourIslands -> repeat(4) { ring ->
+                        drawCircle(hue(ring, .55f), minimum * (.13f + ring * .12f + energy * .05f), center, style = Stroke(1.6f))
+                    }
+                    IdleVisualizerStyle.RibbonReactor -> repeat(6) { ribbon ->
+                        val path = Path()
+                        repeat(48) { index ->
+                            val x = size.width * index / 47f
+                            val y = size.height * (.16f + ribbon * .13f) + sin(index * .18f + motion * 4f + ribbon) * minimum * (.05f + band(ribbon) * .12f)
+                            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                        }
+                        drawPath(path, hue(ribbon + 2, .65f), style = Stroke(2.6f + band(ribbon) * 4f))
+                    }
+                    IdleVisualizerStyle.PrismGarden -> repeat(12) { petal ->
+                        val x = size.width * (.06f + petal * .08f)
+                        val base = size.height * .78f
+                        val top = base - minimum * (.14f + band(petal) * .38f)
+                        drawLine(hue(petal, .68f), Offset(x, base), Offset(x, top), 3.2f + band(petal) * 5f)
+                    }
+                    IdleVisualizerStyle.MoonlitTides -> repeat(8) { tide ->
+                        val path = Path()
+                        repeat(64) { index ->
+                            val x = size.width * index / 63f
+                            val y = size.height * (.16f + tide * .10f) + sin(index * .18f + motion * 4f + tide) * minimum * (.025f + band(tide) * .09f)
+                            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                        }
+                        drawPath(path, hue(tide + 5, .52f), style = Stroke(1.8f))
+                    }
+                    IdleVisualizerStyle.PulseQuilt -> repeat(24) { tile ->
+                        val column = tile % 6
+                        val row = tile / 6
+                        val x = size.width * (.07f + column * .155f)
+                        val y = size.height * (.13f + row * .205f)
+                        val scale = .75f + band(tile) * .42f
+                        drawRoundRect(hue(tile, .30f + band(tile) * .45f), Offset(x, y), Size(size.width * .115f * scale, size.height * .145f * scale), CornerRadius(8f))
+                    }
+                    IdleVisualizerStyle.EchoReef -> repeat(24) { branch ->
+                        val x = size.width * (.04f + (branch % 12) * .084f)
+                        val bottom = size.height * .94f
+                        val top = bottom - minimum * (.14f + band(branch) * .42f)
+                        drawLine(hue(branch + 4, .62f), Offset(x, bottom), Offset(x + if (branch % 2 == 0) 13f else -13f, top), 1.8f + band(branch) * 3f)
+                    }
+                    IdleVisualizerStyle.VelvetVortex -> repeat(7) { arm ->
+                        val path = Path()
+                        repeat(80) { index ->
+                            val t = index / 79f
+                            val point = polar(arm * .897f + t * 7.8f + motion, minimum * (.04f + t * (.50f + energy * .14f)))
+                            if (index == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
+                        }
+                        drawPath(path, hue(arm + 1, .42f), style = Stroke(1.8f))
+                    }
+                    IdleVisualizerStyle.LanternDrift -> repeat(8) { lantern ->
+                        val point = Offset(size.width * (.12f + (lantern % 4) * .25f), size.height * (.26f + (lantern / 4) * .38f))
+                        drawCircle(Color(0xFFFFB246).copy(alpha = .54f + band(lantern) * .36f), minimum * (.055f + band(lantern) * .06f), point)
+                    }
+                    else -> Unit
                 }
             }
         }
@@ -493,6 +575,10 @@ internal fun TvVisualizerPreview(
             }
 
             IdleVisualizerStyle.PsychedelicScene -> {
+                drawCircle(Color(0xFF2B075D), radius = minimum * .62f, center = center)
+                repeat(4) { ring ->
+                    drawCircle(color(ring * 2 + 1, .58f), radius = minimum * (.13f + ring * .10f), center = center, style = Stroke(1.8f))
+                }
                 repeat(10) { petal ->
                     val path = Path()
                     repeat(28) { index ->
@@ -502,19 +588,83 @@ internal fun TvVisualizerPreview(
                         val point = polar(angle, radius)
                         if (index == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
                     }
-                    drawPath(path, color(petal, .82f), style = Stroke(2.4f))
+                    drawPath(path, color(petal, .98f), style = Stroke(3.1f))
                 }
-                drawCircle(Color.White.copy(alpha = .36f), radius = minimum * .09f, center = center)
+                drawCircle(Color.White.copy(alpha = .72f), radius = minimum * .09f, center = center)
             }
 
             IdleVisualizerStyle.LavaLamp -> {
-                drawRoundRect(Color(0xFF18042C), Offset(size.width * .25f, size.height * .04f), Size(size.width * .50f, size.height * .92f), CornerRadius(minimum * .07f))
-                repeat(6) { blob ->
-                    val x = size.width * (.34f + (blob * 37 % 53) / 100f)
-                    val y = size.height * (.18f + (blob * 41 % 67) / 100f)
-                    val radius = minimum * (.075f + (blob % 3) * .035f)
-                    drawCircle(color(blob + 2, .68f), radius, Offset(x, y))
-                    drawCircle(Color.White.copy(alpha = .18f), radius * .45f, Offset(x - radius * .20f, y - radius * .22f))
+                drawRoundRect(Color(0xFF3C075C), Offset(size.width * .25f, size.height * .04f), Size(size.width * .50f, size.height * .92f), CornerRadius(minimum * .07f))
+                repeat(12) { blob ->
+                    val x = size.width * (.31f + (blob % 4) * .125f)
+                    val y = size.height * (.16f + (blob / 4) * .29f)
+                    val radius = minimum * (.110f + (blob % 3) * .030f)
+                    drawCircle(color(blob + 2, .92f), radius, Offset(x, y))
+                    drawCircle(Color.White.copy(alpha = .38f), radius * .38f, Offset(x - radius * .20f, y - radius * .22f))
+                }
+            }
+
+            IdleVisualizerStyle.SignalRain,
+            IdleVisualizerStyle.ContourIslands,
+            IdleVisualizerStyle.RibbonReactor,
+            IdleVisualizerStyle.PrismGarden,
+            IdleVisualizerStyle.MoonlitTides,
+            IdleVisualizerStyle.PulseQuilt,
+            IdleVisualizerStyle.EchoReef,
+            IdleVisualizerStyle.VelvetVortex,
+            IdleVisualizerStyle.LanternDrift -> {
+                when (style) {
+                    IdleVisualizerStyle.SignalRain -> repeat(12) { index ->
+                        val x = size.width * (.08f + index * .076f)
+                        drawLine(color(index, .82f), Offset(x, size.height * .18f), Offset(x, size.height * .84f), 2f)
+                    }
+                    IdleVisualizerStyle.ContourIslands -> repeat(4) { ring ->
+                        drawCircle(color(ring, .66f), minimum * (.12f + ring * .11f), center, style = Stroke(1.7f))
+                    }
+                    IdleVisualizerStyle.RibbonReactor -> repeat(5) { ribbon ->
+                        val path = Path()
+                        repeat(36) { index ->
+                            val x = size.width * index / 35f
+                            val y = size.height * (.18f + ribbon * .15f) + sin(index * .26f + ribbon) * minimum * .065f
+                            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                        }
+                        drawPath(path, color(ribbon + 2, .72f), style = Stroke(2.6f))
+                    }
+                    IdleVisualizerStyle.PrismGarden -> repeat(10) { petal ->
+                        val x = size.width * (.09f + petal * .092f)
+                        drawLine(color(petal, .78f), Offset(x, size.height * .79f), Offset(x, size.height * (.36f - (petal % 3) * .07f)), 3.2f)
+                    }
+                    IdleVisualizerStyle.MoonlitTides -> repeat(7) { tide ->
+                        val path = Path()
+                        repeat(40) { index ->
+                            val x = size.width * index / 39f
+                            val y = size.height * (.18f + tide * .10f) + sin(index * .28f + tide) * minimum * .04f
+                            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                        }
+                        drawPath(path, color(tide + 4, .58f), style = Stroke(1.7f))
+                    }
+                    IdleVisualizerStyle.PulseQuilt -> repeat(24) { tile ->
+                        val column = tile % 6
+                        val row = tile / 6
+                        drawRoundRect(color(tile, .64f), Offset(size.width * (.08f + column * .15f), size.height * (.14f + row * .20f)), Size(size.width * .105f, size.height * .13f), CornerRadius(6f))
+                    }
+                    IdleVisualizerStyle.EchoReef -> repeat(20) { branch ->
+                        val x = size.width * (.06f + (branch % 10) * .10f)
+                        drawLine(color(branch + 4, .70f), Offset(x, size.height * .90f), Offset(x + if (branch % 2 == 0) 8f else -8f, size.height * (.36f + (branch % 4) * .08f)), 2f)
+                    }
+                    IdleVisualizerStyle.VelvetVortex -> repeat(6) { arm ->
+                        val path = Path()
+                        repeat(56) { index ->
+                            val t = index / 55f
+                            val point = polar(arm * 1.047f + t * 7.2f, minimum * (.04f + t * .55f))
+                            if (index == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
+                        }
+                        drawPath(path, color(arm + 1, .48f), style = Stroke(1.8f))
+                    }
+                    IdleVisualizerStyle.LanternDrift -> repeat(8) { lantern ->
+                        drawCircle(Color(0xFFFFB246).copy(alpha = .70f), minimum * .075f, Offset(size.width * (.14f + (lantern % 4) * .24f), size.height * (.28f + (lantern / 4) * .36f)))
+                    }
+                    else -> Unit
                 }
             }
         }
@@ -525,5 +675,12 @@ private val palette = listOf(
     Color(0xFF00E5FF), Color(0xFF7B61FF), Color(0xFFFF3DCE), Color(0xFFFFB000),
     Color(0xFF75FF8A), Color(0xFF40A8FF),
 )
+
+private fun lavaPalette(palette: LavaLampPalette): List<Color> = when (palette) {
+    LavaLampPalette.Neon -> listOf(Color(0xFFFF1475), Color(0xFFFF3BC8), Color(0xFF9D28FF))
+    LavaLampPalette.Sunset -> listOf(Color(0xFFFF2538), Color(0xFFFF6A16), Color(0xFFFFD026))
+    LavaLampPalette.Arctic -> listOf(Color(0xFF1AA7FF), Color(0xFF22F4FF), Color(0xFF7455FF))
+    LavaLampPalette.Acid -> listOf(Color(0xFF7CFF16), Color(0xFFC7FF12), Color(0xFF26FFD0))
+}
 
 private const val LightTrailSegments = 32

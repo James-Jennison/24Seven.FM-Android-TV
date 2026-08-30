@@ -19,6 +19,8 @@ import android.view.Choreographer
 import android.view.TextureView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
@@ -38,13 +40,17 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.codeframe78.twentyfourseven.player.R
 import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState
 import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationBandCount
 import com.codeframe78.twentyfourseven.player.domain.AudioWaveformSampleCount
 import com.codeframe78.twentyfourseven.player.domain.CalibratedBandCount
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
+import com.codeframe78.twentyfourseven.player.domain.LavaLampPalette
 import kotlinx.coroutines.flow.StateFlow
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -66,13 +72,14 @@ internal fun TvIdleVisualizer(
     audioState: StateFlow<AudioVisualizationState>,
     stationName: String? = null,
     reduceVisualIntensity: Boolean = false,
+    lavaLampPalette: LavaLampPalette = LavaLampPalette.Neon,
     onExit: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        TvOpenGlIdleVisualizer(style, audioState, stationName, reduceVisualIntensity, onExit, modifier)
+        TvOpenGlIdleVisualizer(style, audioState, stationName, reduceVisualIntensity, lavaLampPalette, onExit, modifier)
     } else {
-        TvCanvasIdleVisualizer(style, audioState, reduceVisualIntensity, modifier)
+        TvCanvasIdleVisualizer(style, audioState, reduceVisualIntensity, lavaLampPalette, modifier)
     }
 }
 
@@ -82,6 +89,7 @@ private fun TvOpenGlIdleVisualizer(
     audioState: StateFlow<AudioVisualizationState>,
     stationName: String?,
     reduceVisualIntensity: Boolean,
+    lavaLampPalette: LavaLampPalette,
     onExit: (() -> Unit)?,
     modifier: Modifier,
 ) {
@@ -107,12 +115,12 @@ private fun TvOpenGlIdleVisualizer(
             factory = { context ->
                 TvVisualizerSurfaceView(context).also {
                     surface = it
-                    it.updateStyle(style)
+                    it.updateStyle(style, lavaLampPalette)
                     it.setOnBackRequested(onExit)
                 }
             },
             update = {
-                it.updateStyle(style)
+                it.updateStyle(style, lavaLampPalette)
                 it.setOnBackRequested(onExit)
             },
         )
@@ -424,7 +432,7 @@ private fun TvOpenGlIdleVisualizer(
                     canvas.nativeCanvas.drawText("LIVE", jogCentre.x, jogCentre.y + size.height * .010f, signalDeckLabelPaint)
                     signalDeckLabelPaint.textSize = size.height * .015f
                     signalDeckLabelPaint.alpha = 145
-                    canvas.nativeCanvas.drawText("PROGRAM DECK", jogCentre.x, jogCentre.y + size.height * .042f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("DJ SOFF SNEP", jogCentre.x, jogCentre.y + size.height * .042f, signalDeckLabelPaint)
                     canvas.nativeCanvas.drawText("LIVE PCM WAVEFORM", size.width * .708f, size.height * .288f, signalDeckLabelPaint)
                     canvas.nativeCanvas.drawText("LOW", size.width * .5075f, size.height * .545f, signalDeckLabelPaint)
                     canvas.nativeCanvas.drawText("LOW-MID", size.width * .580f, size.height * .545f, signalDeckLabelPaint)
@@ -445,6 +453,17 @@ private fun TvOpenGlIdleVisualizer(
                     canvas.nativeCanvas.drawText("CROSSFADER", size.width * .622f, size.height * .912f, signalDeckLabelPaint)
                 }
             }
+        }
+        if (style == IdleVisualizerStyle.DjConsole) {
+            Image(
+                painter = painterResource(R.drawable.dj_soff_snep_overlay),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth(.22f)
+                    .align(Alignment.TopEnd)
+                    .offset(x = (-22).dp, y = 18.dp)
+                    .alpha(.16f),
+            )
         }
     }
     LaunchedEffect(surface, audioState, style, reduceVisualIntensity) {
@@ -667,8 +686,11 @@ private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context)
         super.onDetachedFromWindow()
     }
 
-    fun updateStyle(style: IdleVisualizerStyle) {
-        queueEvent { renderer.setStyle(style.ordinal) }
+    fun updateStyle(style: IdleVisualizerStyle, lavaLampPalette: LavaLampPalette) {
+        queueEvent {
+            renderer.setStyle(style.ordinal)
+            renderer.setLavaLampPalette(lavaLampPalette.ordinal)
+        }
     }
 
     fun setOnBackRequested(onBackRequested: (() -> Unit)?) {
@@ -750,6 +772,7 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     private var impact = 0f
     private var impactPhase = 0f
     private var style = 0
+    private var lavaLampPalette = LavaLampPalette.Neon.ordinal
     private var program = 0
     private var positionHandle = 0
     private var colorHandle = 0
@@ -772,6 +795,16 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     private var neonTransientHandle = 0
     private var neonImpactHandle = 0
     private var neonBandsHandle = 0
+    private var lavaMetaballProgram = 0
+    private var lavaMetaballPositionHandle = 0
+    private var lavaMetaballResolutionHandle = 0
+    private var lavaMetaballBodiesHandle = 0
+    private var lavaMetaballColourOneHandle = 0
+    private var lavaMetaballColourTwoHandle = 0
+    private var lavaMetaballColourThreeHandle = 0
+    private var lavaMetaballEnergyHandle = 0
+    private var lavaMetaballPhaseHandle = 0
+    private var lavaMetaballRiseHandle = 0
     private var waterfallProgram = 0
     private var waterfallPositionHandle = 0
     private var waterfallSamplerHandle = 0
@@ -806,6 +839,10 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         if (styleChanged) clearFeedback = true
         this.style = style
         if (styleChanged && width > 1 && usesFeedback()) createFeedbackBuffers()
+    }
+
+    fun setLavaLampPalette(palette: Int) {
+        lavaLampPalette = palette.coerceIn(0, LavaLampColourPalettes.lastIndex)
     }
 
     fun setSupportsEs3(supportsEs3: Boolean) {
@@ -867,14 +904,27 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
                 compileShader(GLES20.GL_VERTEX_SHADER, NeonVertexShader),
                 compileShader(GLES20.GL_FRAGMENT_SHADER, NeonFragmentShader),
             )
-            neonPositionHandle = GLES20.glGetAttribLocation(neonProgram, "aPosition")
+        neonPositionHandle = GLES20.glGetAttribLocation(neonProgram, "aPosition")
             neonResolutionHandle = GLES20.glGetUniformLocation(neonProgram, "uResolution")
             neonPhaseHandle = GLES20.glGetUniformLocation(neonProgram, "uPhase")
             neonEnergyHandle = GLES20.glGetUniformLocation(neonProgram, "uEnergy")
             neonImpulseHandle = GLES20.glGetUniformLocation(neonProgram, "uImpulse")
             neonTransientHandle = GLES20.glGetUniformLocation(neonProgram, "uTransient")
             neonImpactHandle = GLES20.glGetUniformLocation(neonProgram, "uImpact")
-            neonBandsHandle = GLES20.glGetUniformLocation(neonProgram, "uBands")
+        neonBandsHandle = GLES20.glGetUniformLocation(neonProgram, "uBands")
+        lavaMetaballProgram = linkProgram(
+            compileShader(GLES20.GL_VERTEX_SHADER, LavaMetaballVertexShader),
+            compileShader(GLES20.GL_FRAGMENT_SHADER, LavaMetaballFragmentShader),
+        )
+        lavaMetaballPositionHandle = GLES20.glGetAttribLocation(lavaMetaballProgram, "aPosition")
+        lavaMetaballResolutionHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uResolution")
+        lavaMetaballBodiesHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uBodies[0]")
+        lavaMetaballColourOneHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uColourOne")
+        lavaMetaballColourTwoHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uColourTwo")
+        lavaMetaballColourThreeHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uColourThree")
+        lavaMetaballEnergyHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uEnergy")
+        lavaMetaballPhaseHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uPhase")
+        lavaMetaballRiseHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uRise[0]")
             waterfallProgram = linkProgram(
                 compileShader(GLES20.GL_VERTEX_SHADER, WaterfallVertexShader),
                 compileShader(GLES20.GL_FRAGMENT_SHADER, WaterfallFragmentShader),
@@ -986,7 +1036,17 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
             11 -> signalDeck()
             12 -> djConsole()
             13 -> psychedelicScene()
-            else -> lavaLamp()
+            14 -> if (lavaMetaballProgram != 0) shaderLavaLamp() else lavaLamp()
+            15 -> signalRain()
+            16 -> contourIslands()
+            17 -> ribbonReactor()
+            18 -> prismGarden()
+            19 -> moonlitTides()
+            20 -> pulseQuilt()
+            21 -> echoReef()
+            22 -> velvetVortex()
+            23 -> lanternDrift()
+            else -> kaleidoscope()
         }
         GLES20.glDisableVertexAttribArray(positionHandle)
     }
@@ -1691,8 +1751,19 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         val high = ((band(6) + band(7)) * .5f).coerceIn(0f, 1f)
         begin()
         vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
-        triangleStrip(4, Rgba(.012f, .002f, .028f, 1f))
+        triangleStrip(4, Rgba(.040f, .002f, .105f, 1f))
         val petals = 11
+        // The wide, high-saturation rings make the colour field legible from a
+        // sofa. They still breathe from decoded energy instead of free-running.
+        repeat(5) { ring ->
+            val radius = .18f + ring * .18f + low * .075f + impact * .055f
+            circle(
+                radius,
+                palette(ring * 2 + 1, .20f + mid * .14f + high * .09f + transient * .10f),
+                112,
+                1.1f + high * 1.2f,
+            )
+        }
         repeat(3) { ring ->
             val samples = 96
             val baseRadius = .20f + ring * .22f + low * (.10f + ring * .025f) + impact * .08f
@@ -1709,7 +1780,7 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
                     val radius = (baseRadius + ripple + fringe) * (1f + sin(t * PI.toFloat()) * (.34f + low * .22f))
                     vertex(cos(localAngle) * radius * aspect(), sin(localAngle) * radius)
                 }
-                triangleFan(samples + 2, palette(petal + ring * 3, .095f + low * .18f + mid * .10f + impact * .08f))
+                triangleFan(samples + 2, palette(petal + ring * 3, .30f + low * .26f + mid * .16f + impact * .12f))
 
                 begin()
                 repeat(samples) { point ->
@@ -1721,8 +1792,22 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
                     val radius = (baseRadius + ripple + fringe) * (1f + sin(t * PI.toFloat()) * (.34f + low * .22f))
                     vertex(cos(localAngle) * radius * aspect(), sin(localAngle) * radius)
                 }
-                lineStrip(samples, palette(petal + ring * 3 + 2, .42f + mid * .28f + high * .20f + transient * .16f), 1.1f + high * 1.5f)
+                lineStrip(samples, palette(petal + ring * 3 + 2, .64f + mid * .22f + high * .12f + transient * .12f), 1.5f + high * 1.8f)
             }
+        }
+        // Interleaved rainbow spirals keep the scene immersive at TV distance;
+        // their twist is still driven by the source-led phase accumulator.
+        repeat(7) { ribbon ->
+            val samples = 196
+            begin()
+            repeat(samples) { point ->
+                val t = point / (samples - 1f)
+                val angle = t * Tau * (2.3f + ribbon * .17f) + phase * (.42f + low * .62f) + ribbon * Tau / 7f
+                val wave = sin(t * Tau * (4.1f + ribbon * .25f) - phase * .34f) * (.030f + mid * .090f + transient * .045f)
+                val radius = .10f + t * (.74f + low * .22f) + wave
+                vertex(cos(angle) * radius * aspect(), sin(angle) * radius)
+            }
+            lineStrip(samples, palette(ribbon + 4, .48f + mid * .26f + high * .16f + transient * .10f), 1.25f + high * 1.55f)
         }
         begin()
         var count = 0
@@ -1732,7 +1817,71 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
             vertex(cos(angle) * radius * aspect(), sin(angle) * radius)
             count++
         }
-        points(count, White.withAlpha(.22f + high * .36f + transient * .20f), 1.5f + high * 2.2f + impact * 2.8f)
+        points(count, White.withAlpha(.44f + high * .28f + transient * .16f), 2.2f + high * 2.6f + impact * 3.0f)
+    }
+
+    /**
+     * A fragment-field keeps each wax pool soft and liquid, while their spacing
+     * preserves distinct pools until a strong bass pulse makes neighbours merge.
+     */
+    private fun shaderLavaLamp() {
+        val low = (band(0) * .70f + band(1) * .30f).coerceIn(0f, 1f)
+        val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
+        val bodyData = FloatArray(6 * 4)
+        val bodyRise = FloatArray(6)
+        // Four overlapping bodies make one heavy molten reservoir. Only two
+        // pieces separate from it, so the scene reads as wax convection rather
+        // than a field of independently animated icons.
+        val lanes = floatArrayOf(-1.25f, -.42f, .42f, 1.25f, -.32f, .38f)
+        val heights = floatArrayOf(-.79f, -.80f, -.80f, -.79f, -.24f, .30f)
+        repeat(6) { blob ->
+            val isReservoir = blob < 4
+            val localLow = (band(blob) * .66f + band(blob + 1) * .34f).coerceIn(0f, 1f)
+            val localMid = (band(blob + 3) * .62f + band(blob + 4) * .38f).coerceIn(0f, 1f)
+            // Lava moves with slow buoyancy. Audio adds pressure to the wax but
+            // never turns it into fast, independent fireballs.
+            val liftPhase = phase * if (isReservoir) (.055f + localLow * .075f) else (.10f + localLow * .16f) + blob * 1.91f
+            val lift = sin(liftPhase) * if (isReservoir) (.012f + localLow * .030f + impact * .012f) else (.070f + localLow * .105f + impact * .030f)
+            val ascent = if (isReservoir) 0f else cos(liftPhase).coerceAtLeast(0f)
+            val x = lanes[blob] + sin(phase * if (isReservoir) .05f else (.08f + localMid * .12f) + blob * .83f) *
+                if (isReservoir) .012f else (.014f + localMid * .026f)
+            val y = (heights[blob] + lift).coerceIn(-.86f, .82f)
+            val baseRadiusX = if (isReservoir) .62f else .25f
+            val baseRadiusY = if (isReservoir) .28f else .22f
+            val radiusX = (baseRadiusX + localLow * if (isReservoir) .045f else .040f + impact * if (isReservoir) .035f else .050f) *
+                (1f - ascent * .12f)
+            val radiusY = (baseRadiusY + localLow * if (isReservoir) .050f else .060f + localMid * .025f + impact * .035f) *
+                (1f + ascent * .32f)
+            val offset = blob * 4
+            bodyData[offset] = x
+            bodyData[offset + 1] = y
+            bodyData[offset + 2] = radiusX
+            bodyData[offset + 3] = radiusY
+            bodyRise[blob] = ascent
+        }
+        val colours = LavaLampColourPalettes[lavaLampPalette]
+        GLES20.glDisable(GLES20.GL_BLEND)
+        GLES20.glUseProgram(lavaMetaballProgram)
+        GLES20.glUniform2f(lavaMetaballResolutionHandle, width.toFloat(), height.toFloat())
+        GLES20.glUniform4fv(lavaMetaballBodiesHandle, 6, bodyData, 0)
+        GLES20.glUniform3f(lavaMetaballColourOneHandle, colours[0].r, colours[0].g, colours[0].b)
+        GLES20.glUniform3f(lavaMetaballColourTwoHandle, colours[1].r, colours[1].g, colours[1].b)
+        GLES20.glUniform3f(lavaMetaballColourThreeHandle, colours[2].r, colours[2].g, colours[2].b)
+        GLES20.glUniform1f(lavaMetaballEnergyHandle, (energy * .65f + low * .35f).coerceIn(0f, 1f))
+        GLES20.glUniform1f(lavaMetaballPhaseHandle, phase + mid * .35f)
+        GLES20.glUniform1fv(lavaMetaballRiseHandle, 6, bodyRise, 0)
+        feedbackQuad.position(0)
+        GLES20.glEnableVertexAttribArray(lavaMetaballPositionHandle)
+        GLES20.glVertexAttribPointer(
+            lavaMetaballPositionHandle,
+            2,
+            GLES20.GL_FLOAT,
+            false,
+            4 * Float.SIZE_BYTES,
+            feedbackQuad,
+        )
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        GLES20.glDisableVertexAttribArray(lavaMetaballPositionHandle)
     }
 
     /** A lava lamp without decorative clockwork: every lift, merge, and glow is tied to decoded audio. */
@@ -1742,21 +1891,28 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         val high = ((band(6) + band(7)) * .5f).coerceIn(0f, 1f)
         begin()
         vertex(-.72f, -1f); vertex(.72f, -1f); vertex(-.72f, 1f); vertex(.72f, 1f)
-        triangleStrip(4, Rgba(.055f, .006f, .095f, 1f))
+        triangleStrip(4, Rgba(.105f, .004f, .200f, 1f))
+        begin()
+        vertex(-.72f, -1f); vertex(.72f, -1f); vertex(-.72f, 1f); vertex(.72f, 1f)
+        triangleStrip(4, Rgba(.100f, .004f, .180f, .84f))
         begin(); vertex(-.73f, -.98f); vertex(-.73f, .98f); vertex(.73f, .98f); vertex(.73f, -.98f)
-        lineLoop(4, Rgba(.96f, .28f, .78f, .12f + high * .22f), 1.1f)
+        lineLoop(4, Rgba(.96f, .28f, .78f, .38f + high * .28f), 1.6f)
 
-        repeat(8) { blob ->
+        val liquidColours = LavaLampColourPalettes[lavaLampPalette]
+        // A lamp is one wax colour family, not a scatter of unrelated balloons.
+        // Six substantial bodies are intentionally overlapped so additive blending
+        // produces long, merging lava columns as the decoded bass rises and falls.
+        repeat(6) { blob ->
             val samples = 112
-            val lane = ((blob * 37 % 101) / 100f - .5f) * 1.05f
-            val heightSeed = (blob * 53 % 89) / 88f
+            val lane = floatArrayOf(-.13f, .08f, -.05f, .13f, -.10f, .04f)[blob]
+            val heightSeed = floatArrayOf(-.69f, -.42f, -.13f, .18f, .48f, .75f)[blob]
             val localLow = (band(blob) * .66f + band(blob + 1) * .34f).coerceIn(0f, 1f)
             val localMid = (band(blob + 3) * .62f + band(blob + 4) * .38f).coerceIn(0f, 1f)
-            val lift = sin(phase * (.24f + localLow * .76f) + blob * 1.91f) * (.10f + localLow * .24f + impact * .08f)
-            val centreX = lane + sin(phase * (.18f + localMid * .46f) + blob * .83f) * (.025f + localMid * .075f)
-            val centreY = (-.72f + heightSeed * 1.44f + lift).coerceIn(-.84f, .84f)
-            val radiusX = .13f + localLow * .13f + impact * .045f
-            val radiusY = .10f + localLow * .16f + localMid * .045f
+            val lift = sin(phase * (.21f + localLow * .64f) + blob * 1.91f) * (.10f + localLow * .25f + impact * .10f)
+            val centreX = lane + sin(phase * (.16f + localMid * .38f) + blob * .83f) * (.025f + localMid * .070f)
+            val centreY = (heightSeed + lift).coerceIn(-.82f, .82f)
+            val radiusX = .18f + localLow * .12f + impact * .060f
+            val radiusY = .24f + localLow * .19f + localMid * .075f
             begin()
             vertex(centreX, centreY)
             repeat(samples + 1) { point ->
@@ -1768,7 +1924,8 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
                     centreY + sin(angle) * (radiusY + wobble),
                 )
             }
-            triangleFan(samples + 2, LavaLampPalette[blob % LavaLampPalette.size].withAlpha(.14f + localLow * .24f + localMid * .10f + transient * .08f))
+            val liquidColour = liquidColours[blob % liquidColours.size]
+            triangleFan(samples + 2, liquidColour.withAlpha(.68f + localLow * .20f + localMid * .08f))
             begin()
             repeat(samples) { point ->
                 val angle = point * Tau / (samples - 1f)
@@ -1779,7 +1936,246 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
                     centreY + sin(angle) * (radiusY + wobble),
                 )
             }
-            lineLoop(samples, LavaLampPalette[(blob + 2) % LavaLampPalette.size].withAlpha(.42f + localLow * .30f + high * .14f + transient * .12f), 1f + high * 1.1f)
+            lineLoop(samples, liquidColour.blend(White, .22f).withAlpha(.72f + localLow * .16f + high * .08f), 1.55f + high * 1.25f)
+
+            // A small hot core catches the light and makes the overlapping bodies
+            // read as glowing liquid, not flat discs.
+            begin()
+            val highlightX = centreX - radiusX * .20f * aspect()
+            val highlightY = centreY + radiusY * .20f
+            vertex(highlightX, highlightY)
+            repeat(40) { point ->
+                val angle = point * Tau / 39f
+                vertex(
+                    highlightX + cos(angle) * radiusX * .30f * aspect(),
+                    highlightY + sin(angle) * radiusY * .28f,
+                )
+            }
+            triangleFan(42, liquidColour.blend(White, .58f).withAlpha(.32f + localLow * .16f + high * .08f))
+        }
+    }
+
+    /** Twelve audio-gated spectrum filaments fall into a low horizon and splash on attacks. */
+    private fun signalRain() {
+        val low = (band(0) * .70f + band(1) * .30f).coerceIn(0f, 1f)
+        begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.004f, .012f, .042f, 1f))
+        val floor = -.74f
+        repeat(14) { thread ->
+            val local = (band(thread + 2) * .62f + band(thread + 6) * .38f).coerceIn(0f, 1f)
+            val x = -.88f + thread * (1.76f / 13f)
+            val head = .86f - local * 1.02f - impulse * .24f
+            val trail = (.20f + local * .52f + transient * .18f).coerceAtMost(1.22f)
+            begin(); vertex(x, head); vertex(x, (head - trail).coerceAtLeast(floor))
+            lines(2, palette(thread + 1, .38f + local * .44f), 1.1f + local * 2.8f)
+            begin(); vertex(x - .050f * aspect(), floor); vertex(x + .050f * aspect(), floor)
+            lines(2, palette(thread + 1, .22f + low * .24f), 1f + transient * 2.3f)
+        }
+        begin(); vertex(-1f, floor); vertex(1f, floor)
+        lines(2, Cyan.withAlpha(.22f + low * .32f), 1.1f)
+    }
+
+    /** Nested shorelines keep this scene distinctly calm and non-vortex-like. */
+    private fun contourIslands() {
+        val low = (band(0) * .72f + band(1) * .28f).coerceIn(0f, 1f)
+        val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
+        begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.008f, .043f, .060f, 1f))
+        val islandX = floatArrayOf(-.47f, .34f, .05f)
+        val islandY = floatArrayOf(-.18f, -.28f, .42f)
+        repeat(3) { island ->
+            val local = (band(island * 3 + 1) * .65f + band(island * 3 + 3) * .35f).coerceIn(0f, 1f)
+            repeat(5) { contour ->
+                val samples = 84
+                val base = .105f + contour * .080f + local * .045f + low * .025f
+                begin()
+                repeat(samples) { point ->
+                    val angle = point * Tau / (samples - 1f)
+                    val shoreline = base + sin(angle * 3f + island * 1.7f + phase * .14f) * (.014f + mid * .026f) +
+                        cos(angle * 5f - phase * .10f) * .012f
+                    vertex(
+                        islandX[island] + cos(angle) * shoreline * aspect(),
+                        islandY[island] + sin(angle) * shoreline * (.72f + local * .16f),
+                    )
+                }
+                lineLoop(samples, palette(island * 2 + contour, .22f + contour * .055f + local * .20f), 1f + local * 1.45f)
+            }
+        }
+    }
+
+    private fun ribbonReactor() {
+        val low = (band(0) * .68f + band(1) * .32f).coerceIn(0f, 1f)
+        val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
+        begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.030f, .006f, .052f, 1f))
+        repeat(6) { ribbon ->
+            val samples = 112
+            begin()
+            repeat(samples) { point ->
+                val t = point / (samples - 1f)
+                val x = -1.08f + t * 2.16f
+                val y = (ribbon / 5f - .5f) * 1.22f + sin(t * Tau * (1.12f + ribbon * .07f) + phase * (.26f + mid * .44f) + ribbon) *
+                    (.10f + low * .16f + band(ribbon + 3) * .11f)
+                vertex(x, y)
+            }
+            lineStrip(samples, palette(ribbon + 2, .28f + mid * .30f + low * .18f), 3.0f + band(ribbon) * 5.2f)
+            begin()
+            repeat(samples) { point ->
+                val t = point / (samples - 1f)
+                val x = -1.08f + t * 2.16f
+                val y = (ribbon / 5f - .5f) * 1.22f + sin(t * Tau * (1.12f + ribbon * .07f) + phase * (.26f + mid * .44f) + ribbon) *
+                    (.10f + low * .16f + band(ribbon + 3) * .11f)
+                vertex(x, y)
+            }
+            lineStrip(samples, palette(ribbon + 3, .62f + mid * .25f), 1.05f + band(ribbon + 5) * 1.65f)
+        }
+    }
+
+    private fun prismGarden() {
+        val low = (band(0) * .72f + band(1) * .28f).coerceIn(0f, 1f)
+        val high = ((band(6) + band(7)) * .5f).coerceIn(0f, 1f)
+        begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.008f, .020f, .044f, 1f))
+        begin(); vertex(-1f, -.48f); vertex(1f, -.48f)
+        lines(2, palette(4, .22f + low * .24f), 1.1f)
+        repeat(13) { petal ->
+            val local = band(petal + 2)
+            val x = -.92f + petal * (1.84f / 12f)
+            val base = -.50f + sin(petal * 1.7f) * .045f
+            val height = .16f + local * .43f + low * .18f
+            val half = .052f + local * .035f
+            begin()
+            vertex(x, base)
+            vertex(x - half * aspect(), base + height * .42f)
+            vertex(x, base + height)
+            vertex(x + half * aspect(), base + height * .42f)
+            triangleFan(4, palette(petal + 1, .28f + local * .34f + low * .14f))
+            begin(); vertex(x, base); vertex(x, base + height)
+            lines(2, White.withAlpha(.22f + high * .36f), .8f + high * 1.2f)
+        }
+    }
+
+    private fun moonlitTides() {
+        val low = (band(0) * .72f + band(1) * .28f).coerceIn(0f, 1f)
+        val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
+        begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.004f, .017f, .055f, 1f))
+        repeat(9) { tide ->
+            val samples = 116
+            val baseline = -.78f + tide * .18f
+            begin()
+            repeat(samples) { point ->
+                val t = point / (samples - 1f)
+                val x = -1f + t * 2f
+                val y = baseline + sin(t * Tau * (1.15f + tide * .05f) + phase * (.18f + mid * .34f) + tide * .73f) *
+                    (.040f + low * .115f + band(tide) * .055f)
+                vertex(x, y)
+            }
+            lineStrip(samples, if (tide == 7) White.withAlpha(.26f + mid * .28f) else palette(tide + 5, .20f + low * .19f), 1.15f + band(tide) * 1.7f)
+        }
+        circle(.11f + low * .04f, White.withAlpha(.24f + mid * .18f), 48, 1f)
+    }
+
+    /** A deliberately coarse 6 by 4 matrix so individual tiles remain legible at TV distance. */
+    private fun pulseQuilt() {
+        val rows = 4
+        val columns = 6
+        begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.018f, .012f, .036f, 1f))
+        repeat(rows) { row ->
+            repeat(columns) { column ->
+                val index = row * columns + column
+                val local = (band(index) * .70f + band(index + 4) * .30f).coerceIn(0f, 1f)
+                val x0 = -.93f + column * .315f
+                val x1 = x0 + .265f
+                val y0 = -.79f + row * .405f
+                val y1 = y0 + .330f + local * .042f + transient * .018f
+                begin(); vertex(x0, y0); vertex(x1, y0); vertex(x0, y1); vertex(x1, y1)
+                triangleStrip(4, palette(index + row, .18f + local * .48f))
+                begin(); vertex(x0, y0); vertex(x1, y0); vertex(x1, y1); vertex(x0, y1)
+                lineLoop(4, White.withAlpha(.08f + local * .22f), .8f + local * 1.1f)
+            }
+        }
+    }
+
+    private fun echoReef() {
+        val low = (band(0) * .68f + band(1) * .32f).coerceIn(0f, 1f)
+        val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
+        begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.002f, .034f, .039f, 1f))
+        repeat(28) { branch ->
+            val local = band(branch + 2)
+            val rootX = -.94f + (branch % 14) * .145f
+            val rootY = -.92f + (branch / 14) * .12f
+            val direction = if (branch % 2 == 0) 1f else -1f
+            val length = .21f + local * .38f + low * .17f
+            begin()
+            repeat(5) { joint ->
+                val t = joint / 4f
+                val x = rootX + direction * sin(t * Tau * .70f + branch) * (.025f + mid * .055f) * t
+                val y = rootY + length * t
+                vertex(x, y)
+            }
+            lineStrip(5, palette(branch + 4, .26f + local * .40f), 1.15f + local * 2.4f)
+            if (local > .16f) {
+                begin(); vertex(rootX, rootY + length * .58f); vertex(rootX + direction * (.08f + local * .12f) * aspect(), rootY + length * .75f)
+                lines(2, palette(branch + 5, .24f + local * .35f), .9f + local * 1.5f)
+            }
+        }
+    }
+
+    /** One slow central spiral, intentionally separate from Contour Islands' closed shorelines. */
+    private fun velvetVortex() {
+        val low = (band(0) * .74f + band(1) * .26f).coerceIn(0f, 1f)
+        val high = ((band(6) + band(7)) * .5f).coerceIn(0f, 1f)
+        begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.016f, .002f, .034f, 1f))
+        repeat(7) { arm ->
+            val samples = 132
+            begin()
+            repeat(samples) { point ->
+                val t = point / (samples - 1f)
+                val angle = arm * Tau / 7f + t * Tau * (1.18f + low * .28f) + phase * (.11f + low * .22f)
+                val radius = .045f + t * (.72f + low * .16f) + sin(t * Tau * 3f + arm) * high * .022f
+                vertex(cos(angle) * radius * aspect(), sin(angle) * radius)
+            }
+            lineStrip(samples, palette(arm + 1, .15f + low * .18f + high * .11f), 1.0f + high * 1.25f)
+        }
+        circle(.06f + low * .045f, White.withAlpha(.18f + low * .24f), 48, 1.2f)
+    }
+
+    private fun lanternDrift() {
+        val low = (band(0) * .70f + band(1) * .30f).coerceIn(0f, 1f)
+        val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
+        begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.085f, .016f, .006f, 1f))
+        repeat(9) { lantern ->
+            val local = band(lantern + 1)
+            val x = -.80f + (lantern % 5) * .40f + sin(phase * (.10f + mid * .14f) + lantern) * (.035f + mid * .040f)
+            val y = -.48f + (lantern / 5) * .72f + cos(phase * (.08f + low * .12f) + lantern * 1.9f) * (.050f + low * .065f)
+            val radius = .120f + local * .080f + low * .035f
+            // Soft outer body: a lantern should remain legible at silence, with
+            // the music increasing its size and brightness rather than creating it.
+            begin()
+            vertex(x, y)
+            repeat(44) { point ->
+                val angle = point * Tau / 43f
+                val shoulder = 1f - abs(sin(angle)) * .13f
+                vertex(x + cos(angle) * radius * shoulder * aspect(), y + sin(angle) * radius * 1.17f)
+            }
+            triangleFan(45, Rgba(1f, .28f + local * .18f, .045f, .18f + local * .19f + low * .08f))
+            begin()
+            vertex(x, y)
+            repeat(36) { point ->
+                val angle = point * Tau / 35f
+                vertex(x + cos(angle) * radius * .53f * aspect(), y + sin(angle) * radius * .66f)
+            }
+            triangleFan(37, Rgba(1f, .72f + local * .15f, .24f, .46f + local * .30f + low * .09f))
+            begin(); vertex(x, y - radius * .90f); vertex(x, y + radius * .85f)
+            lines(2, Rgba(1f, .52f, .14f, .34f + local * .32f), 5.5f + local * 6.2f)
+            circle(radius, Rgba(1f, .72f, .28f, .54f + local * .32f), 40, 1.4f + local * 1.5f)
+            begin(); vertex(x, y + radius); vertex(x, y + radius + .070f)
+            lines(2, White.withAlpha(.30f + mid * .22f), .9f)
         }
     }
 
@@ -2328,12 +2724,11 @@ private val CurrentThemes = arrayOf(
     arrayOf(Rgba(1f, .08f, .62f), Rgba(.82f, .16f, 1f), Rgba(1f, .18f, .44f)), // fuchsia pulse
     arrayOf(Rgba(1f, .48f, .06f), Rgba(1f, .82f, .10f), Rgba(.92f, .23f, .04f)), // molten amber
 )
-private val LavaLampPalette = arrayOf(
-    Rgba(1f, .08f, .36f),
-    Rgba(1f, .29f, .04f),
-    Rgba(.93f, .12f, 1f),
-    Rgba(1f, .72f, .05f),
-    Rgba(.46f, .10f, 1f),
+private val LavaLampColourPalettes = arrayOf(
+    arrayOf(Rgba(1f, .02f, .42f), Rgba(1f, .22f, .03f), Rgba(.82f, .04f, 1f), Rgba(1f, .76f, .02f), Rgba(.08f, .72f, 1f)), // neon
+    arrayOf(Rgba(1f, .03f, .12f), Rgba(1f, .16f, .02f), Rgba(1f, .47f, .02f), Rgba(1f, .88f, .04f), Rgba(.94f, .04f, .38f)), // sunset
+    arrayOf(Rgba(.02f, .40f, 1f), Rgba(.02f, .92f, 1f), Rgba(.18f, 1f, .86f), Rgba(.48f, .10f, 1f), Rgba(.86f, .94f, 1f)), // arctic
+    arrayOf(Rgba(.44f, 1f, .02f), Rgba(.82f, 1f, .01f), Rgba(.96f, .72f, .01f), Rgba(.02f, 1f, .70f), Rgba(.56f, .04f, 1f)), // acid
 )
 private val CalligraphyStartX = floatArrayOf(-1.08f, -.92f, 1.08f, -1.08f, .30f)
 private val CalligraphyStartY = floatArrayOf(-.78f, .92f, -.95f, .18f, 1.08f)
@@ -2361,6 +2756,73 @@ private const val FragmentShader = """
 precision mediump float;
 uniform vec4 uColor;
 void main() { gl_FragColor = uColor; }
+"""
+
+private const val LavaMetaballVertexShader = """
+attribute vec2 aPosition;
+varying vec2 vPosition;
+void main() {
+    vPosition = aPosition;
+    gl_Position = vec4(aPosition, 0.0, 1.0);
+}
+"""
+
+/**
+ * The wax is an implicit field instead of independently rendered discs. The
+ * smooth threshold is the merge surface, so bodies visually join, neck, and
+ * divide without a costly physics simulation or transparent overdraw.
+ */
+private const val LavaMetaballFragmentShader = """
+precision mediump float;
+varying vec2 vPosition;
+uniform vec2 uResolution;
+uniform vec4 uBodies[6];
+uniform vec3 uColourOne;
+uniform vec3 uColourTwo;
+uniform vec3 uColourThree;
+uniform float uEnergy;
+uniform float uPhase;
+uniform float uRise[6];
+
+float waxField(vec2 point) {
+    float field = 0.0;
+    for (int index = 0; index < 6; index++) {
+        vec4 body = uBodies[index];
+        vec2 delta = (point - body.xy) / body.zw;
+        float seed = float(index) * 1.73;
+        float ascent = uRise[index];
+        // Distort every boundary differently so wax pools wobble and stretch
+        // instead of remaining mathematically perfect ellipses.
+        delta.x += sin(delta.y * 4.2 + uPhase * 0.18 + seed) * (0.030 + uEnergy * 0.018);
+        delta.y += sin(delta.x * 4.7 - uPhase * 0.14 + seed) * (0.028 + uEnergy * 0.018);
+        // Rising wax stretches vertically, then narrows through a surface-tension
+        // neck. This makes a bubble detach from the lower pool as a teardrop.
+        float neck = smoothstep(-0.18, 0.66, delta.y) * ascent;
+        delta.x *= 1.0 + neck * 0.24;
+        field += 1.0 / max(dot(delta, delta), 0.045);
+    }
+    return field;
+}
+
+void main() {
+    float aspect = uResolution.y / max(uResolution.x, 1.0);
+    vec2 point = vec2(vPosition.x / aspect, vPosition.y);
+            vec3 glass = vec3(0.030, 0.002, 0.075) + vec3(0.060, 0.008, 0.110) * (1.0 - abs(point.y));
+    float field = waxField(point);
+    // A higher threshold keeps resting pools distinct; peaks can still fuse them.
+    float wax = smoothstep(1.62, 2.24, field);
+    float edge = smoothstep(1.10, 1.78, field) - wax;
+    // Keep one dense wax family per selected palette: gradients are subtle
+    // depth cues, never bright horizontal bands through a blob.
+    vec3 waxColour = mix(uColourOne, uColourTwo, 0.34);
+    waxColour = mix(waxColour, uColourThree, 0.16);
+    float subsurface = smoothstep(3.20, 6.20, field);
+    vec3 colour = glass;
+    colour += waxColour * edge * (0.025 + uEnergy * 0.020);
+    colour = mix(colour, waxColour * (0.62 + uEnergy * 0.10), wax);
+    colour += mix(waxColour, uColourThree, 0.18) * subsurface * (0.035 + uEnergy * 0.030);
+            gl_FragColor = vec4(colour, 1.0);
+}
 """
 
 private const val NeonVertexShader = """

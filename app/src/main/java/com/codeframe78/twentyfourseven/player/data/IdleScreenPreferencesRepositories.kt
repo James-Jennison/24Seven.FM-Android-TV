@@ -4,6 +4,7 @@ import android.content.Context
 import com.codeframe78.twentyfourseven.player.domain.IdleScreenPreferences
 import com.codeframe78.twentyfourseven.player.domain.IdleScreenPreferencesRepository
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
+import com.codeframe78.twentyfourseven.player.domain.LavaLampPalette
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingOverlayMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +36,12 @@ class SharedPreferencesIdleScreenPreferencesRepository(
         mutablePreferences.value = updated
     }
 
+    override suspend fun setLavaLampPalette(palette: LavaLampPalette) {
+        val updated = mutablePreferences.value.copy(lavaLampPalette = palette)
+        sharedPreferences.edit().putString(KEY_LAVA_LAMP_PALETTE, palette.name).apply()
+        mutablePreferences.value = updated
+    }
+
     private fun readPreferences(): IdleScreenPreferences {
         val style = sharedPreferences.getString(KEY_VISUALIZER, null)
             ?.let { stored -> IdleVisualizerStyle.entries.firstOrNull { it.name == stored } }
@@ -42,10 +49,14 @@ class SharedPreferencesIdleScreenPreferencesRepository(
         val overlay = sharedPreferences.getString(KEY_NOW_PLAYING_OVERLAY, null)
             ?.let { stored -> NowPlayingOverlayMode.entries.firstOrNull { it.name == stored } }
             ?: NowPlayingOverlayMode.Brief
+        val lavaLampPalette = sharedPreferences.getString(KEY_LAVA_LAMP_PALETTE, null)
+            ?.let { stored -> LavaLampPalette.entries.firstOrNull { it.name == stored } }
+            ?: LavaLampPalette.Neon
         return IdleScreenPreferences(
             visualizer = style,
             nowPlayingOverlay = overlay,
             reduceVisualIntensity = sharedPreferences.getBoolean(KEY_REDUCE_VISUAL_INTENSITY, false),
+            lavaLampPalette = lavaLampPalette,
         )
     }
 
@@ -54,6 +65,7 @@ class SharedPreferencesIdleScreenPreferencesRepository(
         const val KEY_VISUALIZER = "visualizer"
         const val KEY_NOW_PLAYING_OVERLAY = "now-playing-overlay"
         const val KEY_REDUCE_VISUAL_INTENSITY = "reduce-visual-intensity"
+        const val KEY_LAVA_LAMP_PALETTE = "lava-lamp-palette"
     }
 }
 
@@ -73,5 +85,9 @@ class InMemoryIdleScreenPreferencesRepository(
 
     override suspend fun setReduceVisualIntensity(enabled: Boolean) {
         mutablePreferences.value = mutablePreferences.value.copy(reduceVisualIntensity = enabled)
+    }
+
+    override suspend fun setLavaLampPalette(palette: LavaLampPalette) {
+        mutablePreferences.value = mutablePreferences.value.copy(lavaLampPalette = palette)
     }
 }

@@ -16,9 +16,19 @@ enum class IdleVisualizerStyle(val displayName: String, val description: String)
     // Keep the stable enum key so existing saved selections migrate automatically.
     MinimalSpectrum("EQ Spectrum", "Classic 32-band LED analyzer with floating peak caps"),
     VinylPulse("Signal Deck", "Instrument-style meter arcs and peak needles"),
-    DjConsole("DJ Console", "Live broadcast-deck controls driven by decoded PCM"),
+    // Keep the stable enum key so existing saved selections migrate automatically.
+    DjConsole("DJ Soff Snep", "Live DJ deck with an audio-reactive neon watermark"),
     PsychedelicScene("Psychedelic Scene", "Kaleidoscopic colour petals that bloom with the music"),
-    LavaLamp("Lava Lamp", "Molten sound-shaped blobs with bass-weighted movement"),
+    LavaLamp("Lava Lamp", "Full-frame fluid wax with selectable reactive colour palettes"),
+    SignalRain("Signal Rain", "Falling spectrum threads that splash on bass hits"),
+    ContourIslands("Contour Islands", "Bass-warped contour lines around glowing islands"),
+    RibbonReactor("Ribbon Reactor", "Braided colour ribbons tightened by the groove"),
+    PrismGarden("Prism Garden", "Faceted petals rising from a reactive horizon"),
+    MoonlitTides("Moonlit Tides", "Layered wave crests shaped by low frequencies"),
+    PulseQuilt("Pulse Quilt", "A calm six-by-four quilt of audio-flexing tiles"),
+    EchoReef("Echo Reef", "Branching neon reef growth fed by the spectrum"),
+    VelvetVortex("Velvet Vortex", "A deep bass vortex with soft colour eddies"),
+    LanternDrift("Lantern Drift", "Warm lantern light drifting with the groove"),
 }
 
 enum class NowPlayingOverlayMode(val displayName: String) {
@@ -27,10 +37,19 @@ enum class NowPlayingOverlayMode(val displayName: String) {
     Always("Always"),
 }
 
+/** A saved colour family for the Lava Lamp scene; names stay stable for local persistence. */
+enum class LavaLampPalette(val displayName: String, val description: String) {
+    Neon("Neon", "Hot pink, violet, cyan, and electric orange"),
+    Sunset("Sunset", "Red, coral, orange, and golden yellow"),
+    Arctic("Arctic", "Electric blue, aqua, ultraviolet, and white"),
+    Acid("Acid", "Lime, chartreuse, cyan, and ultraviolet"),
+}
+
 data class IdleScreenPreferences(
     val visualizer: IdleVisualizerStyle = IdleVisualizerStyle.NeonKaleidoscope,
     val nowPlayingOverlay: NowPlayingOverlayMode = NowPlayingOverlayMode.Brief,
     val reduceVisualIntensity: Boolean = false,
+    val lavaLampPalette: LavaLampPalette = LavaLampPalette.Neon,
 )
 
 interface IdleScreenPreferencesRepository {
@@ -41,4 +60,6 @@ interface IdleScreenPreferencesRepository {
     suspend fun setNowPlayingOverlay(mode: NowPlayingOverlayMode)
 
     suspend fun setReduceVisualIntensity(enabled: Boolean)
+
+    suspend fun setLavaLampPalette(palette: LavaLampPalette)
 }

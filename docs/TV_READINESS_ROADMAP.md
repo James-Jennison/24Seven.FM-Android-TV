@@ -39,11 +39,24 @@ production configuration changes, account features, or stream changes.
 - **Two-device selector scroll check:** Physical D-pad navigation reached the thirteenth
   visualizer, DJ Console, on both devices. The picker scrolled it fully into view without edge
   clipping or activating a new selection; both MediaSessions remained `PLAYING`.
-- **Current-source visualizer extension (Aug 29):** The owner-approved fifteenth-style picker was
-  exercised on the Google TV Streamer debug build with live decoded audio. `Psychedelic Scene` and
-  `Lava Lamp` were D-pad reachable and opened through the double-Select full-screen route. This is
-  Streamer debug evidence only; it does not replace the existing Fire TV or Play-delivered-split
-  acceptance record.
+- **Current-source visualizer extension (Aug 29):** The owner-approved fifteen-style picker was
+  exercised on the Google TV Streamer debug build with live decoded audio. `Psychedelic Scene` now
+  combines layered rainbow spirals with its petal field; `Lava Lamp` is a full-surface, continuous
+  molten reservoir with only a small number of slow, buoyant wax pieces separating from and
+  rejoining it. Its material has dense, restrained internal shading rather than bright fireball
+  cores. Neon, Sunset, Arctic, and Acid palettes are available through the visible `Lava Lamp
+  Colors` General Options row whenever Lava Lamp is active;
+  and `DJ Soff Snep` replaces the former DJ Console display name with a translucent local neon-mark
+  watermark. The Lava field, palette chooser, Back return, and double-Select full-screen route were
+  physically checked on the Streamer. This is Streamer debug evidence only; it does not replace the
+  existing Fire TV or Play-delivered-split acceptance record.
+- **Twenty-four-style source expansion (Aug 29):** Current source preserves the fifteen stable
+  selections above and appends nine source-led scenes: `Signal Rain`, `Contour Islands`, `Ribbon
+  Reactor`, `Prism Garden`, `Moonlit Tides`, `Pulse Quilt`, `Echo Reef`, `Velvet Vortex`, and
+  `Lantern Drift`. The selector now identifies its 24-style count. The Streamer debug build has
+  D-pad visibility evidence for all rows and one full-screen `Lantern Drift` check without a fatal,
+  EGL, or GL-invalid log entry; individual full-screen acceptance of the other eight additions remains
+  separate from this source-expansion record.
 - **Two-device scroll-position cue:** The installed debug build renders a persistent muted track
   and mint position thumb beside the overflowing selector. Physical inspection confirmed it is
   visible on both devices and moves between the top and bottom selector positions.

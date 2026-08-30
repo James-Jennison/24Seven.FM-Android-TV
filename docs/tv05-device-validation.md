@@ -63,8 +63,31 @@ acceptance. It is not production-release evidence.
 
 ## Current-source addendum — August 29, 2026
 
-- The current debug source expands the picker from thirteen to fifteen fixed styles with `Psychedelic Scene`
-  and `Lava Lamp`. On the Google TV Streamer, both rows were D-pad reachable, their double-Select previews
-  opened full screen while live decoded audio played, and visual inspection confirmed their distinct
-  audio-reactive petal and molten-blob scenes. This is Streamer-only debug evidence; no Play artifact,
-  Fire TV, or release status is implied.
+- The current debug source expanded the picker from thirteen to fifteen fixed styles with `Psychedelic Scene`
+  and `Lava Lamp`. On the Google TV Streamer, both rows were D-pad reachable and their double-Select previews
+  opened full screen while live decoded audio played. The Lava selection now renders as a full-display,
+  edge-to-edge molten reservoir rather than a narrow lamp-shaped inset, one giant blob, or a scatter of
+  equally sized shapes. The final Streamer shader has no white-hot core or blast-style halo; slow buoyant
+  wax separates from the continuous lower reservoir and can rejoin it. The visible `Lava Lamp Colors`
+  General Options row opens four persisted colour palettes (Neon, Sunset, Arctic, and Acid), and Back
+  returns to General Options. The former `DJ Console`
+  display name now reads `DJ Soff Snep` and uses the owner-provided neon mark as a subtle local watermark over
+  the live deck. This is Streamer-only debug evidence; no Play artifact, Fire TV, or release status is implied.
+- Current local source additionally appends nine scenes, reaching 24 styles: `Signal Rain`, `Contour Islands`,
+  `Ribbon Reactor`, `Prism Garden`, `Moonlit Tides`, `Pulse Quilt`, `Echo Reef`, `Velvet Vortex`, and
+  `Lantern Drift`. On the Google TV Streamer debug APK, D-pad scrolling reached all 24 rows with the visible
+  position thumb and `24 styles` cue; `Lantern Drift` opened from the final row through the double-Select
+  full-screen route without a fatal, EGL, or GL-invalid log entry. The other eight added scenes have selector
+  visibility evidence only, so this note makes no claim that all nine received individual full-screen acceptance.
+
+## Commit preflight — August 30, 2026
+
+- Fresh Google TV Streamer captures show the `DJ Soff Snep` neon mark as a deliberately whole-image,
+  low-alpha watermark without a hard visible tile at the deck edge. The persisted enum key remains
+  `DjConsole`, while every visible label resolves through `DJ Soff Snep`.
+- A full-screen Lava Lamp capture shows the continuous lower wax reservoir, a visibly necked rising
+  body, and a separate buoyant drop without a white-hot fireball core. Returning through Back exposes
+  the visible `Lava Lamp Colors` row and the Neon, Sunset, Arctic, and Acid choices.
+- Source inspection confirms each of the nine appended GLES scenes consumes decoded audio bands for
+  geometry, opacity, width, motion, or colour. The Canvas fallback is unreachable for this app's
+  `minSdk = 26` because the GLES path is selected from Android O onward.

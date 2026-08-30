@@ -10,6 +10,7 @@ import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState
 import com.codeframe78.twentyfourseven.player.domain.IdleScreenPreferences
 import com.codeframe78.twentyfourseven.player.domain.IdleScreenPreferencesRepository
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
+import com.codeframe78.twentyfourseven.player.domain.LavaLampPalette
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingOverlayMode
 import com.codeframe78.twentyfourseven.player.domain.PlaybackController
 import com.codeframe78.twentyfourseven.player.domain.PlaybackState
@@ -146,6 +147,10 @@ class TvRadioViewModel(
 
     fun setReduceVisualIntensity(enabled: Boolean) = viewModelScope.launch {
         idleScreenPreferences.setReduceVisualIntensity(enabled)
+    }
+
+    fun setLavaLampPalette(palette: LavaLampPalette) = viewModelScope.launch {
+        idleScreenPreferences.setLavaLampPalette(palette)
     }
 
     class Factory(

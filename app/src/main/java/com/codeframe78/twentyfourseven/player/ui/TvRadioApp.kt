@@ -101,6 +101,7 @@ import com.codeframe78.twentyfourseven.player.domain.PlaybackStatus
 import com.codeframe78.twentyfourseven.player.domain.QueueLoadStatus
 import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
+import com.codeframe78.twentyfourseven.player.domain.LavaLampPalette
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingOverlayMode
 import com.codeframe78.twentyfourseven.player.domain.StationId
 import com.codeframe78.twentyfourseven.player.ui.theme.stationPalette
@@ -125,6 +126,7 @@ internal fun TvRadioApp(
     onSelectIdleVisualizer: (IdleVisualizerStyle) -> Unit,
     onSetNowPlayingOverlay: (NowPlayingOverlayMode) -> Unit,
     onSetReduceVisualIntensity: (Boolean) -> Unit,
+    onSetLavaLampPalette: (LavaLampPalette) -> Unit,
 ) {
     val style = tvStationStyle(state.selectedStation?.id)
     val hostView = LocalView.current
@@ -254,6 +256,7 @@ internal fun TvRadioApp(
                     audioState = visualization,
                     stationName = state.selectedStation?.name,
                     reduceVisualIntensity = state.idleScreen.reduceVisualIntensity,
+                    lavaLampPalette = state.idleScreen.lavaLampPalette,
                     onExit = {
                         if (fullScreenPreviewRequested) {
                             fullScreenPreviewRequested = false
@@ -345,6 +348,7 @@ internal fun TvRadioApp(
                         state = state,
                         onOpenSleepTimer = { menuDestination = TvMenuDestination.SleepTimer },
                         onOpenIdleScreen = { menuDestination = TvMenuDestination.IdleScreen },
+                        onOpenLavaLampColours = { menuDestination = TvMenuDestination.LavaLampColours },
                         onOpenAccessibilityAndMotion = { menuDestination = TvMenuDestination.AccessibilityAndMotion },
                         onOpenAboutAndSupport = { menuDestination = TvMenuDestination.AboutAndSupport },
                         onDismiss = { menuDestination = menuDestination.backDestination() },
@@ -376,6 +380,14 @@ internal fun TvRadioApp(
                             fullScreenPreviewRequested = true
                             menuDestination = null
                         },
+                        onDismiss = { menuDestination = menuDestination.backDestination() },
+                    )
+                }
+
+                TvMenuDestination.LavaLampColours -> {
+                    TvLavaLampColoursSheet(
+                        selectedPalette = state.idleScreen.lavaLampPalette,
+                        onSelectPalette = onSetLavaLampPalette,
                         onDismiss = { menuDestination = menuDestination.backDestination() },
                     )
                 }
@@ -420,6 +432,7 @@ private fun TvGeneralOptionsSheet(
     state: TvRadioUiState,
     onOpenSleepTimer: () -> Unit,
     onOpenIdleScreen: () -> Unit,
+    onOpenLavaLampColours: () -> Unit,
     onOpenAccessibilityAndMotion: () -> Unit,
     onOpenAboutAndSupport: () -> Unit,
     onDismiss: () -> Unit,
@@ -440,6 +453,13 @@ private fun TvGeneralOptionsSheet(
             },
             onClick = onOpenSleepTimer,
         )
+        if (state.idleScreen.visualizer == IdleVisualizerStyle.LavaLamp) {
+            TvOptionAction(
+                title = "Lava Lamp Colors",
+                summary = "${state.idleScreen.lavaLampPalette.displayName} · choose the active wax palette",
+                onClick = onOpenLavaLampColours,
+            )
+        }
         TvOptionAction(
             title = "Accessibility & Motion",
             summary = if (state.idleScreen.reduceVisualIntensity) {
@@ -455,6 +475,26 @@ private fun TvGeneralOptionsSheet(
             onClick = onOpenAboutAndSupport,
         )
         TvOptionAction(title = "Close", summary = "Return to the player", onClick = onDismiss)
+    }
+}
+
+@Composable
+private fun TvLavaLampColoursSheet(
+    selectedPalette: LavaLampPalette,
+    onSelectPalette: (LavaLampPalette) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    TvOptionsSheet(title = "Lava Lamp Colors", onDismiss = onDismiss) { firstAction ->
+        LavaLampPalette.entries.forEachIndexed { index, palette ->
+            TvOptionAction(
+                title = palette.displayName,
+                summary = palette.description,
+                onClick = { onSelectPalette(palette) },
+                selected = palette == selectedPalette,
+                modifier = if (index == 0) Modifier.focusRequester(firstAction) else Modifier,
+            )
+        }
+        TvOptionAction("Back", "Return to General Options", onDismiss)
     }
 }
 
@@ -591,6 +631,7 @@ private fun TvIdleScreenSheet(
             audioState = visualization,
             stationName = state.selectedStation?.name,
             reduceVisualIntensity = state.idleScreen.reduceVisualIntensity,
+            lavaLampPalette = state.idleScreen.lavaLampPalette,
             modifier = Modifier.fillMaxSize(),
         )
         Box(
@@ -616,7 +657,12 @@ private fun TvIdleScreenSheet(
                 color = TvCream,
             )
             Text(
-                previewStyle.description,
+                // The color picker is available for the persisted active style, matching Menu routing.
+                if (previewStyle == IdleVisualizerStyle.LavaLamp) {
+                    previewStyle.description + " · Press Menu for colors"
+                } else {
+                    previewStyle.description
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = TvCream.copy(alpha = .82f),
             )
@@ -638,7 +684,7 @@ private fun TvIdleScreenSheet(
                 color = TvCream,
             )
             Text(
-                "Choose a style to preview · press Select twice for full screen",
+                "${styles.size} styles · select to preview · press Select twice for full screen",
                 style = MaterialTheme.typography.bodySmall,
                 color = TvCream.copy(alpha = .68f),
                 modifier = Modifier.padding(bottom = 8.dp),

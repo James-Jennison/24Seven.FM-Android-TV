@@ -9,6 +9,7 @@ import com.codeframe78.twentyfourseven.player.domain.NowPlayingRepository
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingState
 import com.codeframe78.twentyfourseven.player.domain.HistoryTrack
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
+import com.codeframe78.twentyfourseven.player.domain.LavaLampPalette
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingOverlayMode
 import com.codeframe78.twentyfourseven.player.domain.PlaybackController
 import com.codeframe78.twentyfourseven.player.domain.PlaybackState
@@ -133,7 +134,7 @@ class TvRadioViewModelTest {
     }
 
     @Test
-    fun `TV idle screen exposes all fifteen styles and retains the selected visualizer`() = runTest(dispatcher) {
+    fun `TV idle screen exposes all twenty-four styles and retains the selected visualizer`() = runTest(dispatcher) {
         val preferences = InMemoryIdleScreenPreferencesRepository()
         val viewModel = TvRadioViewModel(
             BootstrapStationRepository(),
@@ -146,7 +147,8 @@ class TvRadioViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()
 
-        assertEquals(15, IdleVisualizerStyle.entries.size)
+        assertEquals(24, IdleVisualizerStyle.entries.size)
+        assertEquals("DJ Soff Snep", IdleVisualizerStyle.DjConsole.displayName)
         viewModel.selectIdleVisualizer(IdleVisualizerStyle.LavaLamp)
         advanceUntilIdle()
 
@@ -169,10 +171,12 @@ class TvRadioViewModelTest {
 
         viewModel.setNowPlayingOverlay(NowPlayingOverlayMode.Always)
         viewModel.setReduceVisualIntensity(true)
+        viewModel.setLavaLampPalette(LavaLampPalette.Arctic)
         advanceUntilIdle()
 
         assertEquals(NowPlayingOverlayMode.Always, viewModel.uiState.value.idleScreen.nowPlayingOverlay)
         assertTrue(viewModel.uiState.value.idleScreen.reduceVisualIntensity)
+        assertEquals(LavaLampPalette.Arctic, viewModel.uiState.value.idleScreen.lavaLampPalette)
     }
 
     @Test

@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
                 onSelectIdleVisualizer = viewModel::selectIdleVisualizer,
                 onSetNowPlayingOverlay = viewModel::setNowPlayingOverlay,
                 onSetReduceVisualIntensity = viewModel::setReduceVisualIntensity,
+                onSetLavaLampPalette = viewModel::setLavaLampPalette,
             )
         }
     }
