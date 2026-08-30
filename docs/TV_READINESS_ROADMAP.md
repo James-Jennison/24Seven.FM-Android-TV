@@ -50,13 +50,14 @@ production configuration changes, account features, or stream changes.
   watermark. The Lava field, palette chooser, Back return, and double-Select full-screen route were
   physically checked on the Streamer. This is Streamer debug evidence only; it does not replace the
   existing Fire TV or Play-delivered-split acceptance record.
-- **Twenty-four-style source expansion (Aug 29):** Current source preserves the fifteen stable
+- **Twenty-four-style source expansion (Aug 29–30):** Current source preserves the fifteen stable
   selections above and appends nine source-led scenes: `Signal Rain`, `Contour Islands`, `Ribbon
   Reactor`, `Prism Garden`, `Moonlit Tides`, `Pulse Quilt`, `Echo Reef`, `Velvet Vortex`, and
-  `Lantern Drift`. The selector now identifies its 24-style count. The Streamer debug build has
-  D-pad visibility evidence for all rows and one full-screen `Lantern Drift` check without a fatal,
-  EGL, or GL-invalid log entry; individual full-screen acceptance of the other eight additions remains
-  separate from this source-expansion record.
+  `Lantern Drift`. The selector identifies its 24-style count. On the Google TV Streamer debug build,
+  D-pad scrolling reached all rows and each appended scene individually opened through the
+  double-Select full-screen route, rendered a distinct composition, and returned to the picker with
+  one Back press. The post-pass log scan found no fatal or GL-invalid entry attributable to the app.
+  This follow-up is Streamer-only debug evidence; Fire TV was deliberately out of scope.
 - **Two-device scroll-position cue:** The installed debug build renders a persistent muted track
   and mint position thumb beside the overflowing selector. Physical inspection confirmed it is
   visible on both devices and moves between the top and bottom selector positions.
@@ -92,7 +93,8 @@ production configuration changes, account features, or stream changes.
   Playback-error fallback cannot be physically observed today because every permitted
   station provides exactly one live stream; inducing it would require a prohibited production
   stream configuration change.
-- **Still open:** Play upload, listing/disclosure completion, and Play-split verification.
+- **Still open:** Google Play review of the saved metadata and TV Closed rollout. Upload, listing/
+  disclosure completion, and Play-generated-split verification are complete.
 
 ## Product guardrails
 
