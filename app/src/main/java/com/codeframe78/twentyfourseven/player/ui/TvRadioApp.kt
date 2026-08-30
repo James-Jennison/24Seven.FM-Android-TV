@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -103,6 +104,7 @@ import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
 import com.codeframe78.twentyfourseven.player.domain.LavaLampPalette
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingOverlayMode
+import com.codeframe78.twentyfourseven.player.domain.Station
 import com.codeframe78.twentyfourseven.player.domain.StationId
 import com.codeframe78.twentyfourseven.player.ui.theme.stationPalette
 import kotlinx.coroutines.delay
@@ -120,6 +122,8 @@ internal fun TvRadioApp(
     visualization: StateFlow<AudioVisualizationState>,
     diagnosticEnvironment: DiagnosticEnvironment,
     onSelectStation: (StationId) -> Unit,
+    onCompleteFirstUse: (Boolean, StationId?) -> Unit,
+    onSetFirstUsePendingStation: (StationId) -> Unit,
     onPause: () -> Unit,
     onSetSleepTimer: (Long) -> Unit,
     onCancelSleepTimer: () -> Unit,
@@ -138,7 +142,9 @@ internal fun TvRadioApp(
     var fullScreenPreviewStyle by remember { mutableStateOf<IdleVisualizerStyle?>(null) }
     var idleNowPlayingOverlayVisible by remember { mutableStateOf(false) }
     var interactionRevision by remember { mutableStateOf(0) }
+    var stationSelectorVisible by remember { mutableStateOf(true) }
     var consumeMenuOpeningDirectionUp by remember { mutableStateOf(false) }
+    val firstUseVisible = state.requiresFirstUse
     DisposableEffect(hostView, state.playback.status) {
         // Fire TV can launch its system dream well before the Player's ten-minute
         // in-app idle timer. While live audio is playing in the visible Player,
@@ -157,6 +163,11 @@ internal fun TvRadioApp(
         } else {
             idleVisualizerActive = false
         }
+    }
+    LaunchedEffect(interactionRevision) {
+        stationSelectorVisible = true
+        delay(4_000)
+        stationSelectorVisible = false
     }
     LaunchedEffect(
         idleVisualizerActive,
@@ -209,6 +220,7 @@ internal fun TvRadioApp(
                     // "any key wakes idle" handling clear preview state on key-down
                     // first, otherwise the preview cannot return to its picker.
                     if (event.key == Key.Back) return@onPreviewKeyEvent false
+                    if (firstUseVisible) return@onPreviewKeyEvent false
                     if (event.type == KeyEventType.KeyDown) {
                         interactionRevision += 1
                         if (idleVisualizerActive) {
@@ -336,11 +348,18 @@ internal fun TvRadioApp(
                             .fillMaxHeight(),
                     )
                 }
-                TvStationBanner(
-                    state = state,
-                    onSelectStation = onSelectStation,
-                    onPause = onPause,
-                )
+                Box(
+                    modifier = Modifier.graphicsLayer {
+                        alpha = if (stationSelectorVisible) 1f else 0f
+                    },
+                ) {
+                    TvStationBanner(
+                        state = state,
+                        onSelectStation = onSelectStation,
+                        onPause = onPause,
+                        onInteraction = { interactionRevision += 1 },
+                    )
+                }
             }
             when (menuDestination) {
                 TvMenuDestination.GeneralOptions -> {
@@ -419,6 +438,15 @@ internal fun TvRadioApp(
 
                 null -> Unit
             }
+            if (firstUseVisible) {
+                TvFirstUseOverlay(
+                    stations = state.stations.sortedBy { it.name },
+                    selectedStation = state.selectedStation,
+                    persistedPendingStationId = state.firstUsePendingStationId,
+                    onSelectPendingStation = onSetFirstUsePendingStation,
+                    onComplete = onCompleteFirstUse,
+                )
+            }
         }
     }
 }
@@ -426,6 +454,168 @@ internal fun TvRadioApp(
 private const val TvIdleScreenDelayMillis = 10 * 60 * 1_000L
 private const val TvNowPlayingOverlayBriefDurationMillis = 5_000L
 private const val TvVisualizerDoubleActivateWindowMillis = 650L
+
+@Composable
+private fun TvFirstUseOverlay(
+    stations: List<Station>,
+    selectedStation: Station?,
+    persistedPendingStationId: StationId?,
+    onSelectPendingStation: (StationId) -> Unit,
+    onComplete: (startPlayback: Boolean, pendingStationId: StationId?) -> Unit,
+) {
+    val startListeningAction = remember { FocusRequester() }
+    var pendingStationValue by rememberSaveable {
+        mutableStateOf(
+            persistedPendingStationId?.value
+                ?: selectedStation?.id?.value
+                ?: stations.firstOrNull()?.id?.value,
+        )
+    }
+    val pendingStation = stations.firstOrNull { it.id.value == pendingStationValue } ?: selectedStation
+    // Dialog content attaches after the initial composition pass on Google TV.
+    // Requesting immediately can be ignored, leaving the first-use surface with
+    // no focused D-pad target; wait for that attachment before taking focus.
+    LaunchedEffect(Unit) {
+        delay(100)
+        startListeningAction.requestFocus()
+    }
+    androidx.activity.compose.BackHandler { onComplete(false, null) }
+    Dialog(
+        onDismissRequest = { onComplete(false, null) },
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
+        ),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(TvInk.copy(alpha = .72f))
+                .semantics {
+                    paneTitle = "Welcome to 24Seven.FM TV"
+                    isTraversalGroup = true
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            val selectedPalette = stationPalette(pendingStation?.id)
+            Column(
+                modifier = Modifier
+                    // Keep the entire first-use decision in the visible TV safe area.
+                    // The Streamer's display density makes a wide/tall phone-like panel
+                    // clip the action row, so this deliberately favors a compact 10-foot
+                    // layout over fixed physical dimensions.
+                    .fillMaxWidth(.88f)
+                    .widthIn(max = 960.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(TvInk.copy(alpha = .82f))
+                    .border(1.dp, TvCream.copy(alpha = .30f), RoundedCornerShape(24.dp))
+                    .padding(horizontal = 32.dp, vertical = 22.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    "Welcome to 24Seven.FM TV",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = TvCream,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    "Live radio, built for your living room.",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TvCream.copy(alpha = .82f),
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(selectedPalette.accent.copy(alpha = .28f))
+                        .border(2.dp, selectedPalette.secondary, RoundedCornerShape(16.dp))
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    pendingStation?.let { station ->
+                        Image(
+                            bitmap = ImageBitmap.imageResource(tvStationSelectorLogoResource(station.id, 128)),
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.size(68.dp),
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                "SELECTED STATION",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = selectedPalette.secondary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(station.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text(station.description, style = MaterialTheme.typography.bodyMedium, color = TvCream.copy(alpha = .84f))
+                        }
+                    }
+                }
+                Text(
+                    "Choose another station below if you like. Selecting a card stays silent until you start listening.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TvCream.copy(alpha = .78f),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    stations.forEach { station ->
+                        val selected = station.id.value == pendingStationValue
+                        val palette = stationPalette(station.id)
+                        Button(
+                            onClick = {
+                                pendingStationValue = station.id.value
+                                onSelectPendingStation(station.id)
+                            },
+                            modifier = Modifier.weight(1f).height(74.dp),
+                            colors = ButtonDefaults.colors(
+                                containerColor = Color.Transparent,
+                                contentColor = TvCream,
+                                focusedContainerColor = palette.accent.copy(alpha = .24f),
+                                focusedContentColor = TvCream,
+                            ),
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                if (selected) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(66.dp)
+                                            .clip(CircleShape)
+                                            .background(palette.accent.copy(alpha = .48f)),
+                                    )
+                                }
+                                Image(
+                                    bitmap = ImageBitmap.imageResource(tvStationSelectorLogoResource(station.id, 48)),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier.size(40.dp),
+                                )
+                                if (selected) {
+                                    Text(
+                                        "✓",
+                                        modifier = Modifier.align(Alignment.TopEnd),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = palette.secondary,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                val stationName = pendingStation?.name ?: "1980s.FM"
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Button(onClick = { onComplete(true, pendingStation?.id) }, modifier = Modifier.focusRequester(startListeningAction)) {
+                        Text("Start listening to $stationName")
+                    }
+                    Button(onClick = { onComplete(false, null) }) { Text("Not now") }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun TvGeneralOptionsSheet(
@@ -1140,6 +1330,7 @@ private fun TvStationBanner(
     state: TvRadioUiState,
     onSelectStation: (StationId) -> Unit,
     onPause: () -> Unit,
+    onInteraction: () -> Unit,
 ) {
     val livePulse by rememberInfiniteTransition(label = "TV live station pulse")
         .animateFloat(
@@ -1196,14 +1387,17 @@ private fun TvStationBanner(
             }
             val iconHaloScale = if (playing) 0.94f + (livePulse * 0.12f) else 1f
             Box(
-                modifier = Modifier.size(102.dp),
+                modifier = Modifier.size(112.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 if (focused) {
                     Box(
                         modifier = Modifier
-                            .size(62.dp)
-                            .background(TvCream.copy(alpha = 0.12f), TvTrackShape)
+                            // Focus is on the station control, not only its artwork:
+                            // include the LIVE/SELECTED status in the same visual unit.
+                            .size(104.dp)
+                            .background(palette.secondary.copy(alpha = 0.30f), TvTrackShape)
+                            .border(2.dp, palette.secondary.copy(alpha = 0.92f), TvTrackShape)
                     )
                 }
                 Button(
@@ -1223,7 +1417,11 @@ private fun TvStationBanner(
                     ),
                     shape = ButtonDefaults.shape(TvTrackShape),
                     modifier = Modifier
-                        .size(90.dp)
+                        .size(100.dp)
+                        .onPreviewKeyEvent { event ->
+                            if (event.type == KeyEventType.KeyDown) onInteraction()
+                            false
+                        }
                         .onFocusChanged {
                             focused = it.isFocused
                             if (it.isFocused) optionsHintGeneration += 1
@@ -1275,7 +1473,21 @@ private fun TvStationBanner(
                                     modifier = Modifier.size(52.dp),
                                 )
                             }
-                            if (playing) Text("LIVE", fontWeight = FontWeight.Bold)
+                            if (playing) {
+                                Text("LIVE", fontWeight = FontWeight.Bold)
+                            }
+                            if (selected && !playing) {
+                                Text(
+                                    "SELECTED",
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .background(palette.accent.copy(alpha = .78f))
+                                        .padding(horizontal = 7.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TvCream,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
                         }
                     }
                 }

@@ -34,8 +34,8 @@ android {
         applicationId = "com.codeframe78.twentyfourseven.tv"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0-tv-alpha01"
+        versionCode = 2
+        versionName = "0.1.0-tv-alpha02"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["appLabel"] = "24Seven.FM TV"
         manifestPlaceholders["buildRevision"] = sourceRevision
@@ -55,7 +55,7 @@ android {
         getByName("debug") {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            manifestPlaceholders["appLabel"] = "24Seven.FM TV (Debug)"
+            manifestPlaceholders["appLabel"] = "24Seven.FM TV — Alpha 02 Debug"
         }
         getByName("release") {
             isMinifyEnabled = true

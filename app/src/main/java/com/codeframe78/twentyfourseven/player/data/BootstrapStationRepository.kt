@@ -92,6 +92,9 @@ class BootstrapStationRepository(
         return candidates.firstNotNullOfOrNull { candidate ->
             stations.firstOrNull { it.id == candidate.canonicalized() }
         }
+            // A fresh TV install should open on the first listener-facing station,
+            // not the historical declaration order used by the repository.
+            ?: stations.firstOrNull { it.id == StationId("1980s") }
             ?: stations.first()
     }
 

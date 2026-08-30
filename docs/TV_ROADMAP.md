@@ -59,6 +59,12 @@ was installed and physically accepted on the Google TV Streamer and Dongle R 4K.
 The closure order and acceptance evidence for these rows are defined in
 [TV_READINESS_ROADMAP.md](TV_READINESS_ROADMAP.md).
 
+## TV08 — First-use listener entry
+
+**Status: In progress.** A translucent, station-first overlay now opens for fresh local TV installs,
+defaults to 1980s.FM, and defers audio until the listener explicitly starts. Its current Streamer
+evidence is recorded in [tv08-first-use-validation.md](tv08-first-use-validation.md).
+
 ## TV06 — Play alpha delivery
 
 **Status: In progress — Google Play review.** Internal testing release

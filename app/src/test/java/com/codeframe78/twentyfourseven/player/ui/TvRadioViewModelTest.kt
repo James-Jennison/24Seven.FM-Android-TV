@@ -4,6 +4,7 @@ import com.codeframe78.twentyfourseven.player.data.BootstrapStationRepository
 import com.codeframe78.twentyfourseven.player.data.InMemoryStationPreferencesRepository
 import com.codeframe78.twentyfourseven.player.data.InMemoryAudioVisualizationRepository
 import com.codeframe78.twentyfourseven.player.data.InMemoryIdleScreenPreferencesRepository
+import com.codeframe78.twentyfourseven.player.data.InMemoryFirstUseRepository
 import com.codeframe78.twentyfourseven.player.domain.LocalStationPreferences
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingRepository
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingState
@@ -63,7 +64,7 @@ class TvRadioViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()
 
-        assertEquals("sst", playback.selectedStation?.id?.value)
+        assertEquals("1980s", playback.selectedStation?.id?.value)
         assertEquals(1, playback.playCalls)
         nowPlaying.state.value = NowPlayingState(StationId("afm"), "Other station")
         advanceUntilIdle()
@@ -93,6 +94,90 @@ class TvRadioViewModelTest {
 
         assertEquals("efm", playback.selectedStation?.id?.value)
         assertEquals(1, playback.playCalls)
+    }
+
+    @Test
+    fun `first use dismissal does not commit a pending station or enable auto playback`() = runTest(dispatcher) {
+        val playback = FakePlaybackController()
+        val firstUse = InMemoryFirstUseRepository(initiallyCompleted = false)
+        val viewModel = TvRadioViewModel(
+            BootstrapStationRepository(), playback, FakeNowPlayingRepository(), FakeQueueRepository(),
+            InMemoryIdleScreenPreferencesRepository(), InMemoryAudioVisualizationRepository(), firstUse,
+        )
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        viewModel.completeFirstUse(startPlayback = false)
+        advanceUntilIdle()
+
+        assertEquals("1980s", playback.selectedStation?.id?.value)
+        assertEquals(0, playback.playCalls)
+        assertFalse(firstUse.hasCompletedFirstUse)
+
+        val relaunched = TvRadioViewModel(
+            BootstrapStationRepository(), FakePlaybackController(), FakeNowPlayingRepository(), FakeQueueRepository(),
+            InMemoryIdleScreenPreferencesRepository(), InMemoryAudioVisualizationRepository(), firstUse,
+        )
+        backgroundScope.launch { relaunched.uiState.collect() }
+        advanceUntilIdle()
+        assertTrue(relaunched.uiState.value.requiresFirstUse)
+
+        val nextLaunchPlayback = FakePlaybackController()
+        val nextLaunch = TvRadioViewModel(
+            BootstrapStationRepository(), nextLaunchPlayback, FakeNowPlayingRepository(), FakeQueueRepository(),
+            InMemoryIdleScreenPreferencesRepository(), InMemoryAudioVisualizationRepository(), firstUse,
+        )
+        backgroundScope.launch { nextLaunch.uiState.collect() }
+        advanceUntilIdle()
+
+        assertTrue(nextLaunch.uiState.value.requiresFirstUse)
+        assertEquals(0, nextLaunchPlayback.playCalls)
+    }
+
+    @Test
+    fun `first use holds playback until the listener confirms a selected station`() = runTest(dispatcher) {
+        val playback = FakePlaybackController()
+        val firstUse = InMemoryFirstUseRepository(initiallyCompleted = false)
+        val viewModel = TvRadioViewModel(
+            BootstrapStationRepository(), playback, FakeNowPlayingRepository(), FakeQueueRepository(),
+            InMemoryIdleScreenPreferencesRepository(), InMemoryAudioVisualizationRepository(), firstUse,
+        )
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.requiresFirstUse)
+        assertEquals("1980s", playback.selectedStation?.id?.value)
+        assertEquals(0, playback.playCalls)
+
+        viewModel.completeFirstUse(startPlayback = true, pendingStationId = StationId("afm"))
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.requiresFirstUse)
+        assertEquals("afm", playback.selectedStation?.id?.value)
+        assertEquals(1, playback.playCalls)
+    }
+
+    @Test
+    fun `first use retains a pending station across a new view model without playback`() = runTest(dispatcher) {
+        val firstUse = InMemoryFirstUseRepository(initiallyCompleted = false)
+        val viewModel = TvRadioViewModel(
+            BootstrapStationRepository(), FakePlaybackController(), FakeNowPlayingRepository(), FakeQueueRepository(),
+            InMemoryIdleScreenPreferencesRepository(), InMemoryAudioVisualizationRepository(), firstUse,
+        )
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        viewModel.setFirstUsePendingStation(StationId("afm"))
+        advanceUntilIdle()
+
+        val relaunched = TvRadioViewModel(
+            BootstrapStationRepository(), FakePlaybackController(), FakeNowPlayingRepository(), FakeQueueRepository(),
+            InMemoryIdleScreenPreferencesRepository(), InMemoryAudioVisualizationRepository(), firstUse,
+        )
+        backgroundScope.launch { relaunched.uiState.collect() }
+        advanceUntilIdle()
+
+        assertTrue(relaunched.uiState.value.requiresFirstUse)
+        assertEquals("afm", relaunched.uiState.value.firstUsePendingStationId?.value)
     }
 
     @Test
@@ -223,7 +308,7 @@ class TvRadioViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()
 
-        assertEquals(listOf(StationId("sst")), queue.observedStations)
+        assertEquals(listOf(StationId("1980s")), queue.observedStations)
         assertEquals("1. Public track", viewModel.uiState.value.queue?.upcoming?.single()?.let { "${it.position}. ${it.displayTitle}" })
         assertEquals("Public history", viewModel.uiState.value.queue?.recentlyPlayed?.single()?.displayTitle)
     }

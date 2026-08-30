@@ -28,6 +28,7 @@ class MainActivity : AppCompatActivity() {
                     container.queueRepository,
                     container.idleScreenPreferences,
                     container.audioVisualizationRepository,
+                    container.firstUseRepository,
                 ),
             )
             val state = viewModel.uiState.collectAsStateWithLifecycle().value
@@ -36,6 +37,8 @@ class MainActivity : AppCompatActivity() {
                 visualization = viewModel.visualization,
                 diagnosticEnvironment = diagnosticEnvironment(),
                 onSelectStation = viewModel::selectStation,
+                onCompleteFirstUse = viewModel::completeFirstUse,
+                onSetFirstUsePendingStation = viewModel::setFirstUsePendingStation,
                 onPause = viewModel::pause,
                 onSetSleepTimer = viewModel::setSleepTimer,
                 onCancelSleepTimer = viewModel::cancelSleepTimer,
