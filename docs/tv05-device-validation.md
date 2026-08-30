@@ -60,3 +60,11 @@ and published Play-generated-split acceptance passed.
 
 This document combines debug-build device evidence, local signed-artifact evidence, and Play-delivered split
 acceptance. It is not production-release evidence.
+
+## Current-source addendum — August 29, 2026
+
+- The current debug source expands the picker from thirteen to fifteen fixed styles with `Psychedelic Scene`
+  and `Lava Lamp`. On the Google TV Streamer, both rows were D-pad reachable, their double-Select previews
+  opened full screen while live decoded audio played, and visual inspection confirmed their distinct
+  audio-reactive petal and molten-blob scenes. This is Streamer-only debug evidence; no Play artifact,
+  Fire TV, or release status is implied.

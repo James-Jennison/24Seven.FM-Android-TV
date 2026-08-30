@@ -14,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -312,6 +313,32 @@ internal fun TvCanvasIdleVisualizer(
                     drawRect(hue(meter * 2, .72f), Offset(left, size.height * .82f - height), Size(size.width * .045f, height))
                 }
             }
+
+            IdleVisualizerStyle.PsychedelicScene -> {
+                repeat(10) { petal ->
+                    val path = Path()
+                    repeat(28) { index ->
+                        val t = index / 27f
+                        val angle = petal * .628f + (t - .5f) * .48f
+                        val radius = minimum * (.10f + t * .34f + sin(t * 6.2f + petal) * .045f)
+                        val point = polar(angle, radius)
+                        if (index == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
+                    }
+                    drawPath(path, hue(petal, .82f), style = Stroke(2.4f))
+                }
+                drawCircle(Color.White.copy(alpha = .36f), radius = minimum * .09f, center = center)
+            }
+
+            IdleVisualizerStyle.LavaLamp -> {
+                drawRoundRect(Color(0xFF18042C), Offset(size.width * .25f, size.height * .04f), Size(size.width * .50f, size.height * .92f), CornerRadius(minimum * .07f))
+                repeat(6) { blob ->
+                    val x = size.width * (.34f + (blob * 37 % 53) / 100f)
+                    val y = size.height * (.18f + (blob * 41 % 67) / 100f)
+                    val radius = minimum * (.075f + (blob % 3) * .035f)
+                    drawCircle(hue(blob + 2, .68f), radius, Offset(x, y))
+                    drawCircle(Color.White.copy(alpha = .18f), radius * .45f, Offset(x - radius * .20f, y - radius * .22f))
+                }
+            }
         }
     }
 }
@@ -462,6 +489,32 @@ internal fun TvVisualizerPreview(
                 drawPath(waveform, color(1, .88f), style = Stroke(2f))
                 repeat(4) { meter ->
                     drawRect(color(meter * 2, .82f), Offset(size.width * (.52f + meter * .095f), size.height * .70f), Size(size.width * .055f, size.height * (.10f + meter * .035f)))
+                }
+            }
+
+            IdleVisualizerStyle.PsychedelicScene -> {
+                repeat(10) { petal ->
+                    val path = Path()
+                    repeat(28) { index ->
+                        val t = index / 27f
+                        val angle = petal * .628f + (t - .5f) * .48f
+                        val radius = minimum * (.10f + t * .34f + sin(t * 6.2f + petal) * .045f)
+                        val point = polar(angle, radius)
+                        if (index == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
+                    }
+                    drawPath(path, color(petal, .82f), style = Stroke(2.4f))
+                }
+                drawCircle(Color.White.copy(alpha = .36f), radius = minimum * .09f, center = center)
+            }
+
+            IdleVisualizerStyle.LavaLamp -> {
+                drawRoundRect(Color(0xFF18042C), Offset(size.width * .25f, size.height * .04f), Size(size.width * .50f, size.height * .92f), CornerRadius(minimum * .07f))
+                repeat(6) { blob ->
+                    val x = size.width * (.34f + (blob * 37 % 53) / 100f)
+                    val y = size.height * (.18f + (blob * 41 % 67) / 100f)
+                    val radius = minimum * (.075f + (blob % 3) * .035f)
+                    drawCircle(color(blob + 2, .68f), radius, Offset(x, y))
+                    drawCircle(Color.White.copy(alpha = .18f), radius * .45f, Offset(x - radius * .20f, y - radius * .22f))
                 }
             }
         }

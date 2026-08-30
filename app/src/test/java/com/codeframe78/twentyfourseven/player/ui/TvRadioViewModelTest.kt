@@ -133,7 +133,7 @@ class TvRadioViewModelTest {
     }
 
     @Test
-    fun `TV idle screen exposes all thirteen styles and retains the selected visualizer`() = runTest(dispatcher) {
+    fun `TV idle screen exposes all fifteen styles and retains the selected visualizer`() = runTest(dispatcher) {
         val preferences = InMemoryIdleScreenPreferencesRepository()
         val viewModel = TvRadioViewModel(
             BootstrapStationRepository(),
@@ -146,11 +146,11 @@ class TvRadioViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()
 
-        assertEquals(13, IdleVisualizerStyle.entries.size)
-        viewModel.selectIdleVisualizer(IdleVisualizerStyle.DjConsole)
+        assertEquals(15, IdleVisualizerStyle.entries.size)
+        viewModel.selectIdleVisualizer(IdleVisualizerStyle.LavaLamp)
         advanceUntilIdle()
 
-        assertEquals(IdleVisualizerStyle.DjConsole, viewModel.uiState.value.idleScreen.visualizer)
+        assertEquals(IdleVisualizerStyle.LavaLamp, viewModel.uiState.value.idleScreen.visualizer)
     }
 
     @Test

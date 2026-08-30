@@ -39,6 +39,11 @@ production configuration changes, account features, or stream changes.
 - **Two-device selector scroll check:** Physical D-pad navigation reached the thirteenth
   visualizer, DJ Console, on both devices. The picker scrolled it fully into view without edge
   clipping or activating a new selection; both MediaSessions remained `PLAYING`.
+- **Current-source visualizer extension (Aug 29):** The owner-approved fifteenth-style picker was
+  exercised on the Google TV Streamer debug build with live decoded audio. `Psychedelic Scene` and
+  `Lava Lamp` were D-pad reachable and opened through the double-Select full-screen route. This is
+  Streamer debug evidence only; it does not replace the existing Fire TV or Play-delivered-split
+  acceptance record.
 - **Two-device scroll-position cue:** The installed debug build renders a persistent muted track
   and mint position thumb beside the overflowing selector. Physical inspection confirmed it is
   visible on both devices and moves between the top and bottom selector positions.
@@ -132,10 +137,10 @@ Fire TV without interrupting playback.
 
 ### R2.2 — Style behavior (after R2.1 acceptance)
 
-**Status: Deferred by product decision (Aug 28, 2026).** The alpha retains fixed selected style.
-Favorites, rotation cadence, and random selection are not in scope for this release and require a
-future explicit product decision; no style-behavior feature is implied by the completed fixed-style
-acceptance.
+**Status: Fixed selection retained.** The owner approved two additional fixed visualizer choices on
+Aug 29, 2026: `Psychedelic Scene` and `Lava Lamp`. Favorites, rotation cadence, and random selection
+remain out of scope for this release and require a future explicit product decision; no style-behavior
+feature is implied by the completed fixed-style acceptance.
 
 - **Fixed selected style** remains the default and preserves the existing picker.
 - **Rotate favorites** rotates only styles the listener explicitly marks as favorites.

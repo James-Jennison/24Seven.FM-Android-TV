@@ -17,6 +17,8 @@ enum class IdleVisualizerStyle(val displayName: String, val description: String)
     MinimalSpectrum("EQ Spectrum", "Classic 32-band LED analyzer with floating peak caps"),
     VinylPulse("Signal Deck", "Instrument-style meter arcs and peak needles"),
     DjConsole("DJ Console", "Live broadcast-deck controls driven by decoded PCM"),
+    PsychedelicScene("Psychedelic Scene", "Kaleidoscopic colour petals that bloom with the music"),
+    LavaLamp("Lava Lamp", "Molten sound-shaped blobs with bass-weighted movement"),
 }
 
 enum class NowPlayingOverlayMode(val displayName: String) {

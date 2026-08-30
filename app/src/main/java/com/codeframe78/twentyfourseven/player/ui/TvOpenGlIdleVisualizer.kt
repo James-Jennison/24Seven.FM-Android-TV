@@ -984,7 +984,9 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
             9 -> lightTrails()
             10 -> eqSpectrum()
             11 -> signalDeck()
-            else -> djConsole()
+            12 -> djConsole()
+            13 -> psychedelicScene()
+            else -> lavaLamp()
         }
         GLES20.glDisableVertexAttribArray(positionHandle)
     }
@@ -1682,6 +1684,105 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         }
     }
 
+    /** A source-led psychedelic field: bass opens petals, mids bend them, and attacks flash their seams. */
+    private fun psychedelicScene() {
+        val low = (band(0) * .70f + band(1) * .30f).coerceIn(0f, 1f)
+        val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
+        val high = ((band(6) + band(7)) * .5f).coerceIn(0f, 1f)
+        begin()
+        vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.012f, .002f, .028f, 1f))
+        val petals = 11
+        repeat(3) { ring ->
+            val samples = 96
+            val baseRadius = .20f + ring * .22f + low * (.10f + ring * .025f) + impact * .08f
+            repeat(petals) { petal ->
+                val centreAngle = petal * Tau / petals + ring * .17f
+                begin()
+                vertex(0f, 0f)
+                repeat(samples + 1) { point ->
+                    val t = point / samples.toFloat()
+                    val localAngle = centreAngle + (t - .5f) * (.42f + mid * .18f)
+                    val ripple = sin(t * Tau * (2.2f + ring * .6f) + phase * (.54f + low * .55f) + petal) *
+                        (.035f + mid * .10f + transient * .05f)
+                    val fringe = sin(t * Tau * (6.5f + ring) - phase * .34f + petal * 1.7f) * high * .027f
+                    val radius = (baseRadius + ripple + fringe) * (1f + sin(t * PI.toFloat()) * (.34f + low * .22f))
+                    vertex(cos(localAngle) * radius * aspect(), sin(localAngle) * radius)
+                }
+                triangleFan(samples + 2, palette(petal + ring * 3, .095f + low * .18f + mid * .10f + impact * .08f))
+
+                begin()
+                repeat(samples) { point ->
+                    val t = point / (samples - 1f)
+                    val localAngle = centreAngle + (t - .5f) * (.42f + mid * .18f)
+                    val ripple = sin(t * Tau * (2.2f + ring * .6f) + phase * (.54f + low * .55f) + petal) *
+                        (.035f + mid * .10f + transient * .05f)
+                    val fringe = sin(t * Tau * (6.5f + ring) - phase * .34f + petal * 1.7f) * high * .027f
+                    val radius = (baseRadius + ripple + fringe) * (1f + sin(t * PI.toFloat()) * (.34f + low * .22f))
+                    vertex(cos(localAngle) * radius * aspect(), sin(localAngle) * radius)
+                }
+                lineStrip(samples, palette(petal + ring * 3 + 2, .42f + mid * .28f + high * .20f + transient * .16f), 1.1f + high * 1.5f)
+            }
+        }
+        begin()
+        var count = 0
+        repeat(42) { spark ->
+            val angle = spark * Tau / 42f + phase * (.12f + high * .34f)
+            val radius = .12f + (spark % 7) * .105f + low * .18f + impact * .12f
+            vertex(cos(angle) * radius * aspect(), sin(angle) * radius)
+            count++
+        }
+        points(count, White.withAlpha(.22f + high * .36f + transient * .20f), 1.5f + high * 2.2f + impact * 2.8f)
+    }
+
+    /** A lava lamp without decorative clockwork: every lift, merge, and glow is tied to decoded audio. */
+    private fun lavaLamp() {
+        val low = (band(0) * .70f + band(1) * .30f).coerceIn(0f, 1f)
+        val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
+        val high = ((band(6) + band(7)) * .5f).coerceIn(0f, 1f)
+        begin()
+        vertex(-.72f, -1f); vertex(.72f, -1f); vertex(-.72f, 1f); vertex(.72f, 1f)
+        triangleStrip(4, Rgba(.055f, .006f, .095f, 1f))
+        begin(); vertex(-.73f, -.98f); vertex(-.73f, .98f); vertex(.73f, .98f); vertex(.73f, -.98f)
+        lineLoop(4, Rgba(.96f, .28f, .78f, .12f + high * .22f), 1.1f)
+
+        repeat(8) { blob ->
+            val samples = 112
+            val lane = ((blob * 37 % 101) / 100f - .5f) * 1.05f
+            val heightSeed = (blob * 53 % 89) / 88f
+            val localLow = (band(blob) * .66f + band(blob + 1) * .34f).coerceIn(0f, 1f)
+            val localMid = (band(blob + 3) * .62f + band(blob + 4) * .38f).coerceIn(0f, 1f)
+            val lift = sin(phase * (.24f + localLow * .76f) + blob * 1.91f) * (.10f + localLow * .24f + impact * .08f)
+            val centreX = lane + sin(phase * (.18f + localMid * .46f) + blob * .83f) * (.025f + localMid * .075f)
+            val centreY = (-.72f + heightSeed * 1.44f + lift).coerceIn(-.84f, .84f)
+            val radiusX = .13f + localLow * .13f + impact * .045f
+            val radiusY = .10f + localLow * .16f + localMid * .045f
+            begin()
+            vertex(centreX, centreY)
+            repeat(samples + 1) { point ->
+                val angle = point * Tau / samples
+                val wobble = sin(angle * 3f + phase * (.52f + localLow * .62f) + blob) * (.020f + localMid * .060f) +
+                    sin(angle * 5f - phase * .30f + blob * 1.7f) * high * .023f
+                vertex(
+                    centreX + cos(angle) * (radiusX + wobble) * aspect(),
+                    centreY + sin(angle) * (radiusY + wobble),
+                )
+            }
+            triangleFan(samples + 2, LavaLampPalette[blob % LavaLampPalette.size].withAlpha(.14f + localLow * .24f + localMid * .10f + transient * .08f))
+            begin()
+            repeat(samples) { point ->
+                val angle = point * Tau / (samples - 1f)
+                val wobble = sin(angle * 3f + phase * (.52f + localLow * .62f) + blob) * (.020f + localMid * .060f) +
+                    sin(angle * 5f - phase * .30f + blob * 1.7f) * high * .023f
+                vertex(
+                    centreX + cos(angle) * (radiusX + wobble) * aspect(),
+                    centreY + sin(angle) * (radiusY + wobble),
+                )
+            }
+            lineLoop(samples, LavaLampPalette[(blob + 2) % LavaLampPalette.size].withAlpha(.42f + localLow * .30f + high * .14f + transient * .12f), 1f + high * 1.1f)
+        }
+    }
+
     private fun meterArc(centerX: Float, centerY: Float, level: Float, peak: Float, colour: Int, scale: Float) {
         val samples = 72
         // Conventional meter direction: quiet at the left, 0 dB at the right.
@@ -2226,6 +2327,13 @@ private val CurrentThemes = arrayOf(
     arrayOf(Rgba(.04f, .68f, 1f), Rgba(.05f, .95f, .78f), Rgba(.14f, .42f, 1f)), // electric water
     arrayOf(Rgba(1f, .08f, .62f), Rgba(.82f, .16f, 1f), Rgba(1f, .18f, .44f)), // fuchsia pulse
     arrayOf(Rgba(1f, .48f, .06f), Rgba(1f, .82f, .10f), Rgba(.92f, .23f, .04f)), // molten amber
+)
+private val LavaLampPalette = arrayOf(
+    Rgba(1f, .08f, .36f),
+    Rgba(1f, .29f, .04f),
+    Rgba(.93f, .12f, 1f),
+    Rgba(1f, .72f, .05f),
+    Rgba(.46f, .10f, 1f),
 )
 private val CalligraphyStartX = floatArrayOf(-1.08f, -.92f, 1.08f, -1.08f, .30f)
 private val CalligraphyStartY = floatArrayOf(-.78f, .92f, -.95f, .18f, 1.08f)
