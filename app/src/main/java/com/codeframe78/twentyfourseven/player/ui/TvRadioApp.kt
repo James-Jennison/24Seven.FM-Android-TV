@@ -42,6 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -127,7 +128,9 @@ internal fun TvRadioApp(
 ) {
     val style = tvStationStyle(state.selectedStation?.id)
     val hostView = LocalView.current
-    var menuDestination by remember { mutableStateOf<TvMenuDestination?>(null) }
+    var menuDestination by rememberSaveable(stateSaver = TvMenuDestinationSaver) {
+        mutableStateOf<TvMenuDestination?>(null)
+    }
     var idleVisualizerActive by remember { mutableStateOf(false) }
     var fullScreenPreviewRequested by remember { mutableStateOf(false) }
     var fullScreenPreviewStyle by remember { mutableStateOf<IdleVisualizerStyle?>(null) }
@@ -344,7 +347,7 @@ internal fun TvRadioApp(
                         onOpenIdleScreen = { menuDestination = TvMenuDestination.IdleScreen },
                         onOpenAccessibilityAndMotion = { menuDestination = TvMenuDestination.AccessibilityAndMotion },
                         onOpenAboutAndSupport = { menuDestination = TvMenuDestination.AboutAndSupport },
-                        onDismiss = { menuDestination = null },
+                        onDismiss = { menuDestination = menuDestination.backDestination() },
                     )
                 }
 
@@ -359,7 +362,7 @@ internal fun TvRadioApp(
                         onCancelSleepTimer()
                         menuDestination = null
                     },
-                    onDismiss = { menuDestination = TvMenuDestination.GeneralOptions },
+                    onDismiss = { menuDestination = menuDestination.backDestination() },
                 )
                 }
 
@@ -373,7 +376,7 @@ internal fun TvRadioApp(
                             fullScreenPreviewRequested = true
                             menuDestination = null
                         },
-                        onDismiss = { menuDestination = TvMenuDestination.GeneralOptions },
+                        onDismiss = { menuDestination = menuDestination.backDestination() },
                     )
                 }
 
@@ -382,7 +385,7 @@ internal fun TvRadioApp(
                         preferences = state.idleScreen,
                         onSetNowPlayingOverlay = onSetNowPlayingOverlay,
                         onSetReduceVisualIntensity = onSetReduceVisualIntensity,
-                        onDismiss = { menuDestination = TvMenuDestination.GeneralOptions },
+                        onDismiss = { menuDestination = menuDestination.backDestination() },
                     )
                 }
 
@@ -390,7 +393,7 @@ internal fun TvRadioApp(
                     TvAboutAndSupportSheet(
                         environment = diagnosticEnvironment,
                         onOpenDiagnostics = { menuDestination = TvMenuDestination.Diagnostics },
-                        onDismiss = { menuDestination = TvMenuDestination.GeneralOptions },
+                        onDismiss = { menuDestination = menuDestination.backDestination() },
                     )
                 }
 
@@ -398,7 +401,7 @@ internal fun TvRadioApp(
                 TvDiagnosticsDialog(
                     state = state,
                     environment = diagnosticEnvironment,
-                    onDismiss = { menuDestination = TvMenuDestination.GeneralOptions },
+                    onDismiss = { menuDestination = menuDestination.backDestination() },
                 )
             }
 
@@ -406,15 +409,6 @@ internal fun TvRadioApp(
             }
         }
     }
-}
-
-private enum class TvMenuDestination {
-    GeneralOptions,
-    SleepTimer,
-    IdleScreen,
-    AccessibilityAndMotion,
-    AboutAndSupport,
-    Diagnostics,
 }
 
 private const val TvIdleScreenDelayMillis = 10 * 60 * 1_000L
