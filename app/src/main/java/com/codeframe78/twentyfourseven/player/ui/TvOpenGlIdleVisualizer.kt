@@ -771,6 +771,10 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     private var transient = 0f
     private var impact = 0f
     private var impactPhase = 0f
+    // Lava receives a deliberately slow, global heat signal. It is not driven by
+    // individual FFT attacks, so wax remains heavy instead of turning into fireballs.
+    private var lavaThermalEnergy = 0f
+    private var lavaConvectionClock = 0f
     private var style = 0
     private var lavaLampPalette = LavaLampPalette.Neon.ordinal
     private var program = 0
@@ -985,6 +989,13 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         impulse += (targetImpulse - impulse) * (1f - exp((-delta * ImpulseSmoothing).toDouble()).toFloat())
         transient += (targetTransient - transient) * (1f - exp((-delta * TransientSmoothing).toDouble()).toFloat())
         impact *= exp((-delta * ImpactDecay).toDouble()).toFloat()
+        if (style == IdleVisualizerStyle.LavaLamp.ordinal) {
+            val bassHeat = (band(0) * .72f + band(1) * .28f).coerceIn(0f, 1f)
+            val heatSmoothing = 1f - exp((-delta / LavaThermalRelaxationSeconds).toDouble()).toFloat()
+            lavaThermalEnergy += (bassHeat - lavaThermalEnergy) * heatSmoothing
+            // One full lobe cycle takes roughly 18–25 seconds: convection, not a beat toy.
+            lavaConvectionClock += delta * (.86f + lavaThermalEnergy * .34f)
+        }
         if (style == IdleVisualizerStyle.StarfieldWarp.ordinal) {
             // Deep Warp has no clock-driven camera movement: only measured sub and
             // low-frequency energy advances the viewer through the star field.
@@ -1825,40 +1836,15 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
      * preserves distinct pools until a strong bass pulse makes neighbours merge.
      */
     private fun shaderLavaLamp() {
-        val low = (band(0) * .70f + band(1) * .30f).coerceIn(0f, 1f)
-        val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
         val bodyData = FloatArray(6 * 4)
         val bodyRise = FloatArray(6)
-        // Four overlapping bodies make one heavy molten reservoir. Only two
-        // pieces separate from it, so the scene reads as wax convection rather
-        // than a field of independently animated icons.
-        val lanes = floatArrayOf(-1.25f, -.42f, .42f, 1.25f, -.32f, .38f)
-        val heights = floatArrayOf(-.79f, -.80f, -.80f, -.79f, -.24f, .30f)
-        repeat(6) { blob ->
-            val isReservoir = blob < 4
-            val localLow = (band(blob) * .66f + band(blob + 1) * .34f).coerceIn(0f, 1f)
-            val localMid = (band(blob + 3) * .62f + band(blob + 4) * .38f).coerceIn(0f, 1f)
-            // Lava moves with slow buoyancy. Audio adds pressure to the wax but
-            // never turns it into fast, independent fireballs.
-            val liftPhase = phase * if (isReservoir) (.055f + localLow * .075f) else (.10f + localLow * .16f) + blob * 1.91f
-            val lift = sin(liftPhase) * if (isReservoir) (.012f + localLow * .030f + impact * .012f) else (.070f + localLow * .105f + impact * .030f)
-            val ascent = if (isReservoir) 0f else cos(liftPhase).coerceAtLeast(0f)
-            val x = lanes[blob] + sin(phase * if (isReservoir) .05f else (.08f + localMid * .12f) + blob * .83f) *
-                if (isReservoir) .012f else (.014f + localMid * .026f)
-            val y = (heights[blob] + lift).coerceIn(-.86f, .82f)
-            val baseRadiusX = if (isReservoir) .62f else .25f
-            val baseRadiusY = if (isReservoir) .28f else .22f
-            val radiusX = (baseRadiusX + localLow * if (isReservoir) .045f else .040f + impact * if (isReservoir) .035f else .050f) *
-                (1f - ascent * .12f)
-            val radiusY = (baseRadiusY + localLow * if (isReservoir) .050f else .060f + localMid * .025f + impact * .035f) *
-                (1f + ascent * .32f)
-            val offset = blob * 4
-            bodyData[offset] = x
-            bodyData[offset + 1] = y
-            bodyData[offset + 2] = radiusX
-            bodyData[offset + 3] = radiusY
-            bodyRise[blob] = ascent
-        }
+        // Two compact, overlapping bottom bodies make a real pool inside the vessel.
+        setLavaBody(bodyData, bodyRise, 0, -.07f, -.75f, .27f, .16f, 0f)
+        setLavaBody(bodyData, bodyRise, 1, .10f, -.73f, .23f, .14f, 0f)
+        // Each lobe begins as a tall connected thread, then rounds as it rises.
+        // The trailing neck remains until the lobe has visibly pinched free.
+        setLavaLobe(bodyData, bodyRise, 2, 4, lavaProgress(0f), -.08f)
+        setLavaLobe(bodyData, bodyRise, 3, 5, lavaProgress(.48f), .10f)
         val colours = LavaLampColourPalettes[lavaLampPalette]
         GLES20.glDisable(GLES20.GL_BLEND)
         GLES20.glUseProgram(lavaMetaballProgram)
@@ -1867,8 +1853,8 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         GLES20.glUniform3f(lavaMetaballColourOneHandle, colours[0].r, colours[0].g, colours[0].b)
         GLES20.glUniform3f(lavaMetaballColourTwoHandle, colours[1].r, colours[1].g, colours[1].b)
         GLES20.glUniform3f(lavaMetaballColourThreeHandle, colours[2].r, colours[2].g, colours[2].b)
-        GLES20.glUniform1f(lavaMetaballEnergyHandle, (energy * .65f + low * .35f).coerceIn(0f, 1f))
-        GLES20.glUniform1f(lavaMetaballPhaseHandle, phase + mid * .35f)
+        GLES20.glUniform1f(lavaMetaballEnergyHandle, lavaThermalEnergy)
+        GLES20.glUniform1f(lavaMetaballPhaseHandle, lavaConvectionClock)
         GLES20.glUniform1fv(lavaMetaballRiseHandle, 6, bodyRise, 0)
         feedbackQuad.position(0)
         GLES20.glEnableVertexAttribArray(lavaMetaballPositionHandle)
@@ -1882,6 +1868,33 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         )
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         GLES20.glDisableVertexAttribArray(lavaMetaballPositionHandle)
+    }
+
+    private fun lavaProgress(offset: Float): Float = ((lavaConvectionClock * .045f + offset) % 1f + 1f) % 1f
+
+    private fun setLavaLobe(bodyData: FloatArray, bodyRise: FloatArray, lobeIndex: Int, neckIndex: Int, progress: Float, lane: Float) {
+        val release = smoothStep(.08f, .30f, progress)
+        val x = lane + sin(lavaConvectionClock * .13f + progress * Tau) * (.018f + lavaThermalEnergy * .018f)
+        val y = -.64f + progress * 1.36f
+        val stretched = (1f - release) * .26f + .06f
+        setLavaBody(bodyData, bodyRise, lobeIndex, x, y, .125f - release * .030f, .17f + stretched, release)
+
+        val neckVisible = 1f - smoothStep(.23f, .43f, progress)
+        setLavaBody(
+            bodyData, bodyRise, neckIndex, x * .72f, -.64f + progress * .62f,
+            (.055f + neckVisible * .040f).coerceAtLeast(.028f), .16f + neckVisible * .20f, neckVisible,
+        )
+    }
+
+    private fun setLavaBody(bodyData: FloatArray, bodyRise: FloatArray, index: Int, x: Float, y: Float, radiusX: Float, radiusY: Float, rise: Float) {
+        val offset = index * 4
+        bodyData[offset] = x; bodyData[offset + 1] = y; bodyData[offset + 2] = radiusX; bodyData[offset + 3] = radiusY
+        bodyRise[index] = rise
+    }
+
+    private fun smoothStep(edge0: Float, edge1: Float, value: Float): Float {
+        val t = ((value - edge0) / (edge1 - edge0)).coerceIn(0f, 1f)
+        return t * t * (3f - 2f * t)
     }
 
     /** A lava lamp without decorative clockwork: every lift, merge, and glow is tied to decoded audio. */
@@ -2706,6 +2719,7 @@ private const val MasterPeakFallPerSecond = .12f
 private const val ImpulseSmoothing = 26f
 private const val TransientSmoothing = 34f
 private const val ImpactDecay = 6.5f
+private const val LavaThermalRelaxationSeconds = 2.1f
 private const val SpectrumPeakFallPerSecond = .34f
 private const val SpectrumHistoryRows = 32
 private const val SpectrumHistoryFrameStride = 3L
@@ -2784,44 +2798,51 @@ uniform float uEnergy;
 uniform float uPhase;
 uniform float uRise[6];
 
-float waxField(vec2 point) {
-    float field = 0.0;
-    for (int index = 0; index < 6; index++) {
-        vec4 body = uBodies[index];
-        vec2 delta = (point - body.xy) / body.zw;
-        float seed = float(index) * 1.73;
-        float ascent = uRise[index];
-        // Distort every boundary differently so wax pools wobble and stretch
-        // instead of remaining mathematically perfect ellipses.
-        delta.x += sin(delta.y * 4.2 + uPhase * 0.18 + seed) * (0.030 + uEnergy * 0.018);
-        delta.y += sin(delta.x * 4.7 - uPhase * 0.14 + seed) * (0.028 + uEnergy * 0.018);
-        // Rising wax stretches vertically, then narrows through a surface-tension
-        // neck. This makes a bubble detach from the lower pool as a teardrop.
-        float neck = smoothstep(-0.18, 0.66, delta.y) * ascent;
-        delta.x *= 1.0 + neck * 0.24;
-        field += 1.0 / max(dot(delta, delta), 0.045);
-    }
-    return field;
+float bodyField(vec2 point, vec2 centre, vec2 radius) {
+    vec2 delta = (point - centre) / radius;
+    return 1.0 / max(dot(delta, delta), 0.042);
 }
 
 void main() {
     float aspect = uResolution.y / max(uResolution.x, 1.0);
     vec2 point = vec2(vPosition.x / aspect, vPosition.y);
-            vec3 glass = vec3(0.030, 0.002, 0.075) + vec3(0.060, 0.008, 0.110) * (1.0 - abs(point.y));
-    float field = waxField(point);
-    // A higher threshold keeps resting pools distinct; peaks can still fuse them.
-    float wax = smoothstep(1.62, 2.24, field);
-    float edge = smoothstep(1.10, 1.78, field) - wax;
-    // Keep one dense wax family per selected palette: gradients are subtle
-    // depth cues, never bright horizontal bands through a blob.
+    vec3 background = vec3(0.010, 0.003, 0.025) + vec3(0.025, 0.004, 0.055) * (1.0 - abs(point.y));
+    // Four 120%-tall tapered chambers are deliberately cropped by the display.
+    // Their dark gaps make the scene read as a wall of lamps, not a single field.
+    float column = floor((point.x + 1.64) / 0.82);
+    if (column < 0.0 || column > 3.0) { gl_FragColor = vec4(background, 1.0); return; }
+    float centreX = -1.23 + column * 0.82;
+    float normalizedY = clamp((point.y + 1.0) * 0.5, 0.0, 1.0);
+    float halfWidth = mix(0.31, 0.215, normalizedY);
+    float localX = point.x - centreX;
+    if (abs(localX) > halfWidth + 0.018) { gl_FragColor = vec4(background, 1.0); return; }
+
+    float stage = fract(uPhase * 0.045 + column * 0.251);
+    float release = smoothstep(0.08, 0.30, stage);
+    // Keep the wax connected through most of its ascent. It only pinches loose
+    // close to the top, which avoids the detached "floating fireball" look.
+    float neckVisible = 1.0 - smoothstep(0.68, 0.88, stage);
+    float drift = sin(uPhase * 0.13 + column * 2.41) * (0.018 + uEnergy * 0.018);
+    float lobeY = -0.66 + stage * 1.42;
+    // One field per chamber: compact base pool, stretched lobe, and a trailing
+    // neck. The global heat changes only the slow rate and glow, never the lobe
+    // position per audio beat.
+    float field = bodyField(point, vec2(centreX - 0.06, -0.77), vec2(0.25, 0.16));
+    field += bodyField(point, vec2(centreX + 0.10, -0.73), vec2(0.21, 0.14));
+    field += bodyField(point, vec2(centreX + drift, lobeY), vec2(0.125 - release * 0.030, 0.43 - release * 0.20));
+    field += bodyField(point, vec2(centreX + drift * 0.72, (-0.69 + lobeY) * 0.5), vec2(0.048 + neckVisible * 0.042, 0.18 + stage * 0.62));
+    float wax = smoothstep(1.64, 2.28, field);
+    float edge = smoothstep(1.08, 1.80, field) - wax;
     vec3 waxColour = mix(uColourOne, uColourTwo, 0.34);
     waxColour = mix(waxColour, uColourThree, 0.16);
-    float subsurface = smoothstep(3.20, 6.20, field);
-    vec3 colour = glass;
-    colour += waxColour * edge * (0.025 + uEnergy * 0.020);
+    float subsurface = smoothstep(3.10, 6.00, field);
+    float rim = smoothstep(halfWidth + 0.018, halfWidth - 0.006, abs(localX));
+    vec3 glass = vec3(0.026, 0.008, 0.062) + vec3(0.050, 0.010, 0.090) * (1.0 - abs(point.y));
+    vec3 colour = glass + vec3(0.25, 0.14, 0.36) * rim * 0.36;
+    colour += waxColour * edge * (0.030 + uEnergy * 0.026);
     colour = mix(colour, waxColour * (0.62 + uEnergy * 0.10), wax);
-    colour += mix(waxColour, uColourThree, 0.18) * subsurface * (0.035 + uEnergy * 0.030);
-            gl_FragColor = vec4(colour, 1.0);
+    colour += mix(waxColour, uColourThree, 0.18) * subsurface * (0.040 + uEnergy * 0.035);
+    gl_FragColor = vec4(colour, 1.0);
 }
 """
 
