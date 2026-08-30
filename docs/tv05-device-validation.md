@@ -91,3 +91,14 @@ acceptance. It is not production-release evidence.
 - Source inspection confirms each of the nine appended GLES scenes consumes decoded audio bands for
   geometry, opacity, width, motion, or colour. The Canvas fallback is unreachable for this app's
   `minSdk = 26` because the GLES path is selected from Android O onward.
+
+## Google TV Streamer follow-up — August 30, 2026
+
+- On the Google TV Streamer debug build, each appended scene (`Signal Rain`, `Contour Islands`,
+  `Ribbon Reactor`, `Prism Garden`, `Moonlit Tides`, `Pulse Quilt`, `Echo Reef`, `Velvet Vortex`,
+  and `Lantern Drift`) was individually opened through the D-pad double-Select full-screen route.
+  Every scene rendered a distinct full-display composition, and one Back press returned to the
+  Idle Visualizer selector after each preview.
+- A post-pass device log scan contained no fatal exception or GL-invalid entry attributable to
+  `com.codeframe78.twentyfourseven.tv.debug`. This is Google TV Streamer-only debug acceptance;
+  Fire TV was deliberately not tested in this follow-up, and no release claim is implied.
