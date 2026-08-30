@@ -43,6 +43,7 @@ import kotlinx.coroutines.launch
 class RadioPlaybackService : MediaSessionService() {
     private lateinit var player: ExoPlayer
     private lateinit var mediaSession: MediaSession
+    private lateinit var stationSwitchCoordinator: StationSwitchCoordinator
     private val nowPlayingPublisher: NowPlayingPublisher by lazy {
         (application as RadioApplication).appContainer.nowPlayingPublisher
     }
@@ -56,6 +57,7 @@ class RadioPlaybackService : MediaSessionService() {
     private var activeNowPlaying: NowPlayingState? = null
     private var activeIcyTitle: String? = null
     private var activeMediaId: String? = null
+    private var isShuttingDown = false
     private val cancelSleepTimerButton by lazy {
         CommandButton.Builder(CommandButton.ICON_MINUS_CIRCLE_FILLED)
             .setSessionCommand(SleepTimerSessionContract.cancelCommand)
@@ -65,6 +67,34 @@ class RadioPlaybackService : MediaSessionService() {
     }
     private val sessionPlayer by lazy {
         object : ForwardingPlayer(player) {
+            override fun setMediaItems(mediaItems: List<MediaItem>) {
+                stationSwitchCoordinator.setMediaItems(mediaItems)
+            }
+
+            override fun setMediaItem(mediaItem: MediaItem) {
+                stationSwitchCoordinator.setMediaItem(mediaItem)
+            }
+
+            override fun setMediaItems(mediaItems: List<MediaItem>, resetPosition: Boolean) {
+                stationSwitchCoordinator.setMediaItems(mediaItems, resetPosition)
+            }
+
+            override fun setMediaItem(mediaItem: MediaItem, resetPosition: Boolean) {
+                stationSwitchCoordinator.setMediaItem(mediaItem, resetPosition)
+            }
+
+            override fun setMediaItems(
+                mediaItems: List<MediaItem>,
+                startIndex: Int,
+                startPositionMs: Long,
+            ) {
+                stationSwitchCoordinator.setMediaItems(mediaItems, startIndex, startPositionMs)
+            }
+
+            override fun setMediaItem(mediaItem: MediaItem, startPositionMs: Long) {
+                stationSwitchCoordinator.setMediaItem(mediaItem, startPositionMs)
+            }
+
             override fun getAvailableCommands(): Player.Commands = super.getAvailableCommands()
                 .buildUpon()
                 .remove(Player.COMMAND_SEEK_TO_NEXT)
@@ -85,24 +115,11 @@ class RadioPlaybackService : MediaSessionService() {
     }
     private val metadataListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            val incomingMediaId = mediaItem?.mediaId
-            if (!shouldClearNowPlaying(activeMediaId, incomingMediaId)) return
-            detailsJob?.cancel()
-            activeNowPlaying = null
-            activeIcyTitle = null
-            activeMediaId = incomingMediaId
-            val incomingStationId = mediaItem?.stationId()
-            // ExoPlayer emits a transient null item while a controller replaces its media list.
-            // It is not a user station change, so it must not erase the restored startup snapshot.
-            if (incomingStationId == null) return
-            // A normal process restart has a public snapshot for the same station. Keep it on
-            // screen while the stream connects instead of flashing the generic app artwork.
-            if (nowPlayingPublisher.current().stationId != incomingStationId) {
-                nowPlayingPublisher.clear(incomingStationId)
-            }
+            onStationSwitchStarted(mediaItem?.mediaId)
         }
 
         override fun onMetadata(metadata: Metadata) {
+            if (isShuttingDown) return
             val stationId = player.currentMediaItem?.stationId() ?: return
             val nowPlaying = metadata.toNowPlayingState(stationId) ?: return
             if (activeNowPlaying?.stationId == stationId && activeIcyTitle == nowPlaying.displayTitle) return
@@ -218,9 +235,30 @@ class RadioPlaybackService : MediaSessionService() {
             (application as RadioApplication).appContainer.audioVisualizationRepository,
         )
         player = ExoPlayer.Builder(this, AudioVisualizationRenderersFactory(this, visualizationProcessor))
+            .setLoadControl(LiveIcecastLoadControl.create())
             .setAudioAttributes(attributes, true)
             .setHandleAudioBecomingNoisy(true)
             .build()
+        stationSwitchCoordinator = StationSwitchCoordinator(
+            playlist = object : PlaylistPort {
+                override fun setMediaItems(mediaItems: List<MediaItem>) {
+                    player.setMediaItems(mediaItems)
+                }
+
+                override fun setMediaItems(mediaItems: List<MediaItem>, resetPosition: Boolean) {
+                    player.setMediaItems(mediaItems, resetPosition)
+                }
+
+                override fun setMediaItems(
+                    mediaItems: List<MediaItem>,
+                    startIndex: Int,
+                    startPositionMs: Long,
+                ) {
+                    player.setMediaItems(mediaItems, startIndex, startPositionMs)
+                }
+            },
+            onSwitchStarted = ::onStationSwitchStarted,
+        )
         player.addListener(fallbackListener)
         player.addListener(metadataListener)
         val sessionActivity = PendingIntent.getActivity(
@@ -238,6 +276,24 @@ class RadioPlaybackService : MediaSessionService() {
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo) = mediaSession
+
+    private fun onStationSwitchStarted(incomingMediaId: String?) {
+        if (isShuttingDown) return
+        if (!shouldClearNowPlaying(activeMediaId, incomingMediaId)) return
+        detailsJob?.cancel()
+        activeNowPlaying = null
+        activeIcyTitle = null
+        activeMediaId = incomingMediaId
+        val incomingStationId = incomingMediaId?.stationId()
+        // ExoPlayer emits a transient null item while a controller replaces its media list.
+        // It is not a user station change, so it must not erase the restored startup snapshot.
+        if (incomingStationId == null) return
+        // A normal process restart has a public snapshot for the same station. Keep it on
+        // screen while the stream connects instead of flashing the generic app artwork.
+        if (nowPlayingPublisher.current().stationId != incomingStationId) {
+            nowPlayingPublisher.clear(incomingStationId)
+        }
+    }
 
     private fun updateSessionMetadata(nowPlaying: NowPlayingState) {
         val index = player.currentMediaItemIndex
@@ -306,6 +362,8 @@ class RadioPlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        isShuttingDown = true
+        stationSwitchCoordinator.close()
         sleepTimerJob?.cancel()
         player.removeListener(fallbackListener)
         player.removeListener(metadataListener)
@@ -321,6 +379,10 @@ private const val SLEEP_TIMER_UPDATE_INTERVAL_MILLIS = 1_000L
 
 private fun MediaItem.stationId(): StationId? = mediaId
     .substringBefore(':')
+    .takeIf(String::isNotBlank)
+    ?.let(::StationId)
+
+private fun String.stationId(): StationId? = substringBefore(':')
     .takeIf(String::isNotBlank)
     ?.let(::StationId)
 

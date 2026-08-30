@@ -4,6 +4,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.net.Uri
+import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
@@ -46,6 +48,31 @@ class RadioPlaybackServiceTest {
 
         connectController().useOnMainThread { controller ->
             assertTrue(controller.availableCommands.contains(Player.COMMAND_PLAY_PAUSE))
+        }
+    }
+
+    @Test
+    fun sessionAcceptsRapidStationReplacementWithoutPreparingNetworkPlayback() {
+        connectController().useOnMainThread { controller ->
+            val firstStation = MediaItem.Builder()
+                .setMediaId("adagio:0")
+                .setUri(Uri.parse("https://example.invalid/adagio"))
+                .build()
+            val secondStation = MediaItem.Builder()
+                .setMediaId("death:0")
+                .setUri(Uri.parse("https://example.invalid/death"))
+                .build()
+
+            controller.setMediaItems(listOf(firstStation), 0, 0L)
+            controller.setMediaItems(listOf(secondStation), 0, 0L)
+            controller.setMediaItem(
+                MediaItem.Builder()
+                    .setMediaId("entranced:0")
+                    .setUri(Uri.parse("https://example.invalid/entranced"))
+                    .build(),
+            )
+
+            assertTrue(controller.currentMediaItem?.mediaId == "entranced:0")
         }
     }
 
