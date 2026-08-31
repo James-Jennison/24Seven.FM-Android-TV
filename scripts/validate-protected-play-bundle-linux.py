@@ -289,11 +289,14 @@ def parse_recovery_payload(
     store_bytes = bytearray(_decode_base64(value.get("storeBytes"), "storeBytes"))
     store_sha256 = _normalize_sha256(value.get("storeSha256"), "storeSha256")
     certificate_sha256 = _normalize_sha256(value.get("certificateSha256"), "certificateSha256")
+    expected_certificate_sha256 = _normalize_sha256(
+        expected_certificate_sha256.replace(":", ""), "expected upload certificate"
+    )
     actual_store_sha256 = hashlib.sha256(store_bytes).hexdigest().upper()
     if actual_store_sha256 != store_sha256:
         store_bytes[:] = b"\x00" * len(store_bytes)
         raise SigningError("The recovered keystore hash does not match the authenticated payload.")
-    if certificate_sha256 != expected_certificate_sha256.upper():
+    if certificate_sha256 != expected_certificate_sha256:
         store_bytes[:] = b"\x00" * len(store_bytes)
         raise SigningError(
             "The recovery package does not contain the registered Play upload identity."

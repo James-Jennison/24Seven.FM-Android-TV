@@ -130,6 +130,16 @@ class LinuxPlaySigningTest(unittest.TestCase):
         finally:
             payload.clear()
 
+    def test_play_console_colon_delimited_certificate_is_accepted(self) -> None:
+        expected_certificate = ":".join(
+            self.certificate_sha256[index : index + 2]
+            for index in range(0, len(self.certificate_sha256), 2)
+        )
+        payload = signing.load_recovery_package(
+            self.create_package(), self.passphrase, expected_certificate
+        )
+        payload.clear()
+
     def test_wrong_passphrase_is_rejected(self) -> None:
         with self.assertRaisesRegex(signing.SigningError, "authentication failed"):
             signing.load_recovery_package(
