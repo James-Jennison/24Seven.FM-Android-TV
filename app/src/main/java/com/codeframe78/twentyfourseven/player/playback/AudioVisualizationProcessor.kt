@@ -46,6 +46,9 @@ internal class AudioVisualizationProcessor(
         output.flip()
     }
 
+    // Media3 still invokes this lifecycle callback for AudioProcessor implementations.
+    // Keep the reset local until its replacement contract is available upstream.
+    @Suppress("OVERRIDE_DEPRECATION")
     override fun onFlush() = resetVisualization()
 
     override fun onReset() = resetVisualization()
