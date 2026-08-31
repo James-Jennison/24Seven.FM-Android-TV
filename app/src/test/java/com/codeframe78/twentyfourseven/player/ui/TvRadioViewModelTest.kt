@@ -234,6 +234,17 @@ class TvRadioViewModelTest {
 
         assertEquals(24, IdleVisualizerStyle.entries.size)
         assertEquals("DJ Soff Snep", IdleVisualizerStyle.DjConsole.displayName)
+        assertEquals(
+            listOf(
+                "NeonKaleidoscope", "AuroraDrift", "OscilloscopeTunnel", "SpectralMandala",
+                "ParticleNebula", "LiquidPrism", "LaserGrid", "StarfieldWarp",
+                "ChromaticTerrain", "LightTrails", "MinimalSpectrum", "VinylPulse",
+                "DjConsole", "PsychedelicScene", "LavaLamp", "SignalRain", "ContourIslands",
+                "RibbonReactor", "PrismGarden", "MoonlitTides", "PulseQuilt", "EchoReef",
+                "VelvetVortex", "LanternDrift",
+            ),
+            IdleVisualizerStyle.entries.map { it.name },
+        )
         viewModel.selectIdleVisualizer(IdleVisualizerStyle.LavaLamp)
         advanceUntilIdle()
 

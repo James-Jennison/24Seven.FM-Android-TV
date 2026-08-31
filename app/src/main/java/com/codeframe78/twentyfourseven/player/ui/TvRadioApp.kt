@@ -14,6 +14,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -43,6 +46,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -108,6 +112,7 @@ import com.codeframe78.twentyfourseven.player.domain.Station
 import com.codeframe78.twentyfourseven.player.domain.StationId
 import com.codeframe78.twentyfourseven.player.ui.theme.stationPalette
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.PI
 import kotlin.math.sin
@@ -1582,6 +1587,9 @@ private fun TvDiagnosticsDialog(
     onDismiss: () -> Unit,
 ) {
     val closeAction = remember { FocusRequester() }
+    val reportScrollState = rememberScrollState()
+    val scrollScope = rememberCoroutineScope()
+    val scrollStepPx = with(LocalDensity.current) { 112.dp.toPx() }
     val report = remember(
         environment,
         state.selectedStation?.name,
@@ -1606,10 +1614,27 @@ private fun TvDiagnosticsDialog(
         Column(
             modifier = Modifier
                 .width(760.dp)
+                .height(840.dp)
                 .clip(TvPanelShape)
                 .background(TvInk.copy(alpha = 0.94f))
                 .border(1.dp, TvCream.copy(alpha = 0.38f), TvPanelShape)
-                .padding(32.dp),
+                .padding(32.dp)
+                .onPreviewKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    when (event.key) {
+                        Key.DirectionDown -> {
+                            scrollScope.launch { reportScrollState.animateScrollBy(scrollStepPx) }
+                            true
+                        }
+
+                        Key.DirectionUp -> {
+                            scrollScope.launch { reportScrollState.animateScrollBy(-scrollStepPx) }
+                            true
+                        }
+
+                        else -> false
+                    }
+                },
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -1624,8 +1649,16 @@ private fun TvDiagnosticsDialog(
                 style = MaterialTheme.typography.bodyLarge,
                 color = TvCream.copy(alpha = 0.82f),
             )
+            Text(
+                "Use ↑ / ↓ to scroll the report",
+                style = MaterialTheme.typography.labelSmall,
+                color = TvCream.copy(alpha = 0.64f),
+            )
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(reportScrollState),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 report.lineSequence()

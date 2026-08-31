@@ -5,6 +5,7 @@ import android.app.ActivityManager
 import android.graphics.Paint as AndroidPaint
 import android.graphics.Typeface
 import android.graphics.SurfaceTexture
+import android.hardware.display.DisplayManager
 import android.opengl.EGL14
 import android.opengl.EGLConfig as AndroidEglConfig
 import android.opengl.EGLDisplay
@@ -19,10 +20,7 @@ import android.view.Choreographer
 import android.view.TextureView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -31,18 +29,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.viewinterop.AndroidView
 import com.codeframe78.twentyfourseven.player.R
 import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState
@@ -50,7 +48,9 @@ import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationBandCount
 import com.codeframe78.twentyfourseven.player.domain.AudioWaveformSampleCount
 import com.codeframe78.twentyfourseven.player.domain.CalibratedBandCount
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
+import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerRenderProfile
 import com.codeframe78.twentyfourseven.player.domain.LavaLampPalette
+import com.codeframe78.twentyfourseven.player.domain.metadata
 import kotlinx.coroutines.flow.StateFlow
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -231,25 +231,32 @@ private fun TvOpenGlIdleVisualizer(
             }
         }
         if (style == IdleVisualizerStyle.DjConsole) {
+            // Decode this large local mark only while its tribute scene is active.
+            val djSoffSnepDecal = ImageBitmap.imageResource(R.drawable.dj_soff_snep_overlay)
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val panelLeft = size.width * .035f
-                val panelTop = size.height * .055f
+                val panelTop = size.height * .045f
                 val panelWidth = size.width * .93f
-                val panelHeight = size.height * .89f
-                val jogCentre = Offset(size.width * .255f, size.height * .535f)
-                val jogRadius = size.height * .290f
-                val mixerLeft = size.width * .485f
-                val mixerRight = size.width * .755f
-                val waveformLeft = size.width * .505f
-                val waveformTop = size.height * .220f
-                val waveformWidth = size.width * .405f
-                val waveformHeight = size.height * .270f
+                val panelHeight = size.height * .930f
+                val jogCentre = Offset(size.width * .190f, size.height * .545f)
+                val rightJogCentre = Offset(size.width * .810f, size.height * .545f)
+                val jogRadius = size.height * .225f
+                val mixerLeft = size.width * .350f
+                val mixerRight = size.width * .650f
+                val waveformLeft = size.width * .340f
+                val waveformTop = size.height * .710f
+                val waveformWidth = size.width * .320f
+                val waveformHeight = size.height * .080f
 
+                // The tribute fills the room, while the deck remains a separate
+                // physical surface in front of it. An opaque base also prevents
+                // the retired GL layout from bleeding through this Canvas scene.
+                drawRect(Color(0xFF03070E))
                 // A physical control surface first: a matte faceplate, recessed
                 // displays and hardware details. The animated GL layer above it
                 // supplies the live PCM waveform, jog response, EQ and VU levels.
                 drawRoundRect(
-                    color = Color(0xB80A101B),
+                    color = Color(0x960A101B),
                     topLeft = Offset(panelLeft, panelTop),
                     size = Size(panelWidth, panelHeight),
                     cornerRadius = CornerRadius(size.height * .025f),
@@ -274,18 +281,36 @@ private fun TvOpenGlIdleVisualizer(
                     drawCircle(Color(0xFF070B10), size.height * .0028f, screw)
                 }
 
-                drawRoundRect(
-                    color = Color(0x8A07101B),
-                    topLeft = Offset(size.width * .040f, size.height * .185f),
-                    size = Size(size.width * .430f, size.height * .680f),
-                    cornerRadius = CornerRadius(size.height * .018f),
-                )
+                // Raised platters sit directly on the tribute background; there
+                // are intentionally no rectangular deck bays behind them.
+                drawCircle(Color(0x9A000000), jogRadius * 1.08f, jogCentre + Offset(0f, size.height * .022f))
+                drawCircle(Color(0xFF101D2B), jogRadius * 1.045f, jogCentre)
+                drawCircle(Color(0xFF86A6C2), jogRadius * 1.010f, jogCentre)
+                drawCircle(Color(0xFF1A2E42), jogRadius * .976f, jogCentre)
                 drawCircle(Color(0x7202060A), jogRadius, jogCentre)
                 drawCircle(Color(0xFF6A7F91), jogRadius, jogCentre, style = Stroke(width = size.height * .005f))
                 drawCircle(Color(0x5A142232), jogRadius * .885f, jogCentre)
                 drawCircle(Color(0xFF293D51), jogRadius * .800f, jogCentre, style = Stroke(width = size.height * .0014f))
                 drawCircle(Color(0x4A0B121C), jogRadius * .585f, jogCentre)
                 drawCircle(Color(0xFF54738C), jogRadius * .585f, jogCentre, style = Stroke(width = size.height * .002f))
+                drawArc(
+                    color = Color(0xFFC7E9FF),
+                    startAngle = 198f,
+                    sweepAngle = 142f,
+                    useCenter = false,
+                    topLeft = Offset(jogCentre.x - jogRadius * .992f, jogCentre.y - jogRadius * .992f),
+                    size = Size(jogRadius * 1.984f, jogRadius * 1.984f),
+                    style = Stroke(width = size.height * .005f),
+                )
+                drawArc(
+                    color = Color(0xFF07111B),
+                    startAngle = 18f,
+                    sweepAngle = 142f,
+                    useCenter = false,
+                    topLeft = Offset(jogCentre.x - jogRadius * .992f, jogCentre.y - jogRadius * .992f),
+                    size = Size(jogRadius * 1.984f, jogRadius * 1.984f),
+                    style = Stroke(width = size.height * .0065f),
+                )
                 repeat(40) { tick ->
                     val angle = tick * Tau / 40f
                     val tickInner = jogRadius * .910f
@@ -327,6 +352,93 @@ private fun TvOpenGlIdleVisualizer(
                     )
                 }
 
+                // A matching second platter completes the physical two-deck
+                // layout. It deliberately has no second logo: the tribute mark
+                // remains the unique label on the DJ's own deck.
+                drawCircle(Color(0x9A000000), jogRadius * 1.08f, rightJogCentre + Offset(0f, size.height * .022f))
+                drawCircle(Color(0xFF101D2B), jogRadius * 1.045f, rightJogCentre)
+                drawCircle(Color(0xFF86A6C2), jogRadius * 1.010f, rightJogCentre)
+                drawCircle(Color(0xFF1A2E42), jogRadius * .976f, rightJogCentre)
+                drawCircle(Color(0x7202060A), jogRadius, rightJogCentre)
+                drawCircle(Color(0xFF6A7F91), jogRadius, rightJogCentre, style = Stroke(width = size.height * .005f))
+                drawCircle(Color(0x5A142232), jogRadius * .885f, rightJogCentre)
+                drawCircle(Color(0xFF293D51), jogRadius * .800f, rightJogCentre, style = Stroke(width = size.height * .0014f))
+                drawCircle(Color(0x4A0B121C), jogRadius * .585f, rightJogCentre)
+                drawCircle(Color(0xFF54738C), jogRadius * .585f, rightJogCentre, style = Stroke(width = size.height * .002f))
+                drawArc(
+                    color = Color(0xFFC7E9FF),
+                    startAngle = 198f,
+                    sweepAngle = 142f,
+                    useCenter = false,
+                    topLeft = Offset(rightJogCentre.x - jogRadius * .992f, rightJogCentre.y - jogRadius * .992f),
+                    size = Size(jogRadius * 1.984f, jogRadius * 1.984f),
+                    style = Stroke(width = size.height * .005f),
+                )
+                drawArc(
+                    color = Color(0xFF07111B),
+                    startAngle = 18f,
+                    sweepAngle = 142f,
+                    useCenter = false,
+                    topLeft = Offset(rightJogCentre.x - jogRadius * .992f, rightJogCentre.y - jogRadius * .992f),
+                    size = Size(jogRadius * 1.984f, jogRadius * 1.984f),
+                    style = Stroke(width = size.height * .0065f),
+                )
+                repeat(40) { tick ->
+                    val angle = tick * Tau / 40f
+                    val start = Offset(
+                        rightJogCentre.x + cos(angle) * jogRadius * .910f,
+                        rightJogCentre.y + sin(angle) * jogRadius * .910f,
+                    )
+                    val end = Offset(
+                        rightJogCentre.x + cos(angle) * jogRadius * .955f,
+                        rightJogCentre.y + sin(angle) * jogRadius * .955f,
+                    )
+                    drawLine(Color(0xFF668096), start, end, strokeWidth = size.height * .0014f)
+                }
+                drawLine(
+                    Color(0xFF48C7FF),
+                    Offset(rightJogCentre.x, rightJogCentre.y - jogRadius * .78f),
+                    Offset(rightJogCentre.x, rightJogCentre.y - jogRadius * .61f),
+                    strokeWidth = size.height * .004f,
+                )
+                djBandLevels.forEachIndexed { band, level ->
+                    val radius = jogRadius * (.23f + band * .125f + level * .080f)
+                    val colour = listOf(Color(0xFF48C7FF), Color(0xFFB764FF), Color(0xFFFF4CA4), Color(0xFF7FF0B1))[band]
+                    drawCircle(
+                        colour.copy(alpha = (.14f + level * .56f).coerceAtMost(.70f)),
+                        radius,
+                        rightJogCentre,
+                        style = Stroke(width = size.height * (.0011f + level * .0018f)),
+                    )
+                }
+                repeat(24) { spoke ->
+                    val level = djBandLevels[(spoke + 2) % CalibratedBandCount]
+                    val angle = spoke * Tau / 24f
+                    val inner = jogRadius * .285f
+                    val outer = jogRadius * (.430f + level * .340f)
+                    drawLine(
+                        Color(0xFF48C7FF).copy(alpha = .06f + level * .38f),
+                        Offset(rightJogCentre.x + cos(angle) * inner, rightJogCentre.y + sin(angle) * inner),
+                        Offset(rightJogCentre.x + cos(angle) * outer, rightJogCentre.y + sin(angle) * outer),
+                        strokeWidth = size.height * (.0009f + level * .0012f),
+                    )
+                }
+
+                // The tribute is the foreground focal point: drawn above the
+                // platter hardware, but inside the clear centre field so it
+                // never competes with the audio controls below it.
+                val foregroundLogoSize = (size.height * .60f).toInt()
+                val foregroundLogoLeft = ((size.width - foregroundLogoSize) * .5f).toInt()
+                val foregroundLogoTop = (size.height * .075f).toInt()
+                drawImage(
+                    image = djSoffSnepDecal,
+                    dstOffset = androidx.compose.ui.unit.IntOffset(foregroundLogoLeft, foregroundLogoTop),
+                    dstSize = androidx.compose.ui.unit.IntSize(foregroundLogoSize, foregroundLogoSize),
+                    alpha = .82f,
+                    filterQuality = FilterQuality.Medium,
+                    blendMode = BlendMode.Screen,
+                )
+
                 drawRoundRect(
                     color = Color(0xA0040A11),
                     topLeft = Offset(waveformLeft, waveformTop),
@@ -366,9 +478,9 @@ private fun TvOpenGlIdleVisualizer(
                     drawLine(Color(0xFF6DE3FF), start, end, strokeWidth = size.height * .0010f)
                 }
 
-                val phaseStart = size.width * .785f
-                val phaseEnd = size.width * .910f
-                val phaseY = size.height * .542f
+                val phaseStart = size.width * .360f
+                val phaseEnd = size.width * .640f
+                val phaseY = size.height * .815f
                 val phaseNeedle = phaseStart + (signalDeckCorrelation.coerceIn(-1f, 1f) + 1f) * .5f * (phaseEnd - phaseStart)
                 val phaseColour = if (signalDeckCorrelation < 0f) Color(0xFFFF6B87) else Color(0xFF79E9C2)
                 drawLine(Color(0xFF3B5872), Offset(phaseStart, phaseY), Offset(phaseEnd, phaseY), strokeWidth = size.height * .003f)
@@ -377,40 +489,59 @@ private fun TvOpenGlIdleVisualizer(
 
                 drawRoundRect(
                     color = Color(0x9808121E),
-                    topLeft = Offset(mixerLeft, size.height * .550f),
-                    size = Size(mixerRight - mixerLeft, size.height * .285f),
-                    cornerRadius = CornerRadius(size.height * .012f),
+                    topLeft = Offset(mixerLeft, size.height * .835f),
+                    size = Size(mixerRight - mixerLeft, size.height * .080f),
+                    cornerRadius = CornerRadius(size.height * .010f),
                 )
                 drawRoundRect(
                     color = Color(0xFF496C88),
-                    topLeft = Offset(mixerLeft, size.height * .550f),
-                    size = Size(mixerRight - mixerLeft, size.height * .285f),
-                    cornerRadius = CornerRadius(size.height * .012f),
+                    topLeft = Offset(mixerLeft, size.height * .835f),
+                    size = Size(mixerRight - mixerLeft, size.height * .080f),
+                    cornerRadius = CornerRadius(size.height * .010f),
                     style = Stroke(width = size.height * .0014f),
                 )
                 repeat(4) { channel ->
-                    val channelX = size.width * (.5075f + channel * .0725f)
-                    drawLine(Color(0xFF425C73), Offset(channelX, size.height * .588f), Offset(channelX, size.height * .760f), strokeWidth = size.height * .008f)
-                    repeat(3) { knob ->
-                        val knobY = size.height * (.585f + knob * .050f)
-                        drawCircle(Color(0xFF05090E), size.height * .019f, Offset(channelX, knobY))
-                        drawCircle(Color(0xFF6F8496), size.height * .019f, Offset(channelX, knobY), style = Stroke(width = size.height * .0014f))
-                        drawLine(
-                            if (knob == 0) Color(0xFFFF63C3) else Color(0xFF7DC8FF),
-                            Offset(channelX, knobY),
-                            Offset(channelX + size.height * .010f, knobY - size.height * .008f),
-                            strokeWidth = size.height * .002f,
+                    val channelX = size.width * (.382f + channel * .079f)
+                    // The compact rail has one high-visibility meter per band,
+                    // rather than controls over the tribute image.
+                    val meterBottom = size.height * .902f
+                    val meterTop = size.height * .850f
+                    val segmentGap = size.height * .0028f
+                    val segmentHeight = (meterBottom - meterTop - segmentGap * 7f) / 8f
+                    val segmentWidth = size.width * .050f
+                    val litSegments = (djBandLevels[channel].coerceIn(0f, 1f) * 8f).toInt().coerceIn(0, 8)
+                    repeat(8) { segment ->
+                        val segmentY = meterBottom - (segment + 1) * (segmentHeight + segmentGap) + segmentGap
+                        val active = segment < litSegments
+                        val colour = when {
+                            segment >= 6 -> Color(0xFFFF4CA4)
+                            segment >= 4 -> Color(0xFFFFCC66)
+                            else -> Color(0xFF52E6C2)
+                        }
+                        drawRoundRect(
+                            color = if (active) colour else Color(0xFF172534),
+                            topLeft = Offset(channelX - segmentWidth * .5f, segmentY),
+                            size = Size(segmentWidth, segmentHeight),
+                            cornerRadius = CornerRadius(segmentHeight * .18f),
                         )
                     }
                 }
-                drawLine(Color(0xFF425C73), Offset(size.width * .525f, size.height * .865f), Offset(size.width * .720f, size.height * .865f), strokeWidth = size.height * .010f)
+                drawLine(Color(0xFF425C73), Offset(size.width * .420f, size.height * .930f), Offset(size.width * .580f, size.height * .930f), strokeWidth = size.height * .006f)
                 drawRoundRect(
                     color = Color(0xFFD5E9F8),
-                    topLeft = Offset(size.width * .610f, size.height * .852f),
-                    size = Size(size.width * .030f, size.height * .026f),
+                    topLeft = Offset(size.width * .485f, size.height * .920f),
+                    size = Size(size.width * .024f, size.height * .026f),
                     cornerRadius = CornerRadius(size.height * .004f),
                 )
-                listOf("CUE" to .112f, "LIVE" to .195f, "SYNC" to .330f).forEach { (_, position) ->
+                val deckControls = listOf(
+                    "CUE" to .092f,
+                    "LIVE" to .190f,
+                    "SYNC" to .288f,
+                    "FX" to .712f,
+                    "LOOP" to .810f,
+                    "PITCH" to .908f,
+                )
+                deckControls.forEach { (_, position) ->
                     val center = Offset(size.width * position, size.height * .875f)
                     drawCircle(Color(0xFF0A121D), size.height * .030f, center)
                     drawCircle(Color(0xFF607A92), size.height * .030f, center, style = Stroke(width = size.height * .0015f))
@@ -427,43 +558,24 @@ private fun TvOpenGlIdleVisualizer(
                         signalDeckLabelPaint,
                     )
                     signalDeckLabelPaint.textAlign = AndroidPaint.Align.CENTER
-                    signalDeckLabelPaint.textSize = size.height * .019f
-                    signalDeckLabelPaint.alpha = 200
-                    canvas.nativeCanvas.drawText("LIVE", jogCentre.x, jogCentre.y + size.height * .010f, signalDeckLabelPaint)
                     signalDeckLabelPaint.textSize = size.height * .015f
                     signalDeckLabelPaint.alpha = 145
-                    canvas.nativeCanvas.drawText("DJ SOFF SNEP", jogCentre.x, jogCentre.y + size.height * .042f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("LIVE PCM WAVEFORM", size.width * .708f, size.height * .288f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("LOW", size.width * .5075f, size.height * .545f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("LOW-MID", size.width * .580f, size.height * .545f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("MID", size.width * .6525f, size.height * .545f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("HIGH", size.width * .725f, size.height * .545f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("MASTER L", size.width * .790f, size.height * .842f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("MASTER R", size.width * .865f, size.height * .842f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("LIVE PCM", size.width * .500f, size.height * .735f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("LOW", size.width * .382f, size.height * .845f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("LOW-MID", size.width * .461f, size.height * .845f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("MID", size.width * .540f, size.height * .845f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("HIGH", size.width * .619f, size.height * .845f, signalDeckLabelPaint)
                     signalDeckLabelPaint.textSize = size.height * .014f
                     signalDeckLabelPaint.alpha = 150
-                    canvas.nativeCanvas.drawText("PHASE ${formatCorrelation(signalDeckCorrelation)}", size.width * .848f, size.height * .575f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText(masterReadings[0], size.width * .790f, size.height * .902f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText(masterReadings[1], size.width * .865f, size.height * .902f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("CUE", size.width * .112f, size.height * .882f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("LIVE", size.width * .195f, size.height * .882f, signalDeckLabelPaint)
-                    canvas.nativeCanvas.drawText("SYNC", size.width * .330f, size.height * .882f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("PHASE ${formatCorrelation(signalDeckCorrelation)}", size.width * .500f, size.height * .830f, signalDeckLabelPaint)
+                    deckControls.forEach { (label, position) ->
+                        canvas.nativeCanvas.drawText(label, size.width * position, size.height * .882f, signalDeckLabelPaint)
+                    }
                     signalDeckLabelPaint.textSize = size.height * .013f
                     signalDeckLabelPaint.alpha = 130
-                    canvas.nativeCanvas.drawText("CROSSFADER", size.width * .622f, size.height * .912f, signalDeckLabelPaint)
+                    canvas.nativeCanvas.drawText("CROSSFADER", size.width * .500f, size.height * .970f, signalDeckLabelPaint)
                 }
             }
-        }
-        if (style == IdleVisualizerStyle.DjConsole) {
-            Image(
-                painter = painterResource(R.drawable.dj_soff_snep_overlay),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth(.22f)
-                    .align(Alignment.TopEnd)
-                    .offset(x = (-22).dp, y = 18.dp)
-                    .alpha(.16f),
-            )
         }
     }
     LaunchedEffect(surface, audioState, style, reduceVisualIntensity) {
@@ -635,6 +747,7 @@ private fun dbfsToMasterMeter(value: Float) =
 
 private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context) {
     private val renderer = TvGeometryVisualizerRenderer()
+    private val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
     private val compatibilityRendering = (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).let {
         // Old TV devices can advertise GLES 3 while still having too little GPU/heap
         // headroom for a 60 fps feedback scene. Keep the rich path on current hardware,
@@ -644,6 +757,15 @@ private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context)
         it.isLowRamDevice || it.memoryClass <= CompatibilityMemoryClassMb
     }
     private var renderEveryOtherVsync = false
+    private val displayListener = object : DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) = Unit
+
+        override fun onDisplayRemoved(displayId: Int) = Unit
+
+        override fun onDisplayChanged(displayId: Int) {
+            if (displayId == display?.displayId) updateRendererRefreshRate()
+        }
+    }
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (!isAttachedToWindow) return
@@ -664,6 +786,9 @@ private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context)
         setEGLContextClientVersion(if (supportsEs3) 3 else 2)
         renderer.setSupportsEs3(supportsEs3)
         renderer.setCompatibilityRendering(compatibilityRendering)
+        renderer.setPerformanceDiagnosticsEnabled(
+            context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0,
+        )
         preserveEGLContextOnPause = true
         setRenderer(renderer)
         // A TV remote routes Back to the focused native GL view before Compose
@@ -678,12 +803,20 @@ private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context)
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        displayManager.registerDisplayListener(displayListener, null)
+        updateRendererRefreshRate()
         Choreographer.getInstance().postFrameCallback(frameCallback)
     }
 
     override fun onDetachedFromWindow() {
         Choreographer.getInstance().removeFrameCallback(frameCallback)
+        displayManager.unregisterDisplayListener(displayListener)
         super.onDetachedFromWindow()
+    }
+
+    private fun updateRendererRefreshRate() {
+        val refreshRate = display?.refreshRate?.takeIf { it > 0f } ?: DefaultDisplayRefreshRateHz
+        queueEvent { renderer.setDisplayRefreshRate(refreshRate) }
     }
 
     fun updateStyle(style: IdleVisualizerStyle, lavaLampPalette: LavaLampPalette) {
@@ -774,6 +907,7 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     // Lava receives a deliberately slow, global heat signal. It is not driven by
     // individual FFT attacks, so wax remains heavy instead of turning into fireballs.
     private var lavaThermalEnergy = 0f
+    private var lavaPulseEnergy = 0f
     private var lavaConvectionClock = 0f
     private var style = 0
     private var lavaLampPalette = LavaLampPalette.Neon.ordinal
@@ -802,17 +936,15 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     private var lavaMetaballProgram = 0
     private var lavaMetaballPositionHandle = 0
     private var lavaMetaballResolutionHandle = 0
-    private var lavaMetaballBodiesHandle = 0
-    private var lavaMetaballColourOneHandle = 0
-    private var lavaMetaballColourTwoHandle = 0
-    private var lavaMetaballColourThreeHandle = 0
+    private var lavaMetaballColoursHandle = 0
     private var lavaMetaballEnergyHandle = 0
+    private var lavaMetaballPulseHandle = 0
     private var lavaMetaballPhaseHandle = 0
-    private var lavaMetaballRiseHandle = 0
     private var waterfallProgram = 0
     private var waterfallPositionHandle = 0
     private var waterfallSamplerHandle = 0
     private val waterfallTexture = IntArray(1)
+    private val lavaPaletteUniform = FloatArray(5 * 3)
     private val spectrumHistoryPixels = ByteBuffer.allocateDirect(AudioVisualizationBandCount * SpectrumHistoryRows)
     private var spectrumHistoryFrame = 0L
     private val feedbackTextures = IntArray(2)
@@ -825,10 +957,12 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     private var height = 1
     private var previousNanos = 0L
     private var phase = 0f
-    private var deepWarpTravel = 0f
     private var frameNumber = 0L
     private var supportsEs3 = false
     private var compatibilityRendering = false
+    private var performanceDiagnosticsEnabled = false
+    private var displayRefreshRateHz = DefaultDisplayRefreshRateHz
+    private val frameTiming = VisualizerFrameTimingWindow()
 
     init {
         repeat(ParticleCount) { index ->
@@ -839,10 +973,19 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     }
 
     fun setStyle(style: Int) {
+        val previouslyUsedRenderBuffer = usesRenderBuffer()
         val styleChanged = this.style != style
         if (styleChanged) clearFeedback = true
         this.style = style
-        if (styleChanged && width > 1 && usesFeedback()) createFeedbackBuffers()
+        if (styleChanged && performanceDiagnosticsEnabled) {
+            resetTimingWindow()
+        }
+        if (styleChanged && width > 1 && usesRenderBuffer()) {
+            createFeedbackBuffers()
+        } else if (styleChanged && previouslyUsedRenderBuffer) {
+            // Direct styles must not carry scene buffers allocated by the prior style.
+            releaseFeedbackBuffers()
+        }
     }
 
     fun setLavaLampPalette(palette: Int) {
@@ -856,7 +999,32 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     fun setCompatibilityRendering(compatibilityRendering: Boolean) {
         if (this.compatibilityRendering == compatibilityRendering) return
         this.compatibilityRendering = compatibilityRendering
-        if (width > 1 && usesFeedback()) createFeedbackBuffers()
+        if (width > 1 && usesRenderBuffer()) createFeedbackBuffers()
+    }
+
+    fun setPerformanceDiagnosticsEnabled(enabled: Boolean) {
+        performanceDiagnosticsEnabled = enabled
+        if (enabled) resetTimingWindow()
+    }
+
+    fun setDisplayRefreshRate(refreshRateHz: Float) {
+        val normalizedRate = refreshRateHz.coerceAtLeast(1f)
+        if (abs(displayRefreshRateHz - normalizedRate) < .1f) return
+        displayRefreshRateHz = normalizedRate
+        if (performanceDiagnosticsEnabled) resetTimingWindow()
+    }
+
+    private fun resetTimingWindow() {
+        // A fresh renderer/style/display-mode window must never leave Device Status
+        // showing a completed sample from a renderer that is no longer visible.
+        // 2.5 display periods retains the prior roughly-40 ms 60 Hz tolerance while
+        // keeping a nominal 24 Hz callback from being classified as slow by itself.
+        VisualizerPerformanceDiagnostics.clear()
+        frameTiming.reset(
+            styleName = IdleVisualizerStyle.entries.getOrNull(style)?.displayName ?: "Unknown",
+            displayRefreshRateHz = displayRefreshRateHz,
+            slowFrameThresholdMillis = (1000f / displayRefreshRateHz) * 2.5f,
+        )
     }
 
     fun setAudioTarget(
@@ -869,23 +1037,31 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         calibratedMeterLevels: FloatArray? = null,
         waveformSamples: FloatArray? = null,
     ) {
-        val incomingEnergy = energy.coerceIn(0f, 1f)
+        val incomingEnergy = unitInterval(energy)
         var frequencyChange = 0f
-        for (index in targets.indices) frequencyChange += abs(bands[index] - targets[index])
+        for (index in targets.indices) frequencyChange += abs(unitInterval(bands.getOrElse(index) { 0f }) - targets[index])
         targetImpulse = (abs(incomingEnergy - targetEnergy) * 1.6f + frequencyChange / BandCount * 4.8f).coerceIn(0f, 1f)
         targetEnergy = incomingEnergy
-        val incomingTransient = transient.coerceIn(0f, 1f)
+        val incomingTransient = unitInterval(transient)
         if (incomingTransient > targetTransient + .035f) {
             impact = maxOf(impact, incomingTransient)
             impactPhase += 2.17f + incomingTransient * 3.6f
         }
         targetTransient = incomingTransient
-        targetMasterLeft = leftMeterLevel.coerceIn(0f, 1f)
-        targetMasterRight = rightMeterLevel.coerceIn(0f, 1f)
-        calibratedMeterLevels?.copyInto(calibratedMeterTargets, endIndex = minOf(calibratedMeterLevels.size, calibratedMeterTargets.size))
-        waveformSamples?.copyInto(waveformTargets, endIndex = minOf(waveformSamples.size, waveformTargets.size))
-        bands.copyInto(targets)
-        rawSpectrum?.copyInto(spectrumTargets, endIndex = minOf(rawSpectrum.size, spectrumTargets.size))
+        targetMasterLeft = unitInterval(leftMeterLevel)
+        targetMasterRight = unitInterval(rightMeterLevel)
+        calibratedMeterLevels?.let { source ->
+            calibratedMeterTargets.indices.forEach { index ->
+                calibratedMeterTargets[index] = unitInterval(source.getOrElse(index) { 0f })
+            }
+        }
+        waveformSamples?.let { source ->
+            waveformTargets.indices.forEach { index -> waveformTargets[index] = signedUnit(source.getOrElse(index) { 0f }) }
+        }
+        targets.indices.forEach { index -> targets[index] = unitInterval(bands.getOrElse(index) { 0f }) }
+        rawSpectrum?.let { source ->
+            spectrumTargets.indices.forEach { index -> spectrumTargets[index] = unitInterval(source.getOrElse(index) { 0f }) }
+        }
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
@@ -922,13 +1098,10 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         )
         lavaMetaballPositionHandle = GLES20.glGetAttribLocation(lavaMetaballProgram, "aPosition")
         lavaMetaballResolutionHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uResolution")
-        lavaMetaballBodiesHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uBodies[0]")
-        lavaMetaballColourOneHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uColourOne")
-        lavaMetaballColourTwoHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uColourTwo")
-        lavaMetaballColourThreeHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uColourThree")
+        lavaMetaballColoursHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uColours[0]")
         lavaMetaballEnergyHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uEnergy")
+        lavaMetaballPulseHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uPulse")
         lavaMetaballPhaseHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uPhase")
-        lavaMetaballRiseHandle = GLES20.glGetUniformLocation(lavaMetaballProgram, "uRise[0]")
             waterfallProgram = linkProgram(
                 compileShader(GLES20.GL_VERTEX_SHADER, WaterfallVertexShader),
                 compileShader(GLES20.GL_FRAGMENT_SHADER, WaterfallFragmentShader),
@@ -963,12 +1136,13 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         this.width = width.coerceAtLeast(1)
         this.height = height.coerceAtLeast(1)
         GLES20.glViewport(0, 0, this.width, this.height)
-        createFeedbackBuffers()
+        if (usesRenderBuffer()) createFeedbackBuffers() else releaseFeedbackBuffers()
     }
 
     override fun onDrawFrame(gl: GL10?) {
         val now = SystemClock.elapsedRealtimeNanos()
-        val delta = if (previousNanos == 0L) 1f / 60f else ((now - previousNanos) / NanosPerSecond).toFloat().coerceIn(0f, .05f)
+        val rawFrameNanos = if (previousNanos == 0L) FrameIntervalNanos else now - previousNanos
+        val delta = (rawFrameNanos / NanosPerSecond).toFloat().coerceIn(0f, .05f)
         previousNanos = now
         val smoothing = 1f - exp((-delta * AudioSmoothing).toDouble()).toFloat()
         energy += (targetEnergy - energy) * smoothing
@@ -989,20 +1163,18 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         impulse += (targetImpulse - impulse) * (1f - exp((-delta * ImpulseSmoothing).toDouble()).toFloat())
         transient += (targetTransient - transient) * (1f - exp((-delta * TransientSmoothing).toDouble()).toFloat())
         impact *= exp((-delta * ImpactDecay).toDouble()).toFloat()
-        if (style == IdleVisualizerStyle.LavaLamp.ordinal) {
+        if (usesSceneBuffer()) {
             val bassHeat = (band(0) * .72f + band(1) * .28f).coerceIn(0f, 1f)
             val heatSmoothing = 1f - exp((-delta / LavaThermalRelaxationSeconds).toDouble()).toFloat()
             lavaThermalEnergy += (bassHeat - lavaThermalEnergy) * heatSmoothing
-            // One full lobe cycle takes roughly 18–25 seconds: convection, not a beat toy.
+            // A shared heat envelope gives the glass an obvious musical response
+            // without moving separate wax blobs like a particle visualizer.
+            val pulseTarget = (band(0) * .52f + band(1) * .31f + band(2) * .17f).coerceIn(0f, 1f)
+            val pulseSeconds = if (pulseTarget > lavaPulseEnergy) .18f else .85f
+            val pulseSmoothing = 1f - exp((-delta / pulseSeconds).toDouble()).toFloat()
+            lavaPulseEnergy += (pulseTarget - lavaPulseEnergy) * pulseSmoothing
+            // The shader maps this clock to a long convection cycle, not a beat toy.
             lavaConvectionClock += delta * (.86f + lavaThermalEnergy * .34f)
-        }
-        if (style == IdleVisualizerStyle.StarfieldWarp.ordinal) {
-            // Deep Warp has no clock-driven camera movement: only measured sub and
-            // low-frequency energy advances the viewer through the star field.
-            val bassMotion = (band(0) * .70f + band(1) * .30f).coerceIn(0f, 1f)
-            // Do not wrap the shared travel clock: that reset made every star jump
-            // at once. Individual stars recycle quietly at the vanishing point.
-            deepWarpTravel += delta * bassMotion * DeepWarpTravelPerSecond
         }
         // Phase is a continuity accumulator, not an autonomous animation clock.
         // It advances only while decoded audio reports energy, spectral change, or
@@ -1017,13 +1189,25 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         phase += delta * (energy * 6.2f + impulse * 7.8f + transient * 6f + impact * impactMotion)
         frameNumber++
 
-        if (usesFeedback()) {
+        if (style == IdleVisualizerStyle.LavaLamp.ordinal) {
+            // Lava is an opaque analytical field. Shade its expensive metaballs in
+            // the capped buffer, then present a single filtered texture at panel
+            // resolution. This preserves the liquid silhouette without asking a
+            // living-room GPU to run the full field at every display pixel.
+            renderSceneBase()
+            renderSceneGeometry()
+            presentSceneBuffer()
+        } else if (usesFeedback()) {
             renderFeedbackBase()
             renderSceneGeometry()
             presentFeedback()
         } else {
             renderDirectBase()
             renderSceneGeometry()
+        }
+        if (performanceDiagnosticsEnabled) {
+            frameTiming.record(rawFrameNanos, SystemClock.elapsedRealtimeNanos() - now)
+                ?.let(VisualizerPerformanceDiagnostics::publish)
         }
     }
 
@@ -1062,7 +1246,14 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         GLES20.glDisableVertexAttribArray(positionHandle)
     }
 
-    private fun usesFeedback() = style == IdleVisualizerStyle.LightTrails.ordinal
+    private fun usesFeedback() = IdleVisualizerStyle.entries
+        .getOrNull(style)
+        ?.metadata
+        ?.renderProfile == IdleVisualizerRenderProfile.Feedback
+
+    private fun usesSceneBuffer() = style == IdleVisualizerStyle.LavaLamp.ordinal
+
+    private fun usesRenderBuffer() = usesFeedback() || usesSceneBuffer()
 
     private fun renderDirectBase() {
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
@@ -1083,7 +1274,9 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     private fun shaderKaleidoscope() {
         GLES20.glDisable(GLES20.GL_BLEND)
         GLES20.glUseProgram(neonProgram)
-        GLES20.glUniform2f(neonResolutionHandle, width.toFloat(), height.toFloat())
+        val renderWidth = if (usesSceneBuffer()) feedbackWidth else width
+        val renderHeight = if (usesSceneBuffer()) feedbackHeight else height
+        GLES20.glUniform2f(neonResolutionHandle, renderWidth.toFloat(), renderHeight.toFloat())
         // The direct analytic scene has no accumulating feedback motion of its
         // own, so advance its visual clock faster than the shared renderer phase.
         // This restores the momentum of the earlier nebula without extra passes.
@@ -1501,67 +1694,57 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         }
     }
 
-    /** A screen-wide refractive pane surface: audio bends a stable sheet of luminous glass. */
+    /** A stained-glass forge: measured spectrum opens large faceted apertures. */
     private fun glassCurrent() {
-        val columns = 7
-        val rows = 5
-        fun nodeX(column: Int, row: Int): Float {
-            val edge = if (column == 0 || column == columns || row == 0 || row == rows) 0f else 1f
-            val low = band(column * 5 + row * 3)
-            val mid = band(column * 5 + row * 3 + 3)
-            val base = -1.06f + column * (2.12f / columns)
-            return base + edge * (
-                sin(phase * (.28f + low * .76f) + column * 1.53f + row * .71f) * (.018f + low * .072f + impact * .034f) +
-                    sin(phase * .64f + row * 2.11f) * (mid * .038f + transient * .020f)
-                )
-        }
-        fun nodeY(column: Int, row: Int): Float {
-            val edge = if (column == 0 || column == columns || row == 0 || row == rows) 0f else 1f
-            val low = band(column * 5 + row * 3 + 1)
-            val high = band(column * 5 + row * 3 + 6)
-            val base = -1.06f + row * (2.12f / rows)
-            return base + edge * (
-                cos(phase * (.31f + low * .70f) + column * 1.19f + row * 1.41f) * (.022f + low * .084f + impact * .040f) +
-                    sin(phase * 1.1f + column * 1.83f) * (high * .030f + transient * .024f)
-                )
-        }
-
-        repeat(rows) { row ->
-            repeat(columns) { column ->
-                val tlX = nodeX(column, row); val tlY = nodeY(column, row)
-                val blX = nodeX(column, row + 1); val blY = nodeY(column, row + 1)
-                val trX = nodeX(column + 1, row); val trY = nodeY(column + 1, row)
-                val brX = nodeX(column + 1, row + 1); val brY = nodeY(column + 1, row + 1)
-                val index = row * columns + column
-                val brightness = (band(index) * .55f + band(index + 4) * .30f + band(index + 7) * .15f).coerceIn(0f, 1f)
-
-                // Split every pane into coloured triangular facets. The stronger
-                // translucent faces are what make this read as refracted glass,
-                // rather than an office-window wireframe.
+        begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.008f, .014f, .048f, 1f))
+        repeat(4) { aperture ->
+            val centreX = when (aperture) {
+                0 -> -.54f
+                1 -> .12f
+                2 -> .56f
+                else -> -.20f
+            }
+            val centreY = when (aperture) {
+                0 -> .20f
+                1 -> .34f
+                2 -> -.28f
+                else -> -.42f
+            }
+            val local = (band(aperture * 2 + 1) * .62f + band(aperture * 2 + 4) * .38f).coerceIn(0f, 1f)
+            repeat(4) { ring ->
+                val segments = 10
+                val radius = .15f + ring * .095f + local * (.040f + ring * .017f) + impact * .025f
                 begin()
-                vertex(tlX, tlY); vertex(blX, blY); vertex(trX, trY)
-                triangles(3, palette(index * 2 + 1, .055f + brightness * .135f + transient * .045f))
-
-                begin()
-                vertex(trX, trY); vertex(blX, blY); vertex(brX, brY)
-                triangles(3, palette(index * 2 + 5, .045f + brightness * .115f + transient * .040f))
-
-                begin()
-                vertex(tlX, tlY); vertex(trX, trY); vertex(brX, brY); vertex(blX, blY)
-                lineLoop(4, palette(index + 3, .12f + brightness * .28f + transient * .14f), .7f + band(index + 6) * 1.10f)
-
-                // A diagonal caustic gives each pane a refracted direction that
-                // becomes visible with the high-frequency content.
-                begin(); vertex(tlX, tlY); vertex(brX, brY)
-                lines(2, White.withAlpha(.045f + band(index + 6) * .22f + transient * .12f), .65f + band(index + 6) * .9f)
+                repeat(segments) { point ->
+                    val angle = point * Tau / segments + aperture * .37f + ring * .13f
+                    val facet = if (point % 2 == 0) 1f else .76f
+                    vertex(centreX + cos(angle) * radius * facet * aspect(), centreY + sin(angle) * radius * facet)
+                }
+                lineLoop(segments, palette(aperture + ring * 3, .18f + local * .30f + transient * .12f), 1.1f + ring * .25f + local * 1.35f)
+            }
+            repeat(5) { ray ->
+                val angle = ray * Tau / 5f + aperture * .82f
+                begin(); vertex(centreX, centreY); vertex(centreX + cos(angle) * (.40f + local * .16f) * aspect(), centreY + sin(angle) * (.40f + local * .16f))
+                lines(2, palette(aperture + ray + 2, .08f + local * .22f), .7f + local * 1.15f)
             }
         }
     }
 
-    /** Fixed patch ports: measured attacks re-route the active band connections. */
+    /** A dense, fixed patch board: frequency routes establish an obvious living circuit. */
     private fun vectorSwitchboard() {
         val routingGeneration = impactPhase.toInt()
-        repeat(14) { module ->
+        begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.004f, .014f, .031f, 1f))
+        repeat(7) { row ->
+            val y = -.72f + row * .24f
+            thickSegment(-.92f, y, .92f, y, .0024f, Rgba(.12f, .20f, .30f, .12f))
+        }
+        repeat(8) { column ->
+            val x = -.86f + column * .246f
+            thickSegment(x, -.84f, x, .84f, .0024f, Rgba(.12f, .20f, .30f, .11f))
+        }
+        repeat(18) { module ->
             val sourceBand = module % BandCount
             val destinationBand = (sourceBand * 3 + routingGeneration) % BandCount
             val sourceY = -.72f + (module % 7) * .24f
@@ -1570,82 +1753,116 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
             // This central bend is assigned to the relevant frequency region; it
             // should not drift unless that band changes.
             val bridgeY = (sourceY + destinationY) * .5f + (band(destinationBand) - .5f) * .18f
-            begin()
-            vertex(-.86f, sourceY)
-            vertex(0f, bridgeY)
-            vertex(.86f, destinationY)
-            lineStrip(3, palette(sourceBand, .08f + strength * .60f + transient * .16f), .8f + strength * 2.2f)
-            begin(); vertex(-.86f, sourceY); vertex(.86f, destinationY)
-            points(2, White.withAlpha(.12f + strength * .52f), 1.6f + strength * 3.1f)
+            val colour = palette(sourceBand, .08f + strength * .60f + transient * .16f)
+            val thickness = .0036f + strength * .0080f
+            thickSegment(-.86f, sourceY, -.30f, sourceY, thickness, colour)
+            thickSegment(-.30f, sourceY, 0f, bridgeY, thickness, colour)
+            thickSegment(0f, bridgeY, .30f, destinationY, thickness, colour)
+            thickSegment(.30f, destinationY, .86f, destinationY, thickness, colour)
         }
     }
 
-    /** Forward-only radial star streaks; the pack's sole deep-space movement scene. */
+    /** A celestial instrument: three static observatory rings flex only with audio energy. */
     private fun deepWarp() {
         val low = (band(0) * .70f + band(1) * .30f).coerceIn(0f, 1f)
         val mid = ((band(2) + band(3) + band(4) + band(5)) / 4f).coerceIn(0f, 1f)
         val high = ((band(6) + band(7)) * .5f).coerceIn(0f, 1f)
-        begin()
-        var count = 0
-        repeat(ParticleCount) { index ->
-            // A star's bearing is fixed.  Altering its angle with time makes the
-            // field rotate, which misrepresents forward motion.
-            val angle = index * 2.399f
-            val depth = ((index * 31 % 211) / 211f + deepWarpTravel * particleSpeed[index]) % 1f
-            val radius = .035f + depth * depth * 1.12f
-            val tail = .006f + depth * (.014f + low * .11f + mid * .045f)
+        begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.004f, .006f, .026f, 1f))
+        repeat(3) { orbit ->
+            val samples = 96
+            val radiusX = (.28f + orbit * .22f + low * .045f) * aspect()
+            val radiusY = .20f + orbit * .16f + low * .035f
+            begin()
+            repeat(samples) { point ->
+                val angle = point * Tau / (samples - 1f)
+                val wobble = sin(angle * 3f + orbit * 1.8f) * (mid * .028f + transient * .012f)
+                vertex(cos(angle) * (radiusX + wobble), sin(angle) * (radiusY + wobble))
+            }
+            lineLoop(samples, palette(orbit + 5, .20f + low * .28f + high * .12f), 1.1f + high * 1.4f)
+        }
+        repeat(12) { marker ->
+            val angle = marker * Tau / 12f
+            val local = band(marker)
+            val radius = .30f + (marker % 3) * .22f + local * .085f
             val x = cos(angle) * radius * aspect()
             val y = sin(angle) * radius
-            vertex(x, y); vertex(cos(angle) * (radius - tail) * aspect(), sin(angle) * (radius - tail))
-            count += 2
+            val markerRadius = .012f + local * .026f
+            begin()
+            vertex(x, y)
+            repeat(19) { point ->
+                val markerAngle = point * Tau / 18f
+                vertex(x + cos(markerAngle) * markerRadius * aspect(), y + sin(markerAngle) * markerRadius)
+            }
+            triangleFan(20, palette(marker + 2, .35f + local * .42f))
+            begin(); vertex(x, y); vertex(cos(angle) * (radius + .11f + local * .08f) * aspect(), sin(angle) * (radius + .11f + local * .08f))
+            lines(2, White.withAlpha(.10f + high * .26f), .75f + high)
         }
-        lines(count, Cyan.withAlpha(.08f + mid * .20f + high * .24f + transient * .15f), 1f + impact * 1.3f)
     }
 
-    /** A full-screen chromatic aurora field; vertical curtains make it distinct from Light Trails. */
+    /** Broad chromatic ribbons with a soft parallax lift rather than flat colour bands. */
     private fun chromafield() {
-        repeat(16) { curtain ->
-            val samples = 188
-            val low = (band(curtain) * .68f + band(curtain + 1) * .32f).coerceIn(0f, 1f)
-            val mid = ((band(curtain + 2) + band(curtain + 3)) * .5f).coerceIn(0f, 1f)
-            val high = ((band(curtain + 5) + band(curtain + 6)) * .5f).coerceIn(0f, 1f)
-            val base = -1.08f + curtain * (2.16f / 15f)
-            val curtainPhase = phase * (.18f + low * .82f + mid * .22f + transient * .14f)
-            fun curtainX(y: Float): Float {
-                val broadFold = sin(y * (1.45f + curtain * .075f) + curtainPhase * (.52f + curtain * .018f) + curtain * 1.27f) *
-                    (.035f + low * .180f + impact * .070f)
-                val fineFold = sin(y * (5.8f + curtain * .17f) - curtainPhase * .92f + curtain * .71f) *
-                    (.012f + mid * .075f + transient * .035f)
-                val shimmer = sin(y * (15.5f + curtain * .31f) + curtainPhase * 1.35f) * high * .025f
-                return (base + broadFold + fineFold + shimmer).coerceIn(-1.12f, 1.12f)
-            }
-            val coreWidth = .018f + low * .060f + mid * .025f + impact * .016f
+        begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
+        triangleStrip(4, Rgba(.008f, .022f, .052f, 1f))
 
-            // A wide dim body makes each curtain feel like coloured light in air.
-            begin()
-            repeat(samples) { index ->
-                val y = -1.06f + index * (2.12f / (samples - 1))
-                val x = curtainX(y)
-                vertex(x - coreWidth * 5.5f, y)
-                vertex(x + coreWidth * 5.5f, y)
+        val currents = arrayOf(
+            Rgba(.08f, .48f, .90f, .30f),
+            Rgba(.10f, .76f, .70f, .28f),
+            Rgba(.42f, .28f, .88f, .30f),
+            Rgba(.86f, .20f, .58f, .26f),
+            Rgba(.98f, .48f, .15f, .22f),
+            Rgba(.18f, .38f, .96f, .28f),
+            Rgba(.12f, .72f, .82f, .26f),
+        )
+        val samples = 72
+        val slowClock = phase * .052f
+        currents.forEachIndexed { index, colour ->
+            val low = (band(index) * .72f + band(index + 1) * .28f).coerceIn(0f, 1f)
+            val mid = ((band(index + 3) + band(index + 4)) * .5f).coerceIn(0f, 1f)
+            val baseY = -1.16f + index * .355f
+            val thickness = .37f + low * .055f
+            fun currentY(x: Float): Float {
+                val primary = sin(x * 1.58f + slowClock + index * .82f) * (.085f + low * .065f)
+                val secondary = sin(x * 4.15f - slowClock * .56f + index * 1.31f) * (.024f + mid * .032f)
+                return baseY + primary + secondary
             }
-            triangleStrip(samples * 2, palette(curtain + 1, .055f + low * .115f + mid * .060f + transient * .045f))
+
+            fun ribbon(offsetY: Float, ribbonThickness: Float, tint: Rgba) {
+                begin()
+                repeat(samples) { point ->
+                    val x = -1.06f + point * (2.12f / (samples - 1))
+                    val y = currentY(x) + offsetY
+                    vertex(x, y - ribbonThickness * .5f)
+                    vertex(x, y + ribbonThickness * .5f)
+                }
+                triangleStrip(samples * 2, tint)
+            }
+
+            // A restrained shadow, fill, and lit crest give every current a raised,
+            // floating-ribbon read without an additional pass or high-frequency noise.
+            ribbon(
+                offsetY = -.046f - low * .012f,
+                ribbonThickness = thickness * 1.04f,
+                tint = colour.blend(Rgba(.006f, .010f, .035f, 1f), .70f)
+                    .withAlpha(.24f + low * .12f),
+            )
+            ribbon(
+                offsetY = 0f,
+                ribbonThickness = thickness,
+                tint = colour.withAlpha(colour.a * (.84f + low * .16f)),
+            )
+            ribbon(
+                offsetY = thickness * .205f,
+                ribbonThickness = thickness * .17f,
+                tint = colour.blend(White, .56f).withAlpha(.13f + mid * .12f),
+            )
 
             begin()
-            repeat(samples) { index ->
-                val y = -1.06f + index * (2.12f / (samples - 1))
-                val x = curtainX(y)
-                vertex(x - coreWidth, y)
-                vertex(x + coreWidth, y)
+            repeat(samples) { point ->
+                val x = -1.06f + point * (2.12f / (samples - 1))
+                vertex(x, currentY(x) + thickness * .28f)
             }
-            triangleStrip(samples * 2, palette(curtain + 3, .115f + low * .20f + mid * .085f + transient * .075f))
-
-            begin()
-            repeat(samples) { index ->
-                val y = -1.06f + index * (2.12f / (samples - 1))
-                vertex(curtainX(y), y)
-            }
-            lineStrip(samples, White.withAlpha(.050f + high * .22f + transient * .12f), .70f + high * 1.05f)
+            lineStrip(samples, White.withAlpha(.10f + mid * .09f), 1.15f)
         }
     }
 
@@ -1763,10 +1980,13 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         begin()
         vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
         triangleStrip(4, Rgba(.040f, .002f, .105f, 1f))
-        val petals = 11
+        // Keep a dense radial composition but cap per-frame translucent geometry.
+        // The previous three-ring, 11-petal, 96-sample construction was visibly
+        // rich but exceeded the Streamer's CPU budget under active playback.
+        val petals = 10
         // The wide, high-saturation rings make the colour field legible from a
         // sofa. They still breathe from decoded energy instead of free-running.
-        repeat(5) { ring ->
+        repeat(4) { ring ->
             val radius = .18f + ring * .18f + low * .075f + impact * .055f
             circle(
                 radius,
@@ -1775,8 +1995,8 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
                 1.1f + high * 1.2f,
             )
         }
-        repeat(3) { ring ->
-            val samples = 96
+        repeat(2) { ring ->
+            val samples = 56
             val baseRadius = .20f + ring * .22f + low * (.10f + ring * .025f) + impact * .08f
             repeat(petals) { petal ->
                 val centreAngle = petal * Tau / petals + ring * .17f
@@ -1808,8 +2028,8 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         }
         // Interleaved rainbow spirals keep the scene immersive at TV distance;
         // their twist is still driven by the source-led phase accumulator.
-        repeat(7) { ribbon ->
-            val samples = 196
+        repeat(5) { ribbon ->
+            val samples = 112
             begin()
             repeat(samples) { point ->
                 val t = point / (samples - 1f)
@@ -1832,30 +2052,27 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     }
 
     /**
-     * A fragment-field keeps each wax pool soft and liquid, while their spacing
-     * preserves distinct pools until a strong bass pulse makes neighbours merge.
+     * One bounded fragment-field is evaluated only inside the active vessel.
+     * Its offset wax masses overlap into short, curved bridges; it deliberately
+     * has no separately drawn neck or per-frame geometry allocation.
      */
     private fun shaderLavaLamp() {
-        val bodyData = FloatArray(6 * 4)
-        val bodyRise = FloatArray(6)
-        // Two compact, overlapping bottom bodies make a real pool inside the vessel.
-        setLavaBody(bodyData, bodyRise, 0, -.07f, -.75f, .27f, .16f, 0f)
-        setLavaBody(bodyData, bodyRise, 1, .10f, -.73f, .23f, .14f, 0f)
-        // Each lobe begins as a tall connected thread, then rounds as it rises.
-        // The trailing neck remains until the lobe has visibly pinched free.
-        setLavaLobe(bodyData, bodyRise, 2, 4, lavaProgress(0f), -.08f)
-        setLavaLobe(bodyData, bodyRise, 3, 5, lavaProgress(.48f), .10f)
         val colours = LavaLampColourPalettes[lavaLampPalette]
         GLES20.glDisable(GLES20.GL_BLEND)
         GLES20.glUseProgram(lavaMetaballProgram)
-        GLES20.glUniform2f(lavaMetaballResolutionHandle, width.toFloat(), height.toFloat())
-        GLES20.glUniform4fv(lavaMetaballBodiesHandle, 6, bodyData, 0)
-        GLES20.glUniform3f(lavaMetaballColourOneHandle, colours[0].r, colours[0].g, colours[0].b)
-        GLES20.glUniform3f(lavaMetaballColourTwoHandle, colours[1].r, colours[1].g, colours[1].b)
-        GLES20.glUniform3f(lavaMetaballColourThreeHandle, colours[2].r, colours[2].g, colours[2].b)
+        val renderWidth = if (feedbackWidth > 1 && feedbackHeight > 1) feedbackWidth else width
+        val renderHeight = if (feedbackWidth > 1 && feedbackHeight > 1) feedbackHeight else height
+        GLES20.glUniform2f(lavaMetaballResolutionHandle, renderWidth.toFloat(), renderHeight.toFloat())
+        colours.forEachIndexed { index, colour ->
+            val offset = index * 3
+            lavaPaletteUniform[offset] = colour.r
+            lavaPaletteUniform[offset + 1] = colour.g
+            lavaPaletteUniform[offset + 2] = colour.b
+        }
+        GLES20.glUniform3fv(lavaMetaballColoursHandle, 5, lavaPaletteUniform, 0)
         GLES20.glUniform1f(lavaMetaballEnergyHandle, lavaThermalEnergy)
+        GLES20.glUniform1f(lavaMetaballPulseHandle, lavaPulseEnergy)
         GLES20.glUniform1f(lavaMetaballPhaseHandle, lavaConvectionClock)
-        GLES20.glUniform1fv(lavaMetaballRiseHandle, 6, bodyRise, 0)
         feedbackQuad.position(0)
         GLES20.glEnableVertexAttribArray(lavaMetaballPositionHandle)
         GLES20.glVertexAttribPointer(
@@ -1868,28 +2085,6 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         )
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         GLES20.glDisableVertexAttribArray(lavaMetaballPositionHandle)
-    }
-
-    private fun lavaProgress(offset: Float): Float = ((lavaConvectionClock * .045f + offset) % 1f + 1f) % 1f
-
-    private fun setLavaLobe(bodyData: FloatArray, bodyRise: FloatArray, lobeIndex: Int, neckIndex: Int, progress: Float, lane: Float) {
-        val release = smoothStep(.08f, .30f, progress)
-        val x = lane + sin(lavaConvectionClock * .13f + progress * Tau) * (.018f + lavaThermalEnergy * .018f)
-        val y = -.64f + progress * 1.36f
-        val stretched = (1f - release) * .26f + .06f
-        setLavaBody(bodyData, bodyRise, lobeIndex, x, y, .125f - release * .030f, .17f + stretched, release)
-
-        val neckVisible = 1f - smoothStep(.23f, .43f, progress)
-        setLavaBody(
-            bodyData, bodyRise, neckIndex, x * .72f, -.64f + progress * .62f,
-            (.055f + neckVisible * .040f).coerceAtLeast(.028f), .16f + neckVisible * .20f, neckVisible,
-        )
-    }
-
-    private fun setLavaBody(bodyData: FloatArray, bodyRise: FloatArray, index: Int, x: Float, y: Float, radiusX: Float, radiusY: Float, rise: Float) {
-        val offset = index * 4
-        bodyData[offset] = x; bodyData[offset + 1] = y; bodyData[offset + 2] = radiusX; bodyData[offset + 3] = radiusY
-        bodyRise[index] = rise
     }
 
     private fun smoothStep(edge0: Float, edge1: Float, value: Float): Float {
@@ -1968,24 +2163,30 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         }
     }
 
-    /** Twelve audio-gated spectrum filaments fall into a low horizon and splash on attacks. */
+    /** A large harmonic gate: arches visibly open and brighten with their assigned bands. */
     private fun signalRain() {
         val low = (band(0) * .70f + band(1) * .30f).coerceIn(0f, 1f)
         begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
-        triangleStrip(4, Rgba(.004f, .012f, .042f, 1f))
-        val floor = -.74f
-        repeat(14) { thread ->
-            val local = (band(thread + 2) * .62f + band(thread + 6) * .38f).coerceIn(0f, 1f)
-            val x = -.88f + thread * (1.76f / 13f)
-            val head = .86f - local * 1.02f - impulse * .24f
-            val trail = (.20f + local * .52f + transient * .18f).coerceAtMost(1.22f)
-            begin(); vertex(x, head); vertex(x, (head - trail).coerceAtLeast(floor))
-            lines(2, palette(thread + 1, .38f + local * .44f), 1.1f + local * 2.8f)
-            begin(); vertex(x - .050f * aspect(), floor); vertex(x + .050f * aspect(), floor)
-            lines(2, palette(thread + 1, .22f + low * .24f), 1f + transient * 2.3f)
+        triangleStrip(4, Rgba(.005f, .018f, .045f, 1f))
+        repeat(9) { arch ->
+            val local = (band(arch) * .64f + band(arch + 3) * .36f).coerceIn(0f, 1f)
+            val x = -.84f + arch * .21f
+            val baseY = -.78f
+            val height = .34f + local * .78f + low * .16f
+            val width = .055f + local * .036f
+            val samples = 36
+            begin()
+            repeat(samples) { point ->
+                val t = point / (samples - 1f)
+                val y = baseY + height * sin(t * PI.toFloat())
+                vertex(x + (t - .5f) * width * aspect() * 2f, y)
+            }
+            lineStrip(samples, palette(arch + 2, .25f + local * .42f + transient * .14f), 1.4f + local * 2.6f)
+            begin(); vertex(x, baseY); vertex(x, baseY + height * .82f)
+            lines(2, White.withAlpha(.08f + local * .22f), .7f + local * 1.1f)
         }
-        begin(); vertex(-1f, floor); vertex(1f, floor)
-        lines(2, Cyan.withAlpha(.22f + low * .32f), 1.1f)
+        begin(); vertex(-.94f, -.78f); vertex(.94f, -.78f)
+        lines(2, Cyan.withAlpha(.24f + low * .32f), 1.3f)
     }
 
     /** Nested shorelines keep this scene distinctly calm and non-vortex-like. */
@@ -2016,31 +2217,42 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         }
     }
 
+    /** Wide crossed bands form a textile-like field rather than a generic waveform. */
     private fun ribbonReactor() {
         val low = (band(0) * .68f + band(1) * .32f).coerceIn(0f, 1f)
         val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
         begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
-        triangleStrip(4, Rgba(.030f, .006f, .052f, 1f))
+        triangleStrip(4, Rgba(.018f, .006f, .044f, 1f))
+        val samples = 72
+        repeat(7) { ribbon ->
+            begin()
+            repeat(samples) { point ->
+                val t = point / (samples - 1f)
+                val x = -1.10f + t * 2.20f
+                val y = -.82f + ribbon * .27f + sin(t * Tau * .72f + ribbon * .91f + phase * (.18f + mid * .28f)) *
+                    (.060f + low * .11f + band(ribbon + 2) * .08f)
+                val slope = cos(t * Tau * .72f + ribbon * .91f + phase * (.18f + mid * .28f)) * Tau * .72f *
+                    (.060f + low * .11f + band(ribbon + 2) * .08f)
+                val normalX = -slope * .010f
+                val normalY = .010f
+                vertex(x + normalX, y + normalY); vertex(x - normalX, y - normalY)
+            }
+            triangleStrip(samples * 2, palette(ribbon + 2, .22f + mid * .28f + low * .18f))
+        }
         repeat(6) { ribbon ->
-            val samples = 112
             begin()
             repeat(samples) { point ->
                 val t = point / (samples - 1f)
-                val x = -1.08f + t * 2.16f
-                val y = (ribbon / 5f - .5f) * 1.22f + sin(t * Tau * (1.12f + ribbon * .07f) + phase * (.26f + mid * .44f) + ribbon) *
-                    (.10f + low * .16f + band(ribbon + 3) * .11f)
-                vertex(x, y)
+                val x = -.82f + ribbon * .32f + sin(t * Tau * .72f + ribbon * .77f - phase * (.16f + mid * .24f)) *
+                    (.060f + low * .10f + band(ribbon + 3) * .07f)
+                val y = -1.08f + t * 2.16f
+                val slope = cos(t * Tau * .72f + ribbon * .77f - phase * (.16f + mid * .24f)) * Tau * .72f *
+                    (.060f + low * .10f + band(ribbon + 3) * .07f)
+                val normalX = .010f
+                val normalY = -slope * .010f
+                vertex(x + normalX, y + normalY); vertex(x - normalX, y - normalY)
             }
-            lineStrip(samples, palette(ribbon + 2, .28f + mid * .30f + low * .18f), 3.0f + band(ribbon) * 5.2f)
-            begin()
-            repeat(samples) { point ->
-                val t = point / (samples - 1f)
-                val x = -1.08f + t * 2.16f
-                val y = (ribbon / 5f - .5f) * 1.22f + sin(t * Tau * (1.12f + ribbon * .07f) + phase * (.26f + mid * .44f) + ribbon) *
-                    (.10f + low * .16f + band(ribbon + 3) * .11f)
-                vertex(x, y)
-            }
-            lineStrip(samples, palette(ribbon + 3, .62f + mid * .25f), 1.05f + band(ribbon + 5) * 1.65f)
+            triangleStrip(samples * 2, palette(ribbon + 5, .18f + mid * .28f + low * .16f))
         }
     }
 
@@ -2068,93 +2280,131 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         }
     }
 
+    /** A calm dusk lattice: offset cells expand from their own spectral bands. */
     private fun moonlitTides() {
         val low = (band(0) * .72f + band(1) * .28f).coerceIn(0f, 1f)
         val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
         begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
-        triangleStrip(4, Rgba(.004f, .017f, .055f, 1f))
-        repeat(9) { tide ->
-            val samples = 116
-            val baseline = -.78f + tide * .18f
+        triangleStrip(4, Rgba(.005f, .017f, .055f, 1f))
+        repeat(15) { cell ->
+            val local = (band(cell) * .62f + band(cell + 3) * .38f).coerceIn(0f, 1f)
+            val column = cell % 5
+            val row = cell / 5
+            val centreX = -.72f + column * .36f + if (row % 2 == 0) 0f else .08f
+            val centreY = -.48f + row * .43f
+            val radius = .080f + local * .105f + low * .035f
+            val samples = 6
             begin()
-            repeat(samples) { point ->
-                val t = point / (samples - 1f)
-                val x = -1f + t * 2f
-                val y = baseline + sin(t * Tau * (1.15f + tide * .05f) + phase * (.18f + mid * .34f) + tide * .73f) *
-                    (.040f + low * .115f + band(tide) * .055f)
-                vertex(x, y)
+            vertex(centreX, centreY)
+            repeat(samples + 1) { point ->
+                val angle = point * Tau / samples + PI.toFloat() / 6f
+                val lobe = 1f + sin(angle * 3f + cell * .73f + phase * .16f) * (mid * .13f + transient * .05f)
+                vertex(
+                    centreX + cos(angle) * radius * lobe * aspect(),
+                    centreY + sin(angle) * radius * lobe,
+                )
             }
-            lineStrip(samples, if (tide == 7) White.withAlpha(.26f + mid * .28f) else palette(tide + 5, .20f + low * .19f), 1.15f + band(tide) * 1.7f)
+            triangleFan(samples + 2, palette(cell + 5, .13f + local * .28f + low * .10f))
         }
-        circle(.11f + low * .04f, White.withAlpha(.24f + mid * .18f), 48, 1f)
     }
 
-    /** A deliberately coarse 6 by 4 matrix so individual tiles remain legible at TV distance. */
+    /** Large irregular mosaic tiles make every band group readable across the room. */
     private fun pulseQuilt() {
-        val rows = 4
-        val columns = 6
+        val rows = 3
+        val columns = 5
         begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
         triangleStrip(4, Rgba(.018f, .012f, .036f, 1f))
         repeat(rows) { row ->
             repeat(columns) { column ->
                 val index = row * columns + column
                 val local = (band(index) * .70f + band(index + 4) * .30f).coerceIn(0f, 1f)
-                val x0 = -.93f + column * .315f
-                val x1 = x0 + .265f
-                val y0 = -.79f + row * .405f
-                val y1 = y0 + .330f + local * .042f + transient * .018f
-                begin(); vertex(x0, y0); vertex(x1, y0); vertex(x0, y1); vertex(x1, y1)
-                triangleStrip(4, palette(index + row, .18f + local * .48f))
-                begin(); vertex(x0, y0); vertex(x1, y0); vertex(x1, y1); vertex(x0, y1)
-                lineLoop(4, White.withAlpha(.08f + local * .22f), .8f + local * 1.1f)
+                val centreX = -.73f + column * .37f + if (row % 2 == 0) 0f else .07f
+                val centreY = -.48f + row * .48f
+                val radius = .13f + local * .10f + transient * .025f
+                val sides = if ((row + column) % 2 == 0) 5 else 6
+                begin()
+                vertex(centreX, centreY)
+                repeat(sides + 1) { point ->
+                    val angle = point * Tau / sides + if (sides == 5) -.30f else 0f
+                    val irregularity = 1f + sin(angle * 2f + index) * .10f
+                    vertex(centreX + cos(angle) * radius * irregularity * aspect(), centreY + sin(angle) * radius * irregularity)
+                }
+                triangleFan(sides + 2, palette(index + row, .15f + local * .44f))
+                begin()
+                repeat(sides) { point ->
+                    val angle = point * Tau / sides + if (sides == 5) -.30f else 0f
+                    val irregularity = 1f + sin(angle * 2f + index) * .10f
+                    vertex(centreX + cos(angle) * radius * irregularity * aspect(), centreY + sin(angle) * radius * irregularity)
+                }
+                lineLoop(sides, White.withAlpha(.10f + local * .25f), .9f + local * 1.25f)
             }
         }
     }
 
+    /** A dense paired reef: shared bases and short branches make a full underwater canopy. */
     private fun echoReef() {
         val low = (band(0) * .68f + band(1) * .32f).coerceIn(0f, 1f)
         val mid = ((band(2) + band(3) + band(4) + band(5)) * .25f).coerceIn(0f, 1f)
         begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
         triangleStrip(4, Rgba(.002f, .034f, .039f, 1f))
-        repeat(28) { branch ->
+        repeat(18) { branch ->
             val local = band(branch + 2)
-            val rootX = -.94f + (branch % 14) * .145f
-            val rootY = -.92f + (branch / 14) * .12f
+            val rootX = -.90f + (branch % 9) * .225f
+            val rootY = -.86f + (branch / 9) * .13f
             val direction = if (branch % 2 == 0) 1f else -1f
             val length = .21f + local * .38f + low * .17f
             begin()
-            repeat(5) { joint ->
-                val t = joint / 4f
+            repeat(6) { joint ->
+                val t = joint / 5f
                 val x = rootX + direction * sin(t * Tau * .70f + branch) * (.025f + mid * .055f) * t
                 val y = rootY + length * t
                 vertex(x, y)
             }
-            lineStrip(5, palette(branch + 4, .26f + local * .40f), 1.15f + local * 2.4f)
-            if (local > .16f) {
-                begin(); vertex(rootX, rootY + length * .58f); vertex(rootX + direction * (.08f + local * .12f) * aspect(), rootY + length * .75f)
-                lines(2, palette(branch + 5, .24f + local * .35f), .9f + local * 1.5f)
+            lineStrip(6, palette(branch + 4, .26f + local * .40f), 1.25f + local * 2.4f)
+            repeat(2) { spur ->
+                val at = .43f + spur * .23f
+                val x = rootX + direction * sin(at * Tau * .70f + branch) * (.025f + mid * .055f) * at
+                val y = rootY + length * at
+                begin(); vertex(x, y); vertex(x + direction * (.075f + local * .11f) * aspect(), y + length * (.11f + spur * .035f))
+                lines(2, palette(branch + spur + 5, .20f + local * .34f), .8f + local * 1.45f)
             }
         }
     }
 
-    /** One slow central spiral, intentionally separate from Contour Islands' closed shorelines. */
+    /** Field-line petals bend around a fixed magnetic core, never becoming another vortex. */
     private fun velvetVortex() {
         val low = (band(0) * .74f + band(1) * .26f).coerceIn(0f, 1f)
         val high = ((band(6) + band(7)) * .5f).coerceIn(0f, 1f)
         begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
-        triangleStrip(4, Rgba(.016f, .002f, .034f, 1f))
-        repeat(7) { arm ->
-            val samples = 132
+        triangleStrip(4, Rgba(.024f, .004f, .050f, 1f))
+        repeat(10) { arm ->
+            val samples = 76
+            var previousX = 0f
+            var previousY = 0f
+            var vertexCount = 0
             begin()
             repeat(samples) { point ->
                 val t = point / (samples - 1f)
-                val angle = arm * Tau / 7f + t * Tau * (1.18f + low * .28f) + phase * (.11f + low * .22f)
-                val radius = .045f + t * (.72f + low * .16f) + sin(t * Tau * 3f + arm) * high * .022f
-                vertex(cos(angle) * radius * aspect(), sin(angle) * radius)
+                val side = if (arm % 2 == 0) -1f else 1f
+                val lane = (arm / 2 - 2) * .19f
+                val x = side * (.10f + t * .78f) * aspect()
+                val y = lane + sin(t * PI.toFloat() + arm * .71f + phase * (.12f + low * .20f)) * (.070f + high * .075f)
+                if (point > 0) {
+                    appendThickSegment(
+                        previousX,
+                        previousY,
+                        x,
+                        y,
+                        .0032f + high * .0021f,
+                    )
+                    vertexCount += 6
+                }
+                previousX = x
+                previousY = y
             }
-            lineStrip(samples, palette(arm + 1, .15f + low * .18f + high * .11f), 1.0f + high * 1.25f)
+            triangles(vertexCount, palette(arm + 1, .48f + low * .22f + high * .17f))
         }
-        circle(.06f + low * .045f, White.withAlpha(.18f + low * .24f), 48, 1.2f)
+        circle(.075f + low * .055f, White.withAlpha(.52f + low * .30f), 48, 1.8f)
     }
 
     private fun lanternDrift() {
@@ -2654,6 +2904,22 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
 
     private fun begin() = vertices.clear()
     private fun vertex(x: Float, y: Float) { vertices.put(x); vertices.put(y) }
+    private fun thickSegment(x0: Float, y0: Float, x1: Float, y1: Float, halfWidth: Float, color: Rgba) {
+        begin()
+        appendThickSegment(x0, y0, x1, y1, halfWidth)
+        triangles(6, color)
+    }
+
+    /** Appends one camera-space ribbon segment; callers can batch a whole path into one draw. */
+    private fun appendThickSegment(x0: Float, y0: Float, x1: Float, y1: Float, halfWidth: Float) {
+        val dx = (x1 - x0) * aspect()
+        val dy = y1 - y0
+        val length = sqrt(dx * dx + dy * dy).coerceAtLeast(.0001f)
+        val offsetX = -dy / length * halfWidth / aspect()
+        val offsetY = dx / length * halfWidth
+        vertex(x0 + offsetX, y0 + offsetY); vertex(x0 - offsetX, y0 - offsetY); vertex(x1 + offsetX, y1 + offsetY)
+        vertex(x1 + offsetX, y1 + offsetY); vertex(x0 - offsetX, y0 - offsetY); vertex(x1 - offsetX, y1 - offsetY)
+    }
     private fun lineStrip(count: Int, color: Rgba, width: Float) = draw(GLES20.GL_LINE_STRIP, count, color, width)
     private fun lineLoop(count: Int, color: Rgba, width: Float) = draw(GLES20.GL_LINE_LOOP, count, color, width)
     private fun lines(count: Int, color: Rgba, width: Float) = draw(GLES20.GL_LINES, count, color, width)
@@ -2671,7 +2937,11 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, 0, vertices); GLES20.glDrawArrays(mode, 0, count)
     }
 
-    private fun band(index: Int) = bands[index % BandCount].coerceIn(0f, 1f)
+    private fun unitInterval(value: Float) = if (value.isFinite()) value.coerceIn(0f, 1f) else 0f
+
+    private fun signedUnit(value: Float) = if (value.isFinite()) value.coerceIn(-1f, 1f) else 0f
+
+    private fun band(index: Int) = unitInterval(bands[index % BandCount])
     private fun aspect() = height.toFloat() / width.toFloat()
     private fun wrap(value: Float) = ((value + 1f) % 2f + 2f) % 2f - 1f
     private fun palette(index: Int, alpha: Float) = Palette[index % Palette.size].withAlpha(alpha)
@@ -2711,6 +2981,7 @@ private const val CompatibilityFeedbackResolutionFraction = .25f
 private const val MinFeedbackWidth = 320
 private const val MinFeedbackHeight = 180
 private const val CompatibilityMemoryClassMb = 256
+private const val DefaultDisplayRefreshRateHz = 60f
 private const val AudioSmoothing = 16f
 private const val MasterMeterFloorDbfs = -30f
 private const val MasterAttackPerSecond = 12f
@@ -2729,7 +3000,6 @@ private const val FrameIntervalNanos = 16_666_667L
 private const val EglOpenGlEs3Bit = 0x40
 private const val NeonMotionMultiplier = 1.7f
 private const val ScopeWaveformAmplitude = .18f
-private const val DeepWarpTravelPerSecond = .95f
 private const val Tau = (PI * 2.0).toFloat()
 private val LightTrailPalette = intArrayOf(0, 6, 5, 3, 2, 1)
 private val CurrentLanes = floatArrayOf(-.48f, .02f, .49f)
@@ -2782,25 +3052,52 @@ void main() {
 """
 
 /**
- * The wax is an implicit field instead of independently rendered discs. The
- * smooth threshold is the merge surface, so bodies visually join, neck, and
- * divide without a costly physics simulation or transparent overdraw.
+ * Four tapered chambers each evaluate a small local implicit field. The wax is
+ * composed from deliberately offset, rotated masses; a bridge exists only when
+ * their fields overlap, never as a drawn stem.
  */
 private const val LavaMetaballFragmentShader = """
 precision mediump float;
 varying vec2 vPosition;
 uniform vec2 uResolution;
-uniform vec4 uBodies[6];
-uniform vec3 uColourOne;
-uniform vec3 uColourTwo;
-uniform vec3 uColourThree;
+uniform vec3 uColours[5];
 uniform float uEnergy;
+uniform float uPulse;
 uniform float uPhase;
-uniform float uRise[6];
 
-float bodyField(vec2 point, vec2 centre, vec2 radius) {
-    vec2 delta = (point - centre) / radius;
-    return 1.0 / max(dot(delta, delta), 0.042);
+float taperedRibbonField(
+    vec2 point,
+    vec2 from,
+    vec2 to,
+    float fromRadius,
+    float neckRadius,
+    float toRadius
+) {
+    // A short, tapered implicit ribbon is used only while wax leaves its pool.
+    // It prevents a detached "seed" without ever drawing a full-height stem.
+    vec2 axis = to - from;
+    float axisLengthSquared = max(dot(axis, axis), 0.0004);
+    float t = clamp(dot(point - from, axis) / axisLengthSquared, 0.0, 1.0);
+    vec2 spine = from + axis * t;
+    vec2 delta = point - spine;
+    // A stable polynomial skew makes the liquid shoulder uneven without the
+    // fragment trigonometry/noise that previously caused the Streamer lag.
+    delta.x += delta.y * abs(delta.y) * 0.18;
+    float inverseT = 1.0 - t;
+    float radius = fromRadius * inverseT * inverseT
+        + neckRadius * (4.0 * t * inverseT)
+        + toRadius * t * t;
+    vec2 normalized = delta / max(radius * (1.0 + uPulse * 0.035), 0.012);
+    return 1.0 / max(dot(normalized, normalized), 0.060);
+}
+
+float waxNodeField(vec2 point, vec2 centre, vec2 radius, float skew) {
+    vec2 normalized = (point - centre) / (radius * (1.0 + uPulse * 0.040));
+    // Stable per-node deformation: a different-sized wax node is never a
+    // pristine UI disc, even before it blends with a neighbour.
+    normalized.x += skew * normalized.y * abs(normalized.y) * 0.24;
+    normalized.y += (0.12 - skew * 0.06) * normalized.x * abs(normalized.x);
+    return 1.0 / max(dot(normalized, normalized), 0.060);
 }
 
 void main() {
@@ -2813,35 +3110,106 @@ void main() {
     if (column < 0.0 || column > 3.0) { gl_FragColor = vec4(background, 1.0); return; }
     float centreX = -1.23 + column * 0.82;
     float normalizedY = clamp((point.y + 1.0) * 0.5, 0.0, 1.0);
-    float halfWidth = mix(0.31, 0.215, normalizedY);
     float localX = point.x - centreX;
-    if (abs(localX) > halfWidth + 0.018) { gl_FragColor = vec4(background, 1.0); return; }
+    // A recognizable lamp silhouette: broad rounded glass belly, a narrower
+    // neck, a metallic cap, and a tapered metal base. The old linear width
+    // function is intentionally gone so these no longer read as light columns.
+    float glassBottom = 0.12;
+    float glassTop = 0.84;
+    float bodyT = clamp((normalizedY - glassBottom) / (glassTop - glassBottom), 0.0, 1.0);
+    float glassHalfWidth = 0.185 + 0.082 * sin(bodyT * 3.14159);
+    float baseHalfWidth = mix(0.270, 0.195, smoothstep(0.02, glassBottom, normalizedY));
+    float capHalfWidth = mix(0.195, 0.145, smoothstep(glassTop, 0.98, normalizedY));
+    float halfWidth = glassHalfWidth;
+    if (normalizedY < glassBottom) halfWidth = baseHalfWidth;
+    if (normalizedY > glassTop) halfWidth = capHalfWidth;
+    if (normalizedY < 0.02 || normalizedY > 0.98 || abs(localX) > halfWidth + 0.014) {
+        gl_FragColor = vec4(background, 1.0); return;
+    }
+    float glassMask = step(glassBottom, normalizedY) * (1.0 - step(glassTop, normalizedY));
+    float baseMask = 1.0 - step(glassBottom, normalizedY);
+    float capMask = step(glassTop, normalizedY);
 
-    float stage = fract(uPhase * 0.045 + column * 0.251);
-    float release = smoothstep(0.08, 0.30, stage);
-    // Keep the wax connected through most of its ascent. It only pinches loose
-    // close to the top, which avoids the detached "floating fireball" look.
-    float neckVisible = 1.0 - smoothstep(0.68, 0.88, stage);
-    float drift = sin(uPhase * 0.13 + column * 2.41) * (0.018 + uEnergy * 0.018);
-    float lobeY = -0.66 + stage * 1.42;
-    // One field per chamber: compact base pool, stretched lobe, and a trailing
-    // neck. The global heat changes only the slow rate and glow, never the lobe
-    // position per audio beat.
-    float field = bodyField(point, vec2(centreX - 0.06, -0.77), vec2(0.25, 0.16));
-    field += bodyField(point, vec2(centreX + 0.10, -0.73), vec2(0.21, 0.14));
-    field += bodyField(point, vec2(centreX + drift, lobeY), vec2(0.125 - release * 0.030, 0.43 - release * 0.20));
-    field += bodyField(point, vec2(centreX + drift * 0.72, (-0.69 + lobeY) * 0.5), vec2(0.048 + neckVisible * 0.042, 0.18 + stage * 0.62));
-    float wax = smoothstep(1.64, 2.28, field);
-    float edge = smoothstep(1.08, 1.80, field) - wax;
-    vec3 waxColour = mix(uColourOne, uColourTwo, 0.34);
-    waxColour = mix(waxColour, uColourThree, 0.16);
-    float subsurface = smoothstep(3.10, 6.00, field);
-    float rim = smoothstep(halfWidth + 0.018, halfWidth - 0.006, abs(localX));
+    // This is a single conserved circulation, not independently spawned
+    // particles. One lopsided pool sheds a heavy two-lobed mass, which returns
+    // on the other side of the chamber. The only bridge is short-lived during
+    // release, so the silhouette cannot become a tall parallel-sided column.
+    float clock = uPhase * 0.0104 + column * 0.251;
+    float leadTravel = 0.5 - 0.5 * cos(clock * 6.2831853);
+    float lean = fract(column * 0.38196601 + 0.29) * 2.0 - 1.0;
+    float bend = fract(column * 0.61803399 + 0.17) * 2.0 - 1.0;
+    vec2 baseLarge = vec2(centreX - 0.085, -0.690);
+    vec2 baseSmall = vec2(centreX + 0.075, -0.665);
+    vec2 lead = vec2(
+        centreX + lean * (0.050 + leadTravel * 0.110) + bend * sin(clock * 3.1415926) * 0.040,
+        -0.650 + leadTravel * 1.205
+    );
+    // The companion is not a free particle: it remains attached to the lead
+    // profile, producing an asymmetric wax lobe rather than a clean oval.
+    vec2 companion = lead + vec2(
+        -lean * (0.065 + 0.025 * leadTravel),
+        -0.070 + 0.030 * sin(clock * 6.2831853 + bend)
+    );
+    // Two smaller, unequal lobes travel with that same wax body. They are
+    // offset diagonally so the field forms shoulders and tapering seams, not
+    // a vertical chain of identical round beads.
+    vec2 shoulder = lead + vec2(
+        lean * (0.070 - 0.020 * leadTravel),
+        0.060 + 0.020 * cos(clock * 6.2831853 + lean)
+    );
+    vec2 tail = companion + vec2(
+        -bend * 0.052,
+        -0.082 - 0.018 * sin(clock * 6.2831853 + lean)
+    );
+    float release = smoothstep(0.15, 0.52, leadTravel);
+    float roofContact = smoothstep(0.84, 0.985, leadTravel);
+    vec2 roofLobe = vec2(centreX + lean * 0.090, 0.555);
+    vec2 visibleLead = mix(lead, roofLobe, roofContact);
+    vec2 visibleCompanion = mix(companion, roofLobe + vec2(-lean * 0.060, -0.045), roofContact);
+    vec2 visibleShoulder = mix(shoulder, roofLobe + vec2(lean * 0.058, 0.010), roofContact);
+    vec2 visibleTail = mix(tail, roofLobe + vec2(-bend * 0.050, -0.092), roofContact);
+    float field = waxNodeField(point, baseLarge, vec2(0.155, 0.085), bend);
+    field += waxNodeField(point, baseSmall, vec2(0.090, 0.110), -lean) * 0.82;
+    field += waxNodeField(point, visibleLead, mix(vec2(0.102, 0.142), vec2(0.148, 0.080), roofContact), lean);
+    field += waxNodeField(point, visibleCompanion, vec2(0.072, 0.110), -bend) * 0.84;
+    field += waxNodeField(point, visibleShoulder, vec2(0.052, 0.080), bend) * 0.62;
+    field += waxNodeField(point, visibleTail, vec2(0.044, 0.070), -lean) * 0.46;
+    float releaseBridge = taperedRibbonField(
+        point,
+        mix(baseLarge, baseSmall, 0.36),
+        lead,
+        0.118,
+        0.038,
+        0.092
+    );
+    field += releaseBridge * (1.0 - release) * 0.82;
+    float wax = smoothstep(1.60, 2.24, field) * glassMask;
+    float edge = (smoothstep(1.06, 1.74, field) - smoothstep(1.60, 2.24, field)) * glassMask;
+    // Each chamber gets a stable two-tone blend inside the user-selected
+    // palette. The tone changes gradually with height, never with beat data.
+    vec3 vesselBase;
+    vec3 vesselTop;
+    if (column < 0.5) {
+        vesselBase = uColours[0]; vesselTop = uColours[1];
+    } else if (column < 1.5) {
+        vesselBase = uColours[1]; vesselTop = uColours[2];
+    } else if (column < 2.5) {
+        vesselBase = uColours[2]; vesselTop = uColours[3];
+    } else {
+        vesselBase = uColours[3]; vesselTop = uColours[4];
+    }
+    vec3 waxColour = mix(vesselBase, vesselTop, smoothstep(-0.78, 0.78, point.y));
+    float subsurface = smoothstep(3.10, 6.00, field) * glassMask;
+    float rim = smoothstep(glassHalfWidth + 0.018, glassHalfWidth - 0.006, abs(localX)) * glassMask;
+    float pulseGlow = uPulse * uPulse;
     vec3 glass = vec3(0.026, 0.008, 0.062) + vec3(0.050, 0.010, 0.090) * (1.0 - abs(point.y));
+    glass += waxColour * glassMask * (0.018 + pulseGlow * 0.085);
     vec3 colour = glass + vec3(0.25, 0.14, 0.36) * rim * 0.36;
-    colour += waxColour * edge * (0.030 + uEnergy * 0.026);
-    colour = mix(colour, waxColour * (0.62 + uEnergy * 0.10), wax);
-    colour += mix(waxColour, uColourThree, 0.18) * subsurface * (0.040 + uEnergy * 0.035);
+    colour += waxColour * edge * (0.042 + uEnergy * 0.026 + pulseGlow * 0.135);
+    colour = mix(colour, waxColour * (0.68 + uEnergy * 0.10 + pulseGlow * 0.22), wax);
+    colour += mix(waxColour, vesselTop, 0.18) * subsurface * (0.052 + uEnergy * 0.035 + pulseGlow * 0.070);
+    vec3 metal = vec3(0.075, 0.070, 0.105) + vec3(0.22, 0.18, 0.28) * pow(1.0 - abs(localX) / max(halfWidth, 0.01), 2.0);
+    colour = mix(colour, metal, max(baseMask, capMask));
     gl_FragColor = vec4(colour, 1.0);
 }
 """
@@ -2862,6 +3230,60 @@ void main() {
  * broad nebula; flux and attacks deform every family independently so energetic
  * music changes the structure rather than only making it brighter.
  */
+/**
+ * Bounded-cost Neon path for living-room GPUs.  It keeps the original's neon
+ * spiral ribbons and audio-driven torsion, but replaces the prior per-pixel
+ * star fields and six independent arm loops with three analytic fields.
+ */
+private const val NeonLiteFragmentShader = """
+#version 300 es
+precision mediump float;
+in vec2 vUv;
+out vec4 fragmentColor;
+uniform vec2 uResolution;
+uniform float uPhase;
+uniform float uEnergy;
+uniform float uImpulse;
+uniform float uTransient;
+uniform float uImpact;
+uniform float uBands[8];
+
+void main() {
+    vec2 point = vUv - 0.5;
+    point.x *= uResolution.x / uResolution.y;
+    float low = uBands[0] * 0.62 + uBands[1] * 0.38;
+    float mid = (uBands[2] + uBands[3] + uBands[4] + uBands[5]) * 0.25;
+    float high = (uBands[6] + uBands[7]) * 0.5;
+    float radius = length(point);
+    float angle = atan(point.y, point.x);
+
+    // A single bounded warp keeps the arms visibly tied to decoded audio.
+    float torsion = sin(angle * 3.0 + uPhase * (0.62 + mid * 0.48))
+        * (0.10 + mid * 0.18 + uImpact * 0.10);
+    float curl = radius * (15.0 + low * 5.0)
+        - angle * 3.0
+        + uPhase * (1.15 + low * 1.35)
+        + torsion;
+    float primary = abs(sin(curl));
+    float echo = abs(sin(radius * (24.0 + high * 5.0) - angle * 5.0 + uPhase * 1.8));
+    float shock = abs(sin(radius * (34.0 + low * 8.0) - uPhase * 3.4));
+    float falloff = smoothstep(1.06, 0.08, radius);
+
+    float ribbon = smoothstep(0.105 + mid * 0.035, 0.018, primary);
+    float accent = smoothstep(0.065 + high * 0.020, 0.012, echo);
+    float pulse = smoothstep(0.080, 0.014, shock) * (uImpulse * 0.12 + uImpact * 0.30);
+    float colourPhase = sin(angle * 2.0 + uPhase * 0.42) * 0.5 + 0.5;
+    vec3 neon = mix(vec3(0.06, 0.28, 1.0), vec3(1.0, 0.06, 0.72), colourPhase);
+    vec3 colour = vec3(0.001, 0.003, 0.012);
+    colour += neon * ribbon * falloff * (0.38 + low * 0.30 + uEnergy * 0.12);
+    colour += vec3(0.26, 0.74, 1.0) * accent * falloff * (0.16 + high * 0.28);
+    colour += vec3(0.82, 0.94, 1.0) * (ribbon * ribbon + pulse) * falloff * (0.20 + uTransient * 0.20);
+    float haze = smoothstep(0.94, 0.18, radius) * (0.010 + low * 0.030);
+    colour += neon * haze;
+    fragmentColor = vec4(min(colour, vec3(1.0)), 1.0);
+}
+"""
+
 private const val NeonFragmentShader = """
 #version 300 es
 precision highp float;

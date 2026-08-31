@@ -59,6 +59,36 @@ was installed and physically accepted on the Google TV Streamer and Dongle R 4K.
 The closure order and acceptance evidence for these rows are defined in
 [TV_READINESS_ROADMAP.md](TV_READINESS_ROADMAP.md).
 
+### Protected core visualizers
+
+The following five styles are protected product fixtures: **Neon Kaleidoscope**,
+**EQ Spectrum**, **Signal Deck**, **DJ Soff Snep**, and **Lava Lamp**. They must
+remain in the TV catalog and retain their distinct identities. Future catalog work
+may refine or replace other styles, but every added style must be original,
+visually distinct from the protected set and its peers, audio-responsive where
+appropriate, and physically validated on supported TV hardware before release.
+
+Their stable persistence keys are `NeonKaleidoscope`, `MinimalSpectrum`,
+`VinylPulse`, `DjConsole`, and `LavaLamp`; those keys and their enum ordering must
+not be changed because existing local selections depend on them.
+
+### Catalog direction for the remaining styles
+
+The Streamer sweep establishes the following direction. This is a catalog-quality
+decision, not a removal from the current build: replacement work remains additive
+until a reviewed successor is physically accepted.
+
+| Decision | Styles | Direction |
+| --- | --- | --- |
+| Keep | Fluid Bloom, Signal Scope, Mirror Script, Orbit Bloom, Chromafield, Light Trails, Psychedelic Scene, Contour Islands, Prism Garden, Lantern Drift | Retain their concepts and names. They are legible at television distance and materially distinct from the protected core. |
+| Rebuild in place | Vector Switchboard, Echo Reef | Preserve the concepts and names, but rebuild their sparse line treatments into fuller, more immediately legible scenes without duplicating Neon Kaleidoscope or Light Trails. |
+| Replace | Glass Current → Facet Forge; Deep Warp → Pulse Observatory; Signal Rain → Harmonic Gate; Ribbon Reactor → Woven Current; Moonlit Tides → Dusk Lattice; Pulse Quilt → Beat Mosaic; Velvet Vortex → Magnetic Fields | The original successors are implemented on their existing stable persistence keys. They remain pending physical Streamer acceptance before this catalog decision can close. |
+
+Successors must not repeat the protected core's identity or become another generic
+wave, particle, equalizer, vortex, or lava treatment. Each requires a unique
+silhouette, an obvious audio mapping, bounded per-frame work, and Google TV
+Streamer physical acceptance before entering the catalog.
+
 ## TV08 — First-use listener entry
 
 **Status: In progress.** A translucent, station-first overlay now opens for fresh local TV installs,

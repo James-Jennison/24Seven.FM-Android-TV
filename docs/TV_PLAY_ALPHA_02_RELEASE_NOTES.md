@@ -9,8 +9,11 @@
   visual distinction between the station under D-pad focus and the station
   currently selected for listening. It fades away after a short idle period and returns
   when you use the D-pad.
-- The idle visualizer collection has expanded and received visual refinements,
-  including more vivid psychedelic and lava-lamp styles and palette choices.
+- The idle visualizer collection now includes 24 distinct full-screen scenes,
+  from Neon Kaleidoscope and Signal Deck to the DJ Soff Snep tribute deck,
+  Chromafield, Psychedelic Scene, and Lava Lamp.
+- Visualizer motion and rendering have been refined for more vivid audio response,
+  smoother constrained-device performance, and Lava Lamp palette choices.
 
 ## Please test
 

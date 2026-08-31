@@ -102,3 +102,54 @@ acceptance. It is not production-release evidence.
 - A post-pass device log scan contained no fatal exception or GL-invalid entry attributable to
   `com.codeframe78.twentyfourseven.tv.debug`. This is Google TV Streamer-only debug acceptance;
   Fire TV was deliberately not tested in this follow-up, and no release claim is implied.
+
+## Google TV emulator renderer compatibility — August 30, 2026
+
+- The current debug APK was installed on two Android 36 Google TV x86_64 emulator profiles using
+  the SwiftShader GLES translator: 1920×1080 and 3840×2160. Each profile opened General Options,
+  entered the Idle Visualizer picker, selected all 24 rows once, and reached the final `Lantern
+  Drift` row. The captured log scans contained no fatal exception, EGL/GL error, shader-compilation
+  error, or app-process crash.
+- On both profiles, a Home action followed by an explicit Activity resume returned the Player
+  activity without any of those renderer errors. The 4K profile was launched with 1 GB emulator
+  memory and reported 988,164 kB total RAM.
+- This is renderer compatibility and lifecycle evidence only. SwiftShader does not reproduce the
+  vendor GPU drivers, firmware, thermal behavior, or frame pacing of Sony, TCL, Hisense, or other
+  physical Android TV hardware; no cross-manufacturer performance conclusion is implied.
+
+## Google TV Streamer Lava renderer pacing — August 30, 2026
+
+- The debug APK was installed and exercised on the physical Google TV Streamer (Android 14), with
+  the Player rendering at 1920×1080 and the display reporting 60.0 Hz. After 120 Lava Lamp preview
+  callbacks, Device Status reported callback interval average/p95/maximum of 27.5/30.0/34.6 ms,
+  CPU draw average/maximum of 1.1/3.7 ms, and zero callbacks beyond the refresh-aware 41.7 ms
+  budget.
+- The previous full-resolution Lava field measurement on the same device was 55.2/117.7/128.8 ms
+  callback interval with 40 callbacks beyond that budget. The retained implementation renders the
+  heavy Lava field into the existing capped scene buffer and presents it as one filtered full-frame
+  sample; the public renderer remains the established `GLSurfaceView` path. A TextureView trial was
+  not retained because it visibly corrupted Compose overlay text on this device.
+- These values describe app render-callback pacing and CPU draw duration, not GPU frame time or a
+  vendor-wide guarantee. The physical result closes the observed Lava Lamp pacing regression for
+  this Google TV Streamer configuration; vendor-hardware coverage remains limited to the emulator
+  compatibility evidence above. The refresh-aware budget uses the display-reported refresh rate as
+  its pacing reference; it does not assert that HDMI/VRR behavior or vendor compositor timing is
+  identical on other devices.
+
+## Google TV Streamer catalog pass — August 30, 2026
+
+- With 1980s.FM actively playing, the Streamer picker rendered each catalog preview selected during
+  the current pass: Fluid Bloom, Signal Scope, Mirror Script, Orbit Bloom, Facet Forge, Vector
+  Switchboard, Pulse Observatory, Chromafield, Light Trails, EQ Spectrum, Signal Deck, DJ Soff
+  Snep, Psychedelic Scene, Lava Lamp, Harmonic Gate, Contour Islands, Woven Current, Prism Garden,
+  Dusk Lattice, Beat Mosaic, Echo Reef, Magnetic Fields, and Lantern Drift. The device exposed no
+  playback error category during the pass. Neon Kaleidoscope is an owner-protected fixture and was
+  expressly left unchanged; it is not recharacterized by this catalog pass.
+- The first brighter Magnetic Fields implementation rendered visibly but failed the Streamer timing
+  check: 36.1 ms callback p95, 38.7 ms CPU-draw maximum, and three callbacks over the 41.7 ms
+  display-derived budget. It was remediated by batching each field line into one filled-triangle
+  mesh instead of issuing a draw for every short segment.
+- The remediated debug APK was rebuilt, unit-tested, installed, and exercised with playback
+  `PLAYING`. Device Status then recorded Magnetic Fields at 16.9 ms callback p95, 8.0 ms CPU-draw
+  maximum, and zero callbacks over the 41.7 ms budget. This is a Google TV Streamer debug result;
+  it is not a vendor-wide GPU performance guarantee.
