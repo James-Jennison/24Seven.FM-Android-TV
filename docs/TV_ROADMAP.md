@@ -97,14 +97,9 @@ evidence is recorded in [tv08-first-use-validation.md](tv08-first-use-validation
 
 ## TV06 — Play alpha delivery
 
-**Status: In progress — Google Play review.** Internal testing release
-`1 (0.1.0-tv-alpha01)` is published to Alpha Testers with version-specific release notes. The Play-generated
-split is physically accepted on the Streamer and Dongle R 4K. The store listing, TV-specific Data Safety
-declaration, Teen-compatible target-audience bands (**13–15**, **16–17**, and **18 and over**) with the optional
-minor-user restriction left off, foreground-service declaration, and IARC questionnaire are saved.
-The Console generated the submitted IARC ratings (Brazil 16+, ESRB Teen, PEGI Parental Guidance, USK 16+, and
-12+ in the generic territories). The authoritative Internal testing track is **Active**, with version code 1
-available to internal testers; the dashboard's earlier Inactive aggregate label was stale. The dedicated
-**TV Closed (Android TV)** track has version code 1, both approved tester lists, and 177 target countries/regions.
-Publishing overview now records the configuration and rollout changes as **Changes in review**. A support case was
-submitted before the track-level check; it is not a remaining release gate.
+**Status: Complete.** The dedicated **TV Closed (Android TV)** track is active for its assigned tester cohorts
+in 177 countries/regions. Alpha 02, version code `2` (`0.1.0-tv-alpha02`), cleared review and was released to
+testers. Its playback hotfix, version code `3` (`0.1.0-tv-alpha02-hotfix1`) from revision
+`77e789d88d21cb8f5b1c3855cbe9a9ee2a7bf80b`, subsequently cleared review, deployed through Google Play, and
+was installed and accepted on the Google TV Streamer. The hotfix restores local station playback without changing
+the Android-TV-only product scope or Alpha 02 feature set.

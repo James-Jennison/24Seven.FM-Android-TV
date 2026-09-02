@@ -199,11 +199,10 @@ R2.1 passes its physical-TV acceptance with no idle/remote regressions.
 
 ## R4 — Release artifact and Play readiness
 
-**Status: In progress — Google Play review.** Internal testing release
-`1 (0.1.0-tv-alpha01)` is published to Alpha Testers. The exact local signed-artifact gate, signing
-verification, R8/resource shrinking, 64-bit, and 16 KB checks passed, and Play accepted the AAB with
-its ReTrace mapping attachment. The Play-generated split was installed and physically accepted on the
-Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains incomplete.
+**Status: Complete for Alpha 02 closed delivery.** The TV Closed Android TV track has released Alpha 02 and its
+version-code-3 playback hotfix. The protected local signer verified the hotfix AAB from revision
+`77e789d88d21cb8f5b1c3855cbe9a9ee2a7bf80b`; Play accepted the bundle with its ReTrace mapping attachment,
+cleared review, and delivered it to the Google TV Streamer, where playback was accepted by the owner.
 
 1. **Exact-build record — complete.** The first artifact is version
    `0.1.0-tv-alpha01` / code `1` from revision `3c742c5f182e4bd0f8997d95feaf1cb5df620714`.
@@ -247,7 +246,7 @@ Google TV Streamer and Dongle R 4K. Listing/disclosure reconciliation remains in
 | 2 | R2.1 Overlay and comfort | Complete — persistence plus fixed/reduced visualizer physical pass |
 | 3 | R2.2 Style behavior decision | Deferred pending explicit product approval |
 | 4 | R3 Physical-TV closure | Complete for the permitted local scope; fallback configuration remains unchanged |
-| 5 | R4 Release readiness | In progress — Internal release is active and device-accepted; all App content declarations are actioned and the TV Closed rollout plus metadata are in Google Play review |
+| 5 | R4 Release readiness | Complete for Alpha 02 closed delivery — TV Closed is active and the version-code-3 playback hotfix cleared review, deployed, and passed owner acceptance on the Streamer |
 
-TV05 is complete. TV06 remains approval-gated and must not be treated as complete from an
-Internal-track publication and device acceptance alone.
+TV05 and TV06 are complete for the Alpha 02 closed-testing milestone. Any future release remains
+separately approval-gated.

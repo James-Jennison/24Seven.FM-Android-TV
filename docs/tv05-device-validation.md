@@ -61,6 +61,16 @@ and published Play-generated-split acceptance passed.
 This document combines debug-build device evidence, local signed-artifact evidence, and Play-delivered split
 acceptance. It is not production-release evidence.
 
+## Alpha 02 playback hotfix delivery — September 2, 2026
+
+- The protected signer produced the Android TV-only version-code-3 bundle
+  `0.1.0-tv-alpha02-hotfix1` from committed revision
+  `77e789d88d21cb8f5b1c3855cbe9a9ee2a7bf80b`; its upload signature was verified before Play upload.
+- Google Play accepted the bundle with its ReTrace mapping attachment, completed review, and deployed it through
+  the active **TV Closed** track.
+- The owner installed the Play-delivered hotfix on the Google TV Streamer and confirmed station playback now
+  works as expected.
+
 ## Current-source addendum — August 29, 2026
 
 - The current debug source expanded the picker from thirteen to fifteen fixed styles with `Psychedelic Scene`
