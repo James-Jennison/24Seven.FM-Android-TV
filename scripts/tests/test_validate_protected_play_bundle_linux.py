@@ -150,6 +150,24 @@ class LinuxPlaySigningTest(unittest.TestCase):
         with self.assertRaisesRegex(signing.SigningError, "registered Play upload identity"):
             signing.load_recovery_package(self.create_package(), self.passphrase, "0" * 64)
 
+    def test_distinct_colon_delimited_certificate_is_rejected(self) -> None:
+        distinct_certificate = "0" + self.certificate_sha256[1:]
+        expected_certificate = ":".join(
+            distinct_certificate[index : index + 2]
+            for index in range(0, len(distinct_certificate), 2)
+        )
+        with self.assertRaisesRegex(signing.SigningError, "registered Play upload identity"):
+            signing.load_recovery_package(
+                self.create_package(), self.passphrase, expected_certificate
+            )
+
+    def test_malformed_registered_certificate_is_rejected(self) -> None:
+        malformed_certificate = self.certificate_sha256[:62] + "ZZ"
+        with self.assertRaisesRegex(signing.SigningError, "expected upload certificate"):
+            signing.load_recovery_package(
+                self.create_package(), self.passphrase, malformed_certificate
+            )
+
     def test_mismatched_keystore_hash_is_rejected(self) -> None:
         with self.assertRaisesRegex(signing.SigningError, "keystore hash"):
             signing.load_recovery_package(

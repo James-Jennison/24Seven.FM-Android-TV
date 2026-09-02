@@ -289,6 +289,8 @@ def parse_recovery_payload(
     store_bytes = bytearray(_decode_base64(value.get("storeBytes"), "storeBytes"))
     store_sha256 = _normalize_sha256(value.get("storeSha256"), "storeSha256")
     certificate_sha256 = _normalize_sha256(value.get("certificateSha256"), "certificateSha256")
+    if not isinstance(expected_certificate_sha256, str):
+        raise SigningError("The recovery package contains an invalid 'expected upload certificate'.")
     expected_certificate_sha256 = _normalize_sha256(
         expected_certificate_sha256.replace(":", ""), "expected upload certificate"
     )
