@@ -34,8 +34,8 @@ android {
         applicationId = "com.codeframe78.twentyfourseven.tv"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.1.0-tv-alpha02"
+        versionCode = 3
+        versionName = "0.1.0-tv-alpha02-hotfix1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["appLabel"] = "24Seven.FM TV"
         manifestPlaceholders["buildRevision"] = sourceRevision

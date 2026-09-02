@@ -149,8 +149,18 @@ class RadioPlaybackService : MediaSessionService() {
         override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
+        ): MediaSession.ConnectionResult = connectionResult(session, controller)
+
+        override fun onConnectAsync(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+        ) = Futures.immediateFuture(connectionResult(session, controller))
+
+        private fun connectionResult(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
         ): MediaSession.ConnectionResult {
-            val access = MediaSessionControllerPolicy.access(controller, packageName)
+            val access = controllerAccess(controller)
             if (access == ControllerAccess.Foreign) {
                 return MediaSession.ConnectionResult.accept(
                     MediaSessionControllerPolicy.sessionCommands(
@@ -164,7 +174,14 @@ class RadioPlaybackService : MediaSessionService() {
             if (!base.isAccepted) return base
             return MediaSession.ConnectionResult.accept(
                 MediaSessionControllerPolicy.sessionCommands(base.availableSessionCommands, access),
-                MediaSessionControllerPolicy.playerCommands(base.availablePlayerCommands, access),
+                MediaSessionControllerPolicy.playerCommands(
+                    if (access == ControllerAccess.LocalApp) {
+                        session.player.availableCommands
+                    } else {
+                        base.availablePlayerCommands
+                    },
+                    access,
+                ),
             )
         }
 
@@ -174,7 +191,7 @@ class RadioPlaybackService : MediaSessionService() {
             mediaItems: List<MediaItem>,
         ) = if (
             MediaSessionControllerPolicy.mayChangeMedia(
-                MediaSessionControllerPolicy.access(controller, packageName),
+                controllerAccess(controller),
             )
         ) {
             super.onAddMediaItems(mediaSession, controller, mediaItems)
@@ -189,7 +206,7 @@ class RadioPlaybackService : MediaSessionService() {
             args: Bundle,
         ) = when (customCommand) {
             SleepTimerSessionContract.setCommand -> {
-                val access = MediaSessionControllerPolicy.access(controller, packageName)
+                val access = controllerAccess(controller)
                 if (!MediaSessionControllerPolicy.maySetSleepTimer(access)) {
                     Futures.immediateFuture(SessionResult(SessionError.ERROR_NOT_SUPPORTED))
                 } else {
@@ -204,7 +221,7 @@ class RadioPlaybackService : MediaSessionService() {
             }
 
             SleepTimerSessionContract.cancelCommand -> {
-                val access = MediaSessionControllerPolicy.access(controller, packageName)
+                val access = controllerAccess(controller)
                 if (!MediaSessionControllerPolicy.mayCancelSleepTimer(access)) {
                     Futures.immediateFuture(SessionResult(SessionError.ERROR_NOT_SUPPORTED))
                 } else {
@@ -223,6 +240,9 @@ class RadioPlaybackService : MediaSessionService() {
         ) {
             if (playerCommands.contains(Player.COMMAND_STOP)) cancelSleepTimer()
         }
+
+        private fun controllerAccess(controller: MediaSession.ControllerInfo): ControllerAccess =
+            MediaSessionControllerPolicy.access(controller, packageName)
     }
 
     override fun onCreate() {

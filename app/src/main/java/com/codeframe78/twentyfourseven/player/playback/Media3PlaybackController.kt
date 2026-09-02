@@ -48,6 +48,7 @@ class Media3PlaybackController(
     private var controller: MediaController? = null
     private var selectedStation: Station? = null
     private var playRequested = false
+    private var controllerConnectionError: String? = null
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
@@ -113,15 +114,17 @@ class Media3PlaybackController(
                 runCatching { controllerFuture.get() }
                     .onSuccess { connected ->
                         controller = connected
+                        controllerConnectionError = null
                         connected.addListener(listener)
                         selectedStation?.let(::setStationMediaItems)
                         updateSleepTimerState(connected.sessionExtras)
                         updateState()
                     }
                     .onFailure { error ->
+                        controllerConnectionError = error.message ?: "Unable to connect to playback service"
                         stateFlow.value = stateFlow.value.copy(
                             status = PlaybackStatus.Error,
-                            errorMessage = error.message ?: "Unable to connect to playback service",
+                            errorMessage = controllerConnectionError,
                         )
                     }
             },
@@ -191,6 +194,16 @@ class Media3PlaybackController(
 
     private fun setStationMediaItems(station: Station) {
         val connected = controller ?: return
+        val commandError = stationChangeCommandError(
+            connected.availableCommands.contains(Player.COMMAND_CHANGE_MEDIA_ITEMS),
+        )
+        if (commandError != null) {
+            stateFlow.value = stateFlow.value.copy(
+                status = PlaybackStatus.Error,
+                errorMessage = commandError,
+            )
+            return
+        }
         val resumePlayback = playRequested || connected.playWhenReady
         val mediaItems = station.streams
             .sortedBy { it.priority }
@@ -223,10 +236,11 @@ class Media3PlaybackController(
         val connected = controller
         val stationId = selectedStation?.id ?: stateFlow.value.stationId
         if (connected == null) {
+            val connectionError = controllerConnectionError
             stateFlow.value = stateFlow.value.copy(
                 stationId = stationId,
-                status = if (playRequested) PlaybackStatus.Connecting else PlaybackStatus.Idle,
-                errorMessage = null,
+                status = disconnectedPlaybackStatus(playRequested, connectionError),
+                errorMessage = connectionError,
                 audioOutput = localAudioOutput,
             )
             return
@@ -282,6 +296,18 @@ class Media3PlaybackController(
         connected.play()
     }
 }
+
+internal fun disconnectedPlaybackStatus(
+    playRequested: Boolean,
+    connectionError: String?,
+): PlaybackStatus = when {
+    connectionError != null -> PlaybackStatus.Error
+    playRequested -> PlaybackStatus.Connecting
+    else -> PlaybackStatus.Idle
+}
+
+internal fun stationChangeCommandError(canChangeMediaItems: Boolean): String? =
+    if (canChangeMediaItems) null else "Playback service cannot switch stations"
 
 private fun ConnectivityManager.hasValidatedDefaultNetwork(): Boolean = activeNetwork
     ?.let(::getNetworkCapabilities)
