@@ -108,6 +108,7 @@ enum class LavaLampPalette(val displayName: String, val description: String) {
 }
 
 data class IdleScreenPreferences(
+    val automaticIdleScreenEnabled: Boolean = true,
     val visualizer: IdleVisualizerStyle = IdleVisualizerStyle.NeonKaleidoscope,
     val nowPlayingOverlay: NowPlayingOverlayMode = NowPlayingOverlayMode.Brief,
     val reduceVisualIntensity: Boolean = false,
@@ -116,6 +117,8 @@ data class IdleScreenPreferences(
 
 interface IdleScreenPreferencesRepository {
     val preferences: StateFlow<IdleScreenPreferences>
+
+    suspend fun setAutomaticIdleScreenEnabled(enabled: Boolean)
 
     suspend fun setVisualizer(style: IdleVisualizerStyle)
 

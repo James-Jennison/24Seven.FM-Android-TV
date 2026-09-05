@@ -44,6 +44,7 @@ class MainActivity : AppCompatActivity() {
                 onCancelSleepTimer = viewModel::cancelSleepTimer,
                 onSelectIdleVisualizer = viewModel::selectIdleVisualizer,
                 onSetNowPlayingOverlay = viewModel::setNowPlayingOverlay,
+                onSetAutomaticIdleScreenEnabled = viewModel::setAutomaticIdleScreenEnabled,
                 onSetReduceVisualIntensity = viewModel::setReduceVisualIntensity,
                 onSetLavaLampPalette = viewModel::setLavaLampPalette,
             )

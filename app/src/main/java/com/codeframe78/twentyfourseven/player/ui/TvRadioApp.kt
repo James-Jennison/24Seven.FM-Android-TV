@@ -132,6 +132,7 @@ internal fun TvRadioApp(
     onPause: () -> Unit,
     onSetSleepTimer: (Long) -> Unit,
     onCancelSleepTimer: () -> Unit,
+    onSetAutomaticIdleScreenEnabled: (Boolean) -> Unit,
     onSelectIdleVisualizer: (IdleVisualizerStyle) -> Unit,
     onSetNowPlayingOverlay: (NowPlayingOverlayMode) -> Unit,
     onSetReduceVisualIntensity: (Boolean) -> Unit,
@@ -153,21 +154,18 @@ internal fun TvRadioApp(
     DisposableEffect(hostView, state.playback.status) {
         // Fire TV can launch its system dream well before the Player's ten-minute
         // in-app idle timer. While live audio is playing in the visible Player,
-        // reserve the screen for the audio-reactive idle visualizer. Leaving the
+        // keep the dashboard or chosen idle visualizer visible. Leaving the
         // app or stopping playback restores normal system screensaver behavior.
         hostView.keepScreenOn = state.playback.status == PlaybackStatus.Playing
         onDispose { hostView.keepScreenOn = false }
     }
-    LaunchedEffect(state.playback.status, menuDestination, interactionRevision, fullScreenPreviewRequested) {
-        if (fullScreenPreviewRequested && menuDestination == null) {
-            idleVisualizerActive = true
-        } else if (state.playback.status == PlaybackStatus.Playing && menuDestination == null) {
-            idleVisualizerActive = false
-            delay(TvIdleScreenDelayMillis)
-            idleVisualizerActive = true
-        } else {
-            idleVisualizerActive = false
-        }
+    LaunchedEffect(state.playback.status, menuDestination, interactionRevision, fullScreenPreviewRequested, state.idleScreen.automaticIdleScreenEnabled) {
+        updateTvIdleScreenActivation(
+            playing = state.playback.status == PlaybackStatus.Playing,
+            menuOpen = menuDestination != null,
+            previewRequested = fullScreenPreviewRequested,
+            automaticEnabled = state.idleScreen.automaticIdleScreenEnabled,
+        ) { idleVisualizerActive = it }
     }
     LaunchedEffect(interactionRevision) {
         stationSelectorVisible = true
@@ -398,6 +396,7 @@ internal fun TvRadioApp(
                 TvIdleScreenSheet(
                         state = state,
                         visualization = visualization,
+                        onSetAutomaticIdleScreenEnabled = onSetAutomaticIdleScreenEnabled,
                         onSelectVisualizer = onSelectIdleVisualizer,
                         onPreviewFullScreen = { previewStyle ->
                             fullScreenPreviewStyle = previewStyle
@@ -456,7 +455,6 @@ internal fun TvRadioApp(
     }
 }
 
-private const val TvIdleScreenDelayMillis = 10 * 60 * 1_000L
 private const val TvNowPlayingOverlayBriefDurationMillis = 5_000L
 private const val TvVisualizerDoubleActivateWindowMillis = 650L
 
@@ -635,7 +633,11 @@ private fun TvGeneralOptionsSheet(
     TvOptionsSheet(title = "General Options", onDismiss = onDismiss) { firstAction ->
         TvOptionAction(
             title = "Idle Screen",
-            summary = "${state.idleScreen.visualizer.displayName} · starts after 10 minutes",
+            summary = if (state.idleScreen.automaticIdleScreenEnabled) {
+                "${state.idleScreen.visualizer.displayName} · starts after 10 minutes"
+            } else {
+                "Automatic idle screen: Off · manual previews available"
+            },
             onClick = onOpenIdleScreen,
             modifier = Modifier.focusRequester(firstAction),
         )
@@ -790,9 +792,10 @@ private fun TvIdleNowPlayingOverlay(state: TvRadioUiState, modifier: Modifier = 
 }
 
 @Composable
-private fun TvIdleScreenSheet(
+internal fun TvIdleScreenSheet(
     state: TvRadioUiState,
     visualization: StateFlow<AudioVisualizationState>,
+    onSetAutomaticIdleScreenEnabled: (Boolean) -> Unit,
     onSelectVisualizer: (IdleVisualizerStyle) -> Unit,
     onPreviewFullScreen: (IdleVisualizerStyle) -> Unit,
     onDismiss: () -> Unit,
@@ -812,10 +815,11 @@ private fun TvIdleScreenSheet(
     LaunchedEffect(Unit) {
         // The Select key that opens this screen ends after composition. Leave the
         // picker non-interactive for that single inherited gesture, then place
-        // focus on the selected style. A listener's next Select is therefore
-        // always an intentional first half of the double-press preview gesture.
+        // focus on the automatic idle setting once its enabled state is composed.
+        // The opening gesture must not toggle the saved preference.
         delay(120)
         selectorInteractive = true
+        androidx.compose.runtime.withFrameNanos { }
         selectedAction.requestFocus()
     }
     Box(
@@ -884,6 +888,17 @@ private fun TvIdleScreenSheet(
                 color = TvCream.copy(alpha = .68f),
                 modifier = Modifier.padding(bottom = 8.dp),
             )
+            TvOptionAction(
+                title = "Automatic idle screen: ${if (state.idleScreen.automaticIdleScreenEnabled) "On" else "Off"}",
+                summary = if (state.idleScreen.automaticIdleScreenEnabled) {
+                    "Starts after 10 minutes · select to turn off"
+                } else {
+                    "Dashboard stays visible · select to turn on"
+                },
+                onClick = { onSetAutomaticIdleScreenEnabled(!state.idleScreen.automaticIdleScreenEnabled) },
+                enabled = selectorInteractive,
+                modifier = Modifier.focusRequester(selectedAction),
+            )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -917,11 +932,6 @@ private fun TvIdleScreenSheet(
                                 }
                             },
                             onPreview = { previewStyle = style },
-                            modifier = if (style == state.idleScreen.visualizer) {
-                                Modifier.focusRequester(selectedAction)
-                            } else {
-                                Modifier
-                            },
                         )
                     }
                 }
@@ -1107,9 +1117,11 @@ private fun TvOptionAction(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
+    enabled: Boolean = true,
 ) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.fillMaxWidth(),
         colors = ButtonDefaults.colors(
             containerColor = if (selected) TvCream.copy(alpha = .16f) else TvCream.copy(alpha = .07f),

@@ -11,6 +11,7 @@
 
 - Never run `gradlew clean` during routine work. Start code-only checks with `./gradlew :app:compileDebugKotlin`; run affected unit tests for domain/ViewModel changes. Assemble an APK only when needed.
 - Do not reinstall Android SDK packages or repeat unaffected successful validators.
+- The physical Google TV Streamer is a standing required acceptance target for TV app behavior changes. During approved development, build, install/update the debug package, launch, and run affected acceptance on the verified Streamer without re-requesting routine device-testing approval. Emulator results supplement physical-device testing. Preserve device data and unrelated apps; publication/signing gates remain separate. If the Streamer is unavailable or an on-device human action is required, record that precise blocker and keep physical acceptance pending. Do not declare the feature complete based on emulator-only evidence.
 - Signing, distribution, production stream settings, background-media behavior, and external publication require project release validation and explicit approval.
 
 ## Browser and desktop control

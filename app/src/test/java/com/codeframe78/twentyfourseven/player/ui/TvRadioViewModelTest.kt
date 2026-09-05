@@ -252,6 +252,36 @@ class TvRadioViewModelTest {
     }
 
     @Test
+    fun `automatic idle setting defaults on and toggles without playback or timer changes`() = runTest(dispatcher) {
+        val preferences = InMemoryIdleScreenPreferencesRepository()
+        val playback = FakePlaybackController()
+        val viewModel = TvRadioViewModel(
+            BootstrapStationRepository(), playback, FakeNowPlayingRepository(), FakeQueueRepository(),
+            preferences, InMemoryAudioVisualizationRepository(),
+        )
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.idleScreen.automaticIdleScreenEnabled)
+        val initialPlayCalls = playback.playCalls
+        viewModel.setAutomaticIdleScreenEnabled(false)
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.idleScreen.automaticIdleScreenEnabled)
+        val recreated = TvRadioViewModel(
+            BootstrapStationRepository(), FakePlaybackController(), FakeNowPlayingRepository(), FakeQueueRepository(),
+            preferences, InMemoryAudioVisualizationRepository(),
+        )
+        assertFalse(recreated.uiState.value.idleScreen.automaticIdleScreenEnabled)
+        viewModel.setAutomaticIdleScreenEnabled(true)
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.idleScreen.automaticIdleScreenEnabled)
+        assertEquals(initialPlayCalls, playback.playCalls)
+        assertEquals(0, playback.pauseCalls)
+        assertEquals(0, playback.stopCalls)
+        assertTrue(playback.sleepTimerDurations.isEmpty())
+        assertEquals(0, playback.cancelSleepTimerCalls)
+    }
+
+    @Test
     fun `TV idle comfort preferences persist in immutable UI state`() = runTest(dispatcher) {
         val preferences = InMemoryIdleScreenPreferencesRepository()
         val viewModel = TvRadioViewModel(

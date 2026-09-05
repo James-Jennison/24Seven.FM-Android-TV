@@ -43,6 +43,15 @@ The approved follow-on options and physical-acceptance sequence is recorded in
 [TV_READINESS_ROADMAP.md](TV_READINESS_ROADMAP.md). In particular, station selection remains on the listener
 dashboard rather than in General Options.
 
+### Automatic idle screen preference (2026-09-05)
+
+Owner-approved local addition: General Options → Idle Screen → Automatic idle screen:
+On / Off, default On. The saved Off choice keeps the dashboard visible during playback
+while preserving manual previews. Local checks and Google TV Streamer debug acceptance
+passed, including both process-restart preferences, manual preview, and real ten-minute
+Off/On behavior. Evidence and the separate publication boundary are tracked in
+[tv-idle-screen-toggle-validation.md](tv-idle-screen-toggle-validation.md).
+
 ## TV05 — TV acceptance
 
 Certify focus traversal, Back behavior, TalkBack, basic/Bluetooth remote input, emulator and physical TV playback, network recovery, 1080p/4K layout, low-memory behavior, 64-bit/16 KB packaging, and all five stations.

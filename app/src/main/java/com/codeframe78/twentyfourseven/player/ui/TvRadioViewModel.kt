@@ -58,6 +58,7 @@ class TvRadioViewModel(
 ) : ViewModel() {
     private val initialSelectedStation = stations.currentSelectedStation()
     private val initialUiState = TvRadioUiState(
+        idleScreen = idleScreenPreferences.preferences.value,
         stations = stations.currentStations(),
         selectedStation = initialSelectedStation,
         nowPlaying = nowPlaying.current().takeIf { it.stationId == initialSelectedStation?.id }
@@ -175,6 +176,10 @@ class TvRadioViewModel(
     fun setSleepTimer(durationMillis: Long) = playback.setSleepTimer(durationMillis)
 
     fun cancelSleepTimer() = playback.cancelSleepTimer()
+
+    fun setAutomaticIdleScreenEnabled(enabled: Boolean) = viewModelScope.launch {
+        idleScreenPreferences.setAutomaticIdleScreenEnabled(enabled)
+    }
 
     fun selectIdleVisualizer(style: IdleVisualizerStyle) = viewModelScope.launch {
         idleScreenPreferences.setVisualizer(style)

@@ -12,11 +12,18 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class SharedPreferencesIdleScreenPreferencesRepository(
     context: Context,
+    preferencesName: String = PREFERENCES_NAME,
 ) : IdleScreenPreferencesRepository {
-    private val sharedPreferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+    private val sharedPreferences = context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
     private val mutablePreferences = MutableStateFlow(readPreferences())
 
     override val preferences: StateFlow<IdleScreenPreferences> = mutablePreferences.asStateFlow()
+
+    override suspend fun setAutomaticIdleScreenEnabled(enabled: Boolean) {
+        val updated = mutablePreferences.value.copy(automaticIdleScreenEnabled = enabled)
+        sharedPreferences.edit().putBoolean(KEY_AUTOMATIC_IDLE_SCREEN_ENABLED, enabled).apply()
+        mutablePreferences.value = updated
+    }
 
     override suspend fun setVisualizer(style: IdleVisualizerStyle) {
         val updated = mutablePreferences.value.copy(visualizer = style)
@@ -53,6 +60,7 @@ class SharedPreferencesIdleScreenPreferencesRepository(
             ?.let { stored -> LavaLampPalette.entries.firstOrNull { it.name == stored } }
             ?: LavaLampPalette.Neon
         return IdleScreenPreferences(
+            automaticIdleScreenEnabled = sharedPreferences.getBoolean(KEY_AUTOMATIC_IDLE_SCREEN_ENABLED, true),
             visualizer = style,
             nowPlayingOverlay = overlay,
             reduceVisualIntensity = sharedPreferences.getBoolean(KEY_REDUCE_VISUAL_INTENSITY, false),
@@ -62,6 +70,7 @@ class SharedPreferencesIdleScreenPreferencesRepository(
 
     private companion object {
         const val PREFERENCES_NAME = "idle-screen-preferences"
+        const val KEY_AUTOMATIC_IDLE_SCREEN_ENABLED = "automatic-idle-screen-enabled"
         const val KEY_VISUALIZER = "visualizer"
         const val KEY_NOW_PLAYING_OVERLAY = "now-playing-overlay"
         const val KEY_REDUCE_VISUAL_INTENSITY = "reduce-visual-intensity"
@@ -74,6 +83,10 @@ class InMemoryIdleScreenPreferencesRepository(
 ) : IdleScreenPreferencesRepository {
     private val mutablePreferences = MutableStateFlow(initial)
     override val preferences: StateFlow<IdleScreenPreferences> = mutablePreferences.asStateFlow()
+
+    override suspend fun setAutomaticIdleScreenEnabled(enabled: Boolean) {
+        mutablePreferences.value = mutablePreferences.value.copy(automaticIdleScreenEnabled = enabled)
+    }
 
     override suspend fun setVisualizer(style: IdleVisualizerStyle) {
         mutablePreferences.value = mutablePreferences.value.copy(visualizer = style)
