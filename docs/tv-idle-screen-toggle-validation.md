@@ -312,3 +312,24 @@ evidence remain preserved and are now ignored by Git; no generated APKs, signing
 containers, or raw work directory were included. This is a local repository checkpoint,
 with no push, deployment, new installation, or release. Startup ANR and acceptance
 limitations above remain unchanged.
+
+## Startup ANR diagnostic and focused-window wait — 2026-11-01
+
+Read-only investigation of the three retained Streamer ANRs (all "Application does not
+have a focused window", debug v3 `0.1.0-tv-alpha02-hotfix1-debug`): main thread was busy in
+the first Compose composition, not hung. Debug cold launch to focus was 5.0 s (7.4–7.5 s
+at the ANR times); the debug package was `run-from-apk`, 32-bit, debuggable. Release of
+HEAD `781421d` built on gthost (throwaway `.reltest` id, debug-signed, installed APK
+SHA-256 `1e11518f6adc5d51eae3062dd20c9122efde7f62813d8b5d25875cbc20f35618`) cold-started
+in 1.22–1.26 s as installed and 0.94–0.95 s with a speed-profile compile. Conclusion: the
+slowness is debug-build specific; no product defect or product fix is claimed. A single
+deliberate early key at ~5.0 s launch did not reproduce an ANR, so the early-input
+mechanism is consistent with, but not independently proven by, a fresh repro.
+
+Acceptance-script change: `scripts/wait-for-focused-window.sh` withholds input until
+`mCurrentFocus` is the expected package (and optional activity) on the expected device,
+with a bounded timeout and distinct exit codes. Validation: six fake-adb unit tests
+(`scripts/tests/test_wait_for_focused_window.py`) pass; on the physical Google TV
+Streamer a debug cold launch became ready at ~4.6 s, delivered the key, and added no ANR
+(count 3 before and after); the wrong-device guard rejected the LCARS tablet (exit 3).
+The benchmark snapshot on gthost and the earlier device dexopt state were left as is.
