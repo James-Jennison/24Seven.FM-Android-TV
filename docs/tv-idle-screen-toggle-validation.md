@@ -391,7 +391,7 @@ after that reviewed candidate is the one-paragraph status wording in `docs/BRAND
 re-review was run. Banner-not-seen-on-launcher and the other residuals are unchanged; Owner
 acceptance of the banner visuals and release remain not granted.
 
-## TV alignment with mobile main and TV launch screen — 2026-11-01 (open)
+## TV alignment with mobile main and TV launch screen — 2026-11-01 (system splash; superseded by the in-app splash section below)
 
 Earlier branding checks compared against the wrong mobile tree (checked out on an older branch). Re-done
 against mobile `main` `a309c1a` (versionName 1.0.2): 26 shared files (icons, mipmaps, colors including
@@ -412,3 +412,22 @@ three reviewers; findings are not yet dispositioned and there is NO closure. Ope
 splash (accept as wired-but-unseen, or build an in-app Compose splash), plus reviewer items to fold into a
 superseding candidate (parity script should also pin the TV commit/clean tree, Media3 version in
 THIRD_PARTY_NOTICES, rationale for core-splashscreen on minSdk 26, banner geometry receipt).
+
+## TV in-app launch splash and alignment closure — 2026-11-01
+
+Google TV never draws the system splash for our theme, so `TvLaunchSplash` plays the same antenna mark in-app
+once per cold start (~1.1 s hold, 300 ms fade) and was observed on the Streamer (about 1.7 s on screen after the
+debug build's ~5 s cold start). A device test then showed a Down key pressed during the splash opened General
+Options underneath; the activity now swallows every key except Back while the splash shows (verified before/after
+on the Streamer; keys work after the splash; Back leaves the app). Candidate `2201407`: gthost compile, 169 unit
+tests, lint 0 errors / 82 warnings, `assembleDebug`, `compileDebugAndroidTestKotlin` passed; installed APK is the
+GTHost APK re-signed with the workstation debug key (983 entries identical by decompressed SHA-256).
+
+Review: change `tv-mobile-alignment-20261101-v3` (supersedes the earlier v1/v2 changes, whose cycles
+`review-cycle-a83a19be9fd5` and `review-cycle-d51b7ab0a46b` have no closure), cycle
+`review-cycle-e4de04b30e7d` COMPLETE, evidence `evidence-cycle-1d6ad30cef56` PASS. Closure
+`closure-426c929c157e`: READY_WITH_RESIDUAL_RISK, TECHNICALLY_READY, REVIEW_APPROVED; Owner acceptance not
+recorded; release not granted. Seven residual risks, notably: system splash layer unobserved (possible double
+splash on platforms that draw it), in-app mark (~245 px) not Owner-accepted, release-build behavior of the splash
+unverified, banner never rendered by this launcher, parity script manual and not pinned to a mobile commit, no
+automated test for the splash or key swallowing, versionCode not bumped.
