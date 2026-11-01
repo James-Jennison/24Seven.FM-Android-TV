@@ -22,4 +22,6 @@ Sign-in, Chat, song requests, browser/email handoffs, notifications, commerce, a
 bash ./gradlew :app:compileDebugKotlin
 ```
 
+Branding and the shared-asset check with the mobile Player are described in [docs/BRANDING.md](docs/BRANDING.md).
+
 See [the TV roadmap](docs/TV_ROADMAP.md) for the delivery sequence. Signing, Play delivery, and publication are always separately approval-gated.

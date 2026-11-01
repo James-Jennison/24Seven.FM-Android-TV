@@ -55,7 +55,7 @@ android {
         getByName("debug") {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            manifestPlaceholders["appLabel"] = "24Seven.FM TV — Alpha 02 Debug"
+            manifestPlaceholders["appLabel"] = "24Seven.FM TV (Debug)"
         }
         getByName("release") {
             isMinifyEnabled = true
