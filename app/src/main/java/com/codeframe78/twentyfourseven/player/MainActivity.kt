@@ -11,6 +11,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,7 +48,13 @@ class MainActivity : AppCompatActivity() {
             )
             val state = viewModel.uiState.collectAsStateWithLifecycle().value
             var launchSplashVisible by rememberSaveable { mutableStateOf(true) }
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    // While the launch splash covers the player, keys must not act on UI the viewer cannot see. Back still
+                    // passes so the app can be left at any time.
+                    .onPreviewKeyEvent { event -> launchSplashVisible && event.key != Key.Back },
+            ) {
                 TvRadioApp(
                     state = state,
                     visualization = viewModel.visualization,

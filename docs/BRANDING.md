@@ -18,7 +18,8 @@ and never writes to either repository. It checks 26 files:
   `splash_*` animators;
 - theme: `RadioTheme.kt`.
 
-The script also prints the TV `HEAD` and refuses to pass while `app/src/main` has uncommitted changes (use
+The script also prints the TV `HEAD` and refuses to pass while `app/src/main` (only that path, not the whole tree)
+has uncommitted changes (use
 `--allow-dirty` only while iterating), so a pass describes a commit. Last verified against mobile `main` commit `a309c1a5a6047815eefae5183985d39d0a3d025d` (versionName 1.0.2).
 Mobile 1.0.3 is in flight, so re-run the script and re-copy when `main` moves. The mobile repository
 has its own writer: change shared files there first, then copy them here unchanged.
@@ -31,7 +32,10 @@ has its own writer: change shared files there first, then copy them here unchang
   the app supports minSdk 26 and the `windowSplashScreen*` theme attributes come from it; Android 12+ devices use the
   platform path. (2) Google TV does not render the system splash (the system creates it, but nothing appears on the
   Streamer), so `TvLaunchSplash` draws the same `splash_icon_animated` mark in-app once per cold start: about 1.1 s
-  hold plus a 300 ms fade over `splash_background`. Neither layer copies mobile's exit hand-off, which lands on a
+  hold plus a 300 ms fade over `splash_background`. It is decorative: it does not gate startup work, but while it is
+  visible the activity swallows every key except Back, so a press cannot act on UI the viewer cannot see. The
+  system-splash layer is wired and the system creates it, but it has never been observed on screen on the acceptance
+  Streamer; the in-app layer is the one verified there. Neither layer copies mobile's exit hand-off, which lands on a
   hard-coded position for mobile's header logo.
 - **Window background.** `tv_window_background` (`#0E0B14`, TV-only `values/tv_colors.xml`) is the
   dark-only TV window color. Mobile's `window_background` follows day/night and is not used here.
