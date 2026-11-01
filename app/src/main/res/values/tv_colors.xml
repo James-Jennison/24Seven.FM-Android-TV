@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TV-only: the TV UI is dark-only, so the window behind the first frame matches the Compose dark background (mobile's
+         window_background follows day/night and is shared, so it is not used here). -->
+    <color name="tv_window_background">#0E0B14</color>
+</resources>

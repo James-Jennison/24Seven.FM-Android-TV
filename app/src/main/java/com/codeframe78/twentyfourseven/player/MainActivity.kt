@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.codeframe78.twentyfourseven.player.ui.DiagnosticEnvironment
@@ -17,6 +18,8 @@ import com.codeframe78.twentyfourseven.player.ui.TvRadioViewModel
  */
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // The system launch screen (animated antenna mark) shows until the first frame; no exit hand-off is attempted on TV.
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         val container = (application as RadioApplication).appContainer
         setContent {

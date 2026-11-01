@@ -8,7 +8,8 @@ recorded by Gradle and in the release bundle dependency metadata.
 
 - AndroidX, including Activity 1.11.0, Compose UI 1.11.3,
   Material icons 1.7.8, Material 3 1.4.0, Core 1.16.0, Lifecycle 2.9.4,
-  Media3 1.10.1, Window 1.5.0, and their AndroidX transitive modules
+  Core SplashScreen 1.2.0, Media3 1.10.1, Window 1.5.0, and their AndroidX
+  transitive modules
 - Accompanist Drawable Painter 0.37.3
 - Coil 3.4.0
 - Guava 33.3.1-android and FailureAccess 1.0.2
