@@ -21,9 +21,8 @@ first, then copy them here unchanged.
 | TV | `24Seven.FM TV` | `24Seven.FM TV (Debug)` | `com.codeframe78.twentyfourseven.tv` |
 | Mobile | `24Seven.FM Player` | `24Seven.FM Player (Debug)` | unchanged, separate |
 
-**This naming scheme is a provisional writer default; the Owner has not explicitly approved it.** It
-is reversible by editing the two `appLabel` values, and release publication should wait for that
-approval. Labels are `appLabel` in `app/build.gradle.kts`; the label check is manual
+**Owner approved this naming scheme in chat on 2026-11-01** (release "24Seven.FM TV", debug
+"24Seven.FM TV (Debug)"). It remains reversible by editing the two `appLabel` values. Labels are `appLabel` in `app/build.gradle.kts`; the label check is manual
 (`aapt2 dump badging <apk>` shows `application-label`). The alpha stage is carried by the version name
 (for example `0.1.0-tv-alpha02-hotfix1`), not by the launcher label. Application IDs never change
 as part of branding.

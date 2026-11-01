@@ -384,3 +384,9 @@ Closure `closure-1e8939016fc9`: READY_WITH_RESIDUAL_RISK, TECHNICALLY_READY, REV
 acceptance not recorded; release not granted. Residuals include the reviewer-rated-HIGH
 "banner not seen on a launcher" (writer-assessed MEDIUM) and the label scheme awaiting Owner
 approval. The earlier change's first cycle is left unclosed as history.
+
+Naming approval: the Owner approved the labels "24Seven.FM TV" and "24Seven.FM TV (Debug)" in chat
+on 2026-11-01, clearing the naming residual of closure `closure-1e8939016fc9`. The only change
+after that reviewed candidate is the one-paragraph status wording in `docs/BRANDING.md`; no
+re-review was run. Banner-not-seen-on-launcher and the other residuals are unchanged; Owner
+acceptance of the banner visuals and release remain not granted.
