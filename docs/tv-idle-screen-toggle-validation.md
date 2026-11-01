@@ -437,3 +437,28 @@ current mark size (240 dp icon, about 245 px wide on 1080p). This answers the re
 Owner-accepted" of closure `closure-426c929c157e` for the size only; the broker residual record is immutable and
 stays as history. No code changed, so no re-review. Overall Owner acceptance of the splash, banner visuals and
 any release remain not recorded.
+
+## In-app splash re-timed and closed on the final code — 2026-11-01
+
+A release-variant test (a minified, debug-signed throwaway with a `.reltest` id) showed the in-app splash was
+effectively invisible on a release build: the first frame takes over a second to lay out and draw on the Streamer,
+so timers started at composition or window focus ran out before Google TV showed the window. Window focus and
+`FrameMetrics` were tried and rejected on measurement. `TvLaunchSplash` now starts its animation and hold from its own
+first draw plus a 350 ms transition allowance (hold 1.5 s, fade 300 ms), one coroutine owns the lifecycle, the
+animation stops on dispose, a splash that is never drawn leaves at once after 10 s, and everything after the first
+draw is capped at 6 s. A first-use dialog is a separate window and covers the splash on the very first run.
+
+Final candidate `9b78049`: gthost 172 unit tests (169 plus 3 first-draw-cap tests on virtual time), lint 0 errors /
+82 warnings, `assembleDebug` and `assembleDebugAndroidTest` passed. On the Streamer `TvLaunchSplashTest` passed
+(OK, 2 tests); the release variant of this commit showed the splash 2.00 s and 1.85 s on two cold launches (cold start
+about 1 s), the debug build about 2.4 s (3 s on a busy device); a key sent during the splash opened no menu, a key after
+it did, and Back left the app. The throwaway release package was uninstalled.
+
+Review: change `tv-mobile-alignment-20261101-v7` (supersedes v3 to v6), cycle `review-cycle-cfbd15e99c77` COMPLETE,
+evidence `evidence-cycle-30372584767f` PASS. Closure `closure-034e23b55e44`: READY_WITH_RESIDUAL_RISK,
+TECHNICALLY_READY, REVIEW_APPROVED; Owner acceptance not recorded; release not granted. Four earlier cycles for this
+work (v3 closed at `closure-426c929c157e`, v4 to v6 never closed) are superseded history. Open: the actual
+release/signing build was never made; the system splash layer is created but never drawn on this Google TV (possible
+double splash on platforms that draw it); MainActivity's key swallowing has device evidence only; the 6 s post-draw cap
+has no test that makes it fire (and removes the splash without a final fade if it does); mid-splash recreation replays
+the splash; the Google TV launcher does not render the banner; `versionCode` is not bumped.
