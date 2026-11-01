@@ -390,3 +390,25 @@ on 2026-11-01, clearing the naming residual of closure `closure-1e8939016fc9`. T
 after that reviewed candidate is the one-paragraph status wording in `docs/BRANDING.md`; no
 re-review was run. Banner-not-seen-on-launcher and the other residuals are unchanged; Owner
 acceptance of the banner visuals and release remain not granted.
+
+## TV alignment with mobile main and TV launch screen — 2026-11-01 (open)
+
+Earlier branding checks compared against the wrong mobile tree (checked out on an older branch). Re-done
+against mobile `main` `a309c1a` (versionName 1.0.2): 26 shared files (icons, mipmaps, colors including
+`values-night`, splash drawables/animators/branding image, `RadioTheme.kt`) are byte-identical copies;
+`scripts/check-branding-parity.sh` now reads mobile through `git show <ref>:<path>` (passes at `main`, fails
+at the old branch). The TV banner was rebuilt from the new icon and palette. The launch screen uses
+`androidx.core:core-splashscreen` 1.2.0 (checksums added) with `installSplashScreen()` and no hand-off
+animation. Candidate `5001c62`: gthost compile, 169 unit tests, lint (0 errors, 82 warnings),
+`assembleDebug` and `compileDebugAndroidTestKotlin` all passed; the APK was re-signed with the workstation
+debug key, installed on the Streamer, launched and showed the new launcher icon.
+
+Launch screen NOT observed: with debug logging, the system creates `SplashScreenStartingData` for our
+theme at launch and clears it 5 s later, but two recordings (am start; selecting the app tile) show only the
+Google TV home/apps screen until the first frame. No Shell starting-window activity was logged, so this
+Google TV most likely does not render system splash screens. Review `review-cycle-a83a19be9fd5` (change
+`tv-mobile-alignment-20261101`, evidence `evidence-cycle-2451e6134d6c` PASS) flagged that as HIGH from all
+three reviewers; findings are not yet dispositioned and there is NO closure. Open: Owner decision on the
+splash (accept as wired-but-unseen, or build an in-app Compose splash), plus reviewer items to fold into a
+superseding candidate (parity script should also pin the TV commit/clean tree, Media3 version in
+THIRD_PARTY_NOTICES, rationale for core-splashscreen on minSdk 26, banner geometry receipt).
