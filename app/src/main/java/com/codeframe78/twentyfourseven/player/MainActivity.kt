@@ -4,11 +4,19 @@ import android.content.pm.ApplicationInfo
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.codeframe78.twentyfourseven.player.ui.DiagnosticEnvironment
+import com.codeframe78.twentyfourseven.player.ui.TvLaunchSplash
 import com.codeframe78.twentyfourseven.player.ui.TvRadioApp
 import com.codeframe78.twentyfourseven.player.ui.TvRadioViewModel
 
@@ -18,7 +26,8 @@ import com.codeframe78.twentyfourseven.player.ui.TvRadioViewModel
  */
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        // The system launch screen (animated antenna mark) shows until the first frame; no exit hand-off is attempted on TV.
+        // The system launch screen (animated antenna mark) shows until the first frame where the platform renders it; Google TV
+        // does not, so TvLaunchSplash plays the same mark in-app. No exit hand-off is attempted on TV.
         installSplashScreen()
         super.onCreate(savedInstanceState)
         val container = (application as RadioApplication).appContainer
@@ -35,24 +44,28 @@ class MainActivity : AppCompatActivity() {
                 ),
             )
             val state = viewModel.uiState.collectAsStateWithLifecycle().value
-            TvRadioApp(
-                state = state,
-                visualization = viewModel.visualization,
-                diagnosticEnvironment = diagnosticEnvironment(),
-                onSelectStation = viewModel::selectStation,
-                onCompleteFirstUse = viewModel::completeFirstUse,
-                onSetFirstUsePendingStation = viewModel::setFirstUsePendingStation,
-                onPause = viewModel::pause,
-                onSetSleepTimer = viewModel::setSleepTimer,
-                onCancelSleepTimer = viewModel::cancelSleepTimer,
-                onSelectIdleVisualizer = viewModel::selectIdleVisualizer,
-                onSetNowPlayingOverlay = viewModel::setNowPlayingOverlay,
-                onSetIdleScreenStartDelay = viewModel::setIdleScreenStartDelay,
-                onSetAutomaticIdleScreenEnabled = viewModel::setAutomaticIdleScreenEnabled,
-                onSetReduceVisualIntensity = viewModel::setReduceVisualIntensity,
-                onSetLavaLampPalette = viewModel::setLavaLampPalette,
-                onSetIonTunnelPalette = viewModel::setIonTunnelPalette,
-            )
+            var launchSplashVisible by rememberSaveable { mutableStateOf(true) }
+            Box(modifier = Modifier.fillMaxSize()) {
+                TvRadioApp(
+                    state = state,
+                    visualization = viewModel.visualization,
+                    diagnosticEnvironment = diagnosticEnvironment(),
+                    onSelectStation = viewModel::selectStation,
+                    onCompleteFirstUse = viewModel::completeFirstUse,
+                    onSetFirstUsePendingStation = viewModel::setFirstUsePendingStation,
+                    onPause = viewModel::pause,
+                    onSetSleepTimer = viewModel::setSleepTimer,
+                    onCancelSleepTimer = viewModel::cancelSleepTimer,
+                    onSelectIdleVisualizer = viewModel::selectIdleVisualizer,
+                    onSetNowPlayingOverlay = viewModel::setNowPlayingOverlay,
+                    onSetIdleScreenStartDelay = viewModel::setIdleScreenStartDelay,
+                    onSetAutomaticIdleScreenEnabled = viewModel::setAutomaticIdleScreenEnabled,
+                    onSetReduceVisualIntensity = viewModel::setReduceVisualIntensity,
+                    onSetLavaLampPalette = viewModel::setLavaLampPalette,
+                    onSetIonTunnelPalette = viewModel::setIonTunnelPalette,
+                )
+                if (launchSplashVisible) TvLaunchSplash(onFinished = { launchSplashVisible = false })
+            }
         }
     }
 

@@ -3,17 +3,29 @@
 # The mobile files are read with `git show <ref>:<path>`; the mobile working tree, index and
 # checked-out branch are never read or modified, so uncommitted mobile work cannot skew the result.
 #
-# Usage: scripts/check-branding-parity.sh <mobile-player-git-repo> [ref=main]
-# Exit codes: 0 all shared files identical at the ref, 1 a file differs or is missing, 2 usage error.
+# The TV side is the TV working tree, so the script also prints the TV commit and refuses to report a pass while
+# app/src/main has uncommitted changes (a pass must describe a commit). --allow-dirty skips that for local iteration.
+#
+# Usage: scripts/check-branding-parity.sh [--allow-dirty] <mobile-player-git-repo> [ref=main]
+# Exit codes: 0 all shared files identical at the ref, 1 a file differs or is missing (or the TV tree is dirty),
+# 2 usage error.
 set -euo pipefail
 
+allow_dirty=0
+if [[ ${1:-} == --allow-dirty ]]; then allow_dirty=1; shift; fi
 mobile=${1:-}
 ref=${2:-main}
-[[ -n $mobile ]] || { echo "usage: $0 <mobile-player-git-repo> [ref=main]" >&2; exit 2; }
+[[ -n $mobile ]] || { echo "usage: $0 [--allow-dirty] <mobile-player-git-repo> [ref=main]" >&2; exit 2; }
 git -C "$mobile" rev-parse --git-dir >/dev/null 2>&1 || { echo "not a git repository: $mobile" >&2; exit 2; }
-commit=$(git -C "$mobile" rev-parse --verify --quiet "$ref^{commit}") || { echo "unknown ref: $ref" >&2; exit 2; }
 tv=$(cd "$(dirname "$0")/.." && pwd)
+commit=$(git -C "$mobile" rev-parse --verify --quiet "$ref^{commit}") || { echo "unknown ref: $ref" >&2; exit 2; }
 echo "mobile ref $ref = $commit"
+tv_head=$(git -C "$tv" rev-parse --verify --quiet HEAD) || { echo "TV tree is not a git repository" >&2; exit 2; }
+echo "tv HEAD = $tv_head"
+if [[ -n $(git -C "$tv" status --porcelain -- app/src/main) ]] && ((allow_dirty == 0)); then
+  echo "TV working tree has uncommitted changes under app/src/main; commit them or pass --allow-dirty" >&2
+  exit 1
+fi
 
 shared=(
   res/drawable/app_icon_foreground.xml

@@ -18,17 +18,21 @@ and never writes to either repository. It checks 26 files:
   `splash_*` animators;
 - theme: `RadioTheme.kt`.
 
-Last verified against mobile `main` commit `a309c1a5a6047815eefae5183985d39d0a3d025d` (versionName 1.0.2).
+The script also prints the TV `HEAD` and refuses to pass while `app/src/main` has uncommitted changes (use
+`--allow-dirty` only while iterating), so a pass describes a commit. Last verified against mobile `main` commit `a309c1a5a6047815eefae5183985d39d0a3d025d` (versionName 1.0.2).
 Mobile 1.0.3 is in flight, so re-run the script and re-copy when `main` moves. The mobile repository
 has its own writer: change shared files there first, then copy them here unchanged.
 
 ## TV-specific
 
-- **Launch screen.** TV uses the same animated antenna-mark splash resources through
-  `androidx.core:core-splashscreen`, with `installSplashScreen()` in `MainActivity`. It does not copy
-  mobile's exit hand-off (a hard-coded landing position for the mobile header logo); the system's
-  default exit applies. The `Starting` theme is in `values/styles.xml`; the branding image applies on
-  Android 12+ via `values-v31`.
+- **Launch screen.** Two layers play the same antenna mark. (1) The system splash uses the shared resources through
+  `androidx.core:core-splashscreen` (`installSplashScreen()` in `MainActivity`; `Theme.TwentyFourSevenPlayer.Starting`
+  in `values/styles.xml`; the branding image applies on Android 12+ via `values-v31`). The library is needed because
+  the app supports minSdk 26 and the `windowSplashScreen*` theme attributes come from it; Android 12+ devices use the
+  platform path. (2) Google TV does not render the system splash (the system creates it, but nothing appears on the
+  Streamer), so `TvLaunchSplash` draws the same `splash_icon_animated` mark in-app once per cold start: about 1.1 s
+  hold plus a 300 ms fade over `splash_background`. Neither layer copies mobile's exit hand-off, which lands on a
+  hard-coded position for mobile's header logo.
 - **Window background.** `tv_window_background` (`#0E0B14`, TV-only `values/tv_colors.xml`) is the
   dark-only TV window color. Mobile's `window_background` follows day/night and is not used here.
 - **Not copied from mobile:** the DejaVu Sans Mono fonts (used only by mobile chat).
@@ -60,6 +64,12 @@ the conventional leanback banner bucket (other densities are scaled). Known limi
 launcher on the acceptance Streamer shows only the round app icon on Home and the Apps tab and never
 renders the banner, so the banner is verified from the packaged resource and a rendered image, not
 seen on a launcher.
+
+## Known lint noise from shared files
+
+Copying mobile's resources unchanged adds two lint warnings that are accepted rather than fixed in TV, since
+editing them would break parity: `VectorPath` on `splash_icon.xml` and `UnusedResources` on `window_background`
+(TV uses `tv_window_background`).
 
 ## Not covered
 
