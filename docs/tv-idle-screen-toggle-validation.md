@@ -343,3 +343,18 @@ passing, plus a repeat Streamer run (ready, key delivered, ANR count unchanged).
 Gemini FAILED at the provider ("Go policy, session, or response validation failed. Check
 truthful allowance receipt and durable evidence."): review UNAVAILABLE for those two, not
 approved; no substitute reviewer was used. The remediated candidate has no closure review.
+
+Corrected-source review of the focus-wait helper (candidate `92656c3`, change
+`tv-focus-wait-helper-20261101`, CRITICAL, frozen panel architecture-synthetic /
+platform-together / deepseek): cycle `review-cycle-31e23f0449f9` COMPLETE for all three;
+objective evidence `evidence-cycle-97174a8a0250` PASS (receipt integrity plus a live rerun of
+the 10 fake-adb tests on GTHost). The earlier cycle `review-cycle-c61875a96890` is unchanged
+history: it reviewed `de92e37` only, DeepSeek COMPLETE, Gemini/Grok FAILED, not retried.
+Reviewers raised 4 MEDIUM and 6 LOW findings (diagnostics for adb exit-0 error text and
+unparseable focus lines, test-strength gaps, a transient-adb retry dispute); none required a
+source change here. They were dispositioned individually (one REJECTED as a dispute, two
+DUPLICATE, the rest CONFIRMED) and the unchanged-behavior ones are recorded as accepted
+residual risks (8 recorded). Broker closure `closure-e76900836df3`: READY_WITH_RESIDUAL_RISK,
+TECHNICALLY_READY, REVIEW_APPROVED; Owner acceptance NOT recorded; release NOT granted.
+The input ANR was still not reproduced on demand and is not claimed fixed. Review inputs and
+records: GTHost `review-inputs/tv-focus-wait-20261101`, local `work/focus-wait-review/`.
