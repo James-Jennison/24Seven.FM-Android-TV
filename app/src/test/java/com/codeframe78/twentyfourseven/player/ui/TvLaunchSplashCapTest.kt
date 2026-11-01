@@ -8,7 +8,6 @@ import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -43,7 +42,9 @@ class TvLaunchSplashCapTest {
         advanceTimeBy(TV_LAUNCH_SPLASH_MAX_MILLIS - 10)
         firstDraw.complete(Unit)
         runCurrent()
-        assertTrue(result == true)
-        assertFalse(result == false)
+        assertEquals(true, result)
+        advanceTimeBy(TV_LAUNCH_SPLASH_MAX_MILLIS)
+        runCurrent()
+        assertEquals("a late cap must not overwrite the drawn result", true, result)
     }
 }

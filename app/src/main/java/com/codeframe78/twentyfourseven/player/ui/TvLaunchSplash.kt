@@ -50,6 +50,12 @@ internal const val TV_LAUNCH_SPLASH_TRANSITION_MILLIS = 350L
  */
 internal const val TV_LAUNCH_SPLASH_MAX_MILLIS = 10_000L
 
+/**
+ * Hard bound on everything after the first draw (transition, hold, fade). A busy or janky device can stretch the frame
+ * driven parts, so if this elapses the splash simply leaves.
+ */
+internal const val TV_LAUNCH_SPLASH_DRAWN_MAX_MILLIS = 6_000L
+
 /** True once the splash has been drawn, false if [cap] milliseconds pass first. Internal so the cap can be tested. */
 internal suspend fun awaitSplashFirstDraw(firstDraw: CompletableDeferred<Unit>, cap: Long): Boolean =
     withTimeoutOrNull(cap) { firstDraw.await() } != null
@@ -59,7 +65,7 @@ internal suspend fun awaitSplashFirstDraw(firstDraw: CompletableDeferred<Unit>, 
  * app because Google TV does not render the system splash screen. It plays once per cold start, then fades out and
  * calls [onFinished] so the caller can remove it. It is decorative, so it exposes nothing to accessibility.
  *
- * Nothing is timed from composition. The first frame of the player UI takes over a second to lay out and draw on the
+ * The whole lifetime is bounded: at most the first-draw wait (10 s) plus the post-draw sequence (6 s). Nothing is timed from composition. The first frame of the player UI takes over a second to lay out and draw on the
  * Streamer (a release build), so a timer started at composition would run out before Google TV shows the window. The
  * animation and the hold start from the splash's own first draw instead. A first-use dialog is a separate window and
  * covers the splash on the very first run.
@@ -80,13 +86,15 @@ internal fun TvLaunchSplash(onFinished: () -> Unit) {
             onFinished()
             return@LaunchedEffect
         }
-        if (drawable != null) {
-            delay(TV_LAUNCH_SPLASH_TRANSITION_MILLIS)
-            markVisible = true
-            (drawable as? Animatable)?.start()
-            delay(TV_LAUNCH_SPLASH_HOLD_MILLIS)
+        withTimeoutOrNull(TV_LAUNCH_SPLASH_DRAWN_MAX_MILLIS) {
+            if (drawable != null) {
+                delay(TV_LAUNCH_SPLASH_TRANSITION_MILLIS)
+                markVisible = true
+                (drawable as? Animatable)?.start()
+                delay(TV_LAUNCH_SPLASH_HOLD_MILLIS)
+            }
+            alpha.animateTo(0f, tween(TV_LAUNCH_SPLASH_FADE_MILLIS))
         }
-        alpha.animateTo(0f, tween(TV_LAUNCH_SPLASH_FADE_MILLIS))
         onFinished()
     }
     Box(
