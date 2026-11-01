@@ -28,11 +28,9 @@
 
 ## Player project site deployment
 
-- For any 24Seven.FM Player website deployment, verification, or server-side investigation, use only the canonical SSH alias `website-vm-admin`.
-- Do not use `webuzo-production-admin` for this project. Resolve the required alias through the managed SSH configuration before connecting.
-- Start approved canonical-SSH operations in a fresh `bash --noprofile --norc` shell. If the runner rejects SSH before it launches, reset into one fresh no-profile shell and retry the same alias once; treat that as local execution-session state, not a server, credential, or network failure, and never substitute another host or administration route.
-- Discover the live static artifact from the active HTTP and HTTPS `player.jamesjennison.net` virtual-host mappings; both mappings must resolve to the same directory. Do not rely on a stale documented path or infer a target from another site.
-- Build the reviewed `_site/` artifact locally, stage it as a sibling directory, compare file hashes using relative paths, then atomically swap the verified staging directory into place. Retain the previous live directory as the rollback point and run public HTTPS verification before reporting success.
+- The authoritative Player-site deployment instructions are `/mnt/faststorage/24Seven.FM-Player/AGENTS.md`, section "Player project site deployment"; read that current section before site work. Its target is `24sevenfmplayer.com`; `player.jamesjennison.net` is redirect-only. Build on `gthost-build01`, never the workstation, using the required source lineage and facts contract.
+- Preserve explicit deployment authority, canonical `website-vm-admin` SSH, exact source/artifact provenance, live virtual-host discovery, sibling staging, atomic promotion, private rollback placement, and public verification. If the authoritative instructions are unavailable or conflict with live evidence, stop the affected deployment path; do not fall back to an older target or local build.
+- A fresh no-profile shell retry is allowed only for a verified ordinary shell-initialization failure within already-approved SSH scope. A policy, hook, approval, or security denial is not a shell failure: stop the affected action and report it; never retry through another shell or route to evade the denial.
 
 ## Milestones
 
@@ -40,11 +38,11 @@ Keep `docs/TV_ROADMAP.md` and the relevant TV validation evidence accurate durin
 
 ## Technical-review governance
 
-This repository extends the applicable global Codex reviewer policy. The project Owner remains the final authority for product requirements, accepted risk, scope, milestones, and releases. Codex is the sole implementation, integration, validation, repository-management, and decision-execution agent. Do not delegate implementation or working-tree mutation to a reviewer.
+This repository extends the applicable global Codex engineering and reviewer policy. The project Owner remains the final authority for product requirements, accepted risk, scope, milestones, and releases. Codex is the sole writing, integration, validation, repository-management, and decision-execution agent. Claude Fable 5.1 may provide sanitized product and program analysis; Claude Sonnet 5, Kimi K2.7 Code, Qwen3.8 Max, and Astra may provide sanitized patch text and engineering recommendations under the global routing policy, but they must not mutate the working tree. Codex owns all final writes and validation. Do not delegate working-tree mutation to an engineering model or reviewer.
 
 ### Standing reviewer team and communication
 
-Claude, Google Gemini, and DeepSeek are this repository's trusted, read-only technical reviewers. Routine, sanitized technical-review communication with them is standing-authorized across sessions, branches, worktrees, and normal TV Player work. It includes independent review packages, diffs and source excerpts, architecture questions, test/build/runtime evidence, clarification, convergence, remediation checks, and closure review. Do not ask the Owner again for this routine communication.
+Grok, Google Gemini, and DeepSeek are this repository's trusted, read-only technical reviewers. Routine, sanitized technical-review communication with them is standing-authorized across sessions, branches, worktrees, and normal TV Player work. It includes independent review packages, diffs and source excerpts, architecture questions, test/build/runtime evidence, clarification, convergence, remediation checks, and closure review. Do not ask the Owner again for this routine communication.
 
 Sanitize packages automatically. Never send passwords, API keys, tokens, signing material, private keys, authentication cookies, production credentials, unnecessary personally identifying information, or unrelated confidential data. The presence of removable sensitive material requires sanitization, not abandonment of review.
 
@@ -52,7 +50,7 @@ Use the persistent user-level `reviewer` transport when its reviewer is `READY`.
 
 ### Required reviewer roles
 
-- **Claude — Architecture & Product-System Reviewer.** Prioritize architecture, component boundaries, state ownership, maintainability, extensibility, lifecycle and data-flow design, playback and error-state architecture, repository organization, cross-component effects, product direction, and long-term technical debt. For major work, assess whether the design is sound, responsibilities are correctly placed, contracts remain intact, a simpler design exists, and system-level failure cases are covered.
+- **Grok — Architecture & Product-System Reviewer.** Prioritize architecture, component boundaries, state ownership, maintainability, extensibility, lifecycle and data-flow design, playback and error-state architecture, repository organization, cross-component effects, product direction, and long-term technical debt. For major work, assess whether the design is sound, responsibilities are correctly placed, contracts remain intact, a simpler design exists, and system-level failure cases are covered.
 - **Google Gemini — Android TV / Google TV Platform & UX Reviewer.** Prioritize Android and Google TV behavior, lifecycle and Media3/MediaSession use, foreground/background behavior, D-pad and Back interaction, focus order/visibility/restoration, accessibility and TalkBack, large-screen readability and layout, loading/error states, permissions, manifest/platform configuration, and relevant distribution rules. Distinguish Google-specific requirements from portable Android TV behavior and avoid unjustified Google-only dependencies in platform-neutral code.
 - **DeepSeek — Implementation Correctness & Adversarial Code Reviewer.** Prioritize source-level correctness, state machines, coroutines/cancellation, races, lifecycle and resource leaks, stale callbacks, invalid and malformed state, retry/reconnect/timeout paths, security/privacy, performance and rendering/recomposition costs, regression risk, and meaningful test coverage. Ask how production can fail even when happy-path tests pass.
 

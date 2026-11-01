@@ -297,3 +297,18 @@ Final ledger reconciliation: receipt evidence and all exact reviewer jobs passed
 A raw-finding fingerprint link was missing from the normalized material provenance
 finding; added an immutable linked record and copied its verified disposition without
 rewriting prior evidence. Final closure `closure-d2ef92c11642` is READY with no reasons.
+
+
+## Repository checkpoint — 2026-11-01
+
+Owner requested committing the accumulated work. Application/media/tests, build helper,
+project documentation, artwork and clearly labeled rejected experiment archives are
+recorded in `6c85f826ab53413b265cea28f5c601f81a04bdce` on `codex/tv-automatic-idle-setting` (172 files).
+Staged application/build inputs were objectively identical to tested snapshot
+`9fd9f852e08df2520ee7c58c73cceffbcc9e8d99`; no application change or repeat test run
+was introduced by committing. Existing AGENTS.md guidance is recorded separately,
+without changing its content during this checkpoint. Local `/work/` snapshots and raw
+evidence remain preserved and are now ignored by Git; no generated APKs, signing
+containers, or raw work directory were included. This is a local repository checkpoint,
+with no push, deployment, new installation, or release. Startup ANR and acceptance
+limitations above remain unchanged.
