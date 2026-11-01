@@ -31,8 +31,12 @@ has its own writer: change shared files there first, then copy them here unchang
   in `values/styles.xml`; the branding image applies on Android 12+ via `values-v31`). The library is needed because
   the app supports minSdk 26 and the `windowSplashScreen*` theme attributes come from it; Android 12+ devices use the
   platform path. (2) Google TV does not render the system splash (the system creates it, but nothing appears on the
-  Streamer), so `TvLaunchSplash` draws the same `splash_icon_animated` mark in-app once per cold start: about 1.1 s
-  hold plus a 300 ms fade over `splash_background`. It is decorative: it does not gate startup work, but while it is
+  Streamer), so `TvLaunchSplash` draws the same `splash_icon_animated` mark in-app once per cold start over
+  `splash_background`. Nothing is timed from composition (the first frame takes over a second to draw on a release
+  build): after the splash's own first draw it waits 350 ms for the launch transition, starts the animation, holds
+  the mark for 1.5 s and fades for 300 ms (about 1.9 s on screen). A single coroutine owns this; if the splash is
+  never drawn within 10 s it just leaves. A first-use dialog is a separate window and covers the splash on the very
+  first run of a fresh install. It is decorative: it does not gate startup work, but while it is
   visible the activity swallows every key except Back, so a press cannot act on UI the viewer cannot see. The
   system-splash layer is wired and the system creates it, but it has never been observed on screen on the acceptance
   Streamer; the in-app layer is the one verified there. Neither layer copies mobile's exit hand-off, which lands on a

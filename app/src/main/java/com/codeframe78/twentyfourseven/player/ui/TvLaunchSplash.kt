@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +29,7 @@ import androidx.core.content.ContextCompat
 import com.codeframe78.twentyfourseven.player.R
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * How long the mark stays up once it is on screen. The antenna animation runs for about 950 ms (see
@@ -42,7 +44,10 @@ internal const val TV_LAUNCH_SPLASH_FADE_MILLIS = 300
  */
 internal const val TV_LAUNCH_SPLASH_TRANSITION_MILLIS = 350L
 
-/** Safety cap: if the splash is never drawn it still leaves, so it cannot hold keys back indefinitely. */
+/**
+ * Safety cap on the wait for the splash's first draw. If it is never drawn the splash skips straight to leaving, so it
+ * cannot hold keys back indefinitely: the whole lifetime is at most this wait plus the transition, hold and fade.
+ */
 internal const val TV_LAUNCH_SPLASH_MAX_MILLIS = 10_000L
 
 /**
@@ -62,17 +67,16 @@ internal fun TvLaunchSplash(onFinished: () -> Unit) {
     val alpha = remember { FloatAnimatable(1f) }
     val firstDraw = remember { CompletableDeferred<Unit>() }
     var markVisible by remember { mutableStateOf(false) }
+    DisposableEffect(drawable) { onDispose { (drawable as? Animatable)?.stop() } }
+    // One coroutine owns the whole lifecycle, so exactly one path fades the splash and calls onFinished.
     LaunchedEffect(Unit) {
-        firstDraw.await()
-        delay(TV_LAUNCH_SPLASH_TRANSITION_MILLIS)
-        markVisible = true
-        (drawable as? Animatable)?.start()
-        delay(TV_LAUNCH_SPLASH_HOLD_MILLIS)
-        alpha.animateTo(0f, tween(TV_LAUNCH_SPLASH_FADE_MILLIS))
-        onFinished()
-    }
-    LaunchedEffect(Unit) {
-        delay(TV_LAUNCH_SPLASH_MAX_MILLIS)
+        val drawn = withTimeoutOrNull(TV_LAUNCH_SPLASH_MAX_MILLIS) { firstDraw.await() } != null
+        if (drawn && drawable != null) {
+            delay(TV_LAUNCH_SPLASH_TRANSITION_MILLIS)
+            markVisible = true
+            (drawable as? Animatable)?.start()
+            delay(TV_LAUNCH_SPLASH_HOLD_MILLIS)
+        }
         alpha.animateTo(0f, tween(TV_LAUNCH_SPLASH_FADE_MILLIS))
         onFinished()
     }
@@ -80,6 +84,8 @@ internal fun TvLaunchSplash(onFinished: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .graphicsLayer { this.alpha = alpha.value }
+            // drawWithContent must stay outside background(): it then wraps the background and runs on every draw pass, and
+            // completing the deferred is idempotent.
             .drawWithContent {
                 drawContent()
                 firstDraw.complete(Unit)
