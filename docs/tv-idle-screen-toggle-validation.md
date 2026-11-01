@@ -431,3 +431,9 @@ recorded; release not granted. Seven residual risks, notably: system splash laye
 splash on platforms that draw it), in-app mark (~245 px) not Owner-accepted, release-build behavior of the splash
 unverified, banner never rendered by this launcher, parity script manual and not pinned to a mobile commit, no
 automated test for the splash or key swallowing, versionCode not bumped.
+
+Splash size decision: the Owner reviewed the recorded in-app splash frame on 2026-11-01 and chose to keep the
+current mark size (240 dp icon, about 245 px wide on 1080p). This answers the residual "in-app mark not
+Owner-accepted" of closure `closure-426c929c157e` for the size only; the broker residual record is immutable and
+stays as history. No code changed, so no re-review. Overall Owner acceptance of the splash, banner visuals and
+any release remain not recorded.
