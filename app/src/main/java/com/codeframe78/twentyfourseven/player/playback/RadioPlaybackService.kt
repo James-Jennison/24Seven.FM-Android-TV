@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 @androidx.annotation.OptIn(markerClass = [UnstableApi::class])
 class RadioPlaybackService : MediaSessionService() {
     private lateinit var player: ExoPlayer
+    private lateinit var visualizationProcessor: AudioVisualizationProcessor
     private lateinit var mediaSession: MediaSession
     private lateinit var stationSwitchCoordinator: StationSwitchCoordinator
     private val nowPlayingPublisher: NowPlayingPublisher by lazy {
@@ -251,7 +252,7 @@ class RadioPlaybackService : MediaSessionService() {
             .setUsage(C.USAGE_MEDIA)
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
             .build()
-        val visualizationProcessor = AudioVisualizationProcessor(
+        visualizationProcessor = AudioVisualizationProcessor(
             (application as RadioApplication).appContainer.audioVisualizationRepository,
         )
         player = ExoPlayer.Builder(this, AudioVisualizationRenderersFactory(this, visualizationProcessor))
@@ -389,9 +390,18 @@ class RadioPlaybackService : MediaSessionService() {
         player.removeListener(metadataListener)
         serviceScope.cancel()
         nowPlayingPublisher.clear()
-        mediaSession.release()
-        player.release()
-        super.onDestroy()
+        try {
+            releasePlaybackResources(mediaSession::release, player::release, visualizationProcessor::close)
+        } finally {
+            super.onDestroy()
+        }
+    }
+}
+
+/** Each owner gets its teardown even if an earlier resource release fails. */
+internal fun releasePlaybackResources(session: () -> Unit, player: () -> Unit, analysis: () -> Unit) {
+    try { session() } finally {
+        try { player() } finally { analysis() }
     }
 }
 

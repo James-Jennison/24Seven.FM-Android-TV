@@ -1,0 +1,232 @@
+[
+  {
+    "source": "10187-222917593_medium.mp4",
+    "asset": "app/src/main/assets/visualizers/emerald_resonance.mp4",
+    "source_sha256": "57139b24477b8e05822991684968eaf738a0f0795bbe10e3deb30bd4b1cfaf87",
+    "asset_sha256": "4c28a4405dc57fd1d90d94c6b17b7bf0a4121cc420a1c8d5c79ef6d2bd1dacec",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 720,
+          "r_frame_rate": "30/1"
+        }
+      ],
+      "format": {
+        "duration": "10.000000",
+        "size": "3105516"
+      }
+    }
+  },
+  {
+    "source": "55598-502387709_medium.mp4",
+    "asset": "app/src/main/assets/visualizers/aurora_veil.mp4",
+    "source_sha256": "03d5d7c365ec7406bfcfde69eafaf280e0e2f2b714b30e348ab13043734a3366",
+    "asset_sha256": "25bed3d4e4d33f3fca2568dbb634f82a80ea1d2c34214546c1fa723b1db3b141",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 720,
+          "r_frame_rate": "30/1"
+        }
+      ],
+      "format": {
+        "duration": "15.966667",
+        "size": "4454934"
+      }
+    }
+  },
+  {
+    "source": "121032-724685579_medium.mp4",
+    "asset": "app/src/main/assets/visualizers/spectral_silk.mp4",
+    "source_sha256": "897d8c4dc5c81cdcbf7fbac5b2047470108d46ee65791d55559cdc55232bbaf5",
+    "asset_sha256": "34b5c81d5450560e7b357324be4710a96192f99ad8d0bdb3adcf3934e0be95a1",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 720,
+          "r_frame_rate": "30/1"
+        }
+      ],
+      "format": {
+        "duration": "28.966667",
+        "size": "25101235"
+      }
+    }
+  },
+  {
+    "source": "121536-724710045_medium.mp4",
+    "asset": "app/src/main/assets/visualizers/orbital_pulse.mp4",
+    "source_sha256": "ad18276dc0300103f37aad997098ae4851bd7d39f7d8b0987efba5687538a7d7",
+    "asset_sha256": "f9c5f56a3bdd3d2e303b1aabfd717e3831ef71cb25259643760b081a23df88ac",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 720,
+          "r_frame_rate": "30/1"
+        }
+      ],
+      "format": {
+        "duration": "29.033333",
+        "size": "10036187"
+      }
+    }
+  },
+  {
+    "source": "121756-724719640_medium.mp4",
+    "asset": "app/src/main/assets/visualizers/chromatic_blossom.mp4",
+    "source_sha256": "0d9ae89e89a055fe7522be410bd33ab2470c7a5d8975aa255083d4c210fa3757",
+    "asset_sha256": "f593a872e761219b65ffef8a9b01495be3d5cc3d1c110be7ad463e4ffa35777b",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 720,
+          "r_frame_rate": "30/1"
+        }
+      ],
+      "format": {
+        "duration": "15.000000",
+        "size": "6688233"
+      }
+    }
+  },
+  {
+    "source": "121759-724719655_medium.mp4",
+    "asset": "app/src/main/assets/visualizers/electric_synapse.mp4",
+    "source_sha256": "87be5d0a22191795e2f0b1919be7e725c961db27f6d8f2dfb87aa0705804f5a7",
+    "asset_sha256": "528741bbd654b9c392cfb75e628fac366b5f1821b1f8fd9776490932e17f7ddc",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 720,
+          "r_frame_rate": "30/1"
+        }
+      ],
+      "format": {
+        "duration": "16.000000",
+        "size": "12400619"
+      }
+    }
+  },
+  {
+    "source": "121770-724719694_medium.mp4",
+    "asset": "app/src/main/assets/visualizers/stardust_ignition.mp4",
+    "source_sha256": "a8305c00102651d507693e1bc21a748319865f140aea4e49cccb689d7d3ae441",
+    "asset_sha256": "05d04526a021399aeb78a6060ddc8e7eab9afe8b34210d0d5626c480781cfd8e",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 720,
+          "r_frame_rate": "30/1"
+        }
+      ],
+      "format": {
+        "duration": "7.500000",
+        "size": "2880410"
+      }
+    }
+  },
+  {
+    "source": "144257-784302968_medium.mp4",
+    "asset": "app/src/main/assets/visualizers/violet_circuit.mp4",
+    "source_sha256": "1f0069d97b956c8a1e7f658b11a4e656dcbc797c8a27f2cac6fa081b16810e5e",
+    "asset_sha256": "d4db59fe29a6ef47331f4d7b66ad0815402203f08860f019106d1c2df6edc30c",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 720,
+          "r_frame_rate": "30/1"
+        }
+      ],
+      "format": {
+        "duration": "10.000000",
+        "size": "1482191"
+      }
+    }
+  },
+  {
+    "source": "165233-832460014_medium.mp4",
+    "asset": "app/src/main/assets/visualizers/prismatic_passage.mp4",
+    "source_sha256": "68c102e00ff50b9f5aabc73f9a045eed2d2e66eaaaba75198b6ae78c5d7e1ba2",
+    "asset_sha256": "b90d0a17526718f64f1fcca57456be46b9cbd361ff1c388170a9c561113d8348",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 720,
+          "r_frame_rate": "30/1"
+        }
+      ],
+      "format": {
+        "duration": "10.000000",
+        "size": "5365074"
+      }
+    }
+  },
+  {
+    "source": "165234-832460016_medium.mp4",
+    "asset": "app/src/main/assets/visualizers/ion_transit.mp4",
+    "source_sha256": "0bda0fa34d8c660fd5d5545713a839f4fd6b437f679370bd85c35d0d85386712",
+    "asset_sha256": "64898776020106b3ea1a1ba32c5ad0605de5cd3658834ebdb93c7a0ec7da6f9c",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 720,
+          "r_frame_rate": "30/1"
+        }
+      ],
+      "format": {
+        "duration": "16.666667",
+        "size": "15088385"
+      }
+    }
+  }
+]

@@ -1,5 +1,7 @@
 package com.codeframe78.twentyfourseven.player.ui
 
+import com.codeframe78.twentyfourseven.player.domain.IdleScreenStartDelay
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -110,8 +112,9 @@ class TvRadioViewModel(
         required to pendingStationId
     }
 
+    // Renderers read .value on their frame clocks without collecting. Re-wrapping this
+    // already-hot state with WhileSubscribed stops PCM updates after the last collector exits.
     val visualization: StateFlow<AudioVisualizationState> = visualizationRepository.state
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AudioVisualizationState())
 
     val uiState: StateFlow<TvRadioUiState> = combine(
         listenerContent,
@@ -177,6 +180,10 @@ class TvRadioViewModel(
 
     fun cancelSleepTimer() = playback.cancelSleepTimer()
 
+    fun setIdleScreenStartDelay(delay: IdleScreenStartDelay) = viewModelScope.launch {
+        idleScreenPreferences.setStartDelay(delay)
+    }
+
     fun setAutomaticIdleScreenEnabled(enabled: Boolean) = viewModelScope.launch {
         idleScreenPreferences.setAutomaticIdleScreenEnabled(enabled)
     }
@@ -191,6 +198,10 @@ class TvRadioViewModel(
 
     fun setReduceVisualIntensity(enabled: Boolean) = viewModelScope.launch {
         idleScreenPreferences.setReduceVisualIntensity(enabled)
+    }
+
+    fun setIonTunnelPalette(palette: com.codeframe78.twentyfourseven.player.domain.IonTunnelPalette) = viewModelScope.launch {
+        idleScreenPreferences.setIonTunnelPalette(palette)
     }
 
     fun setLavaLampPalette(palette: LavaLampPalette) = viewModelScope.launch {

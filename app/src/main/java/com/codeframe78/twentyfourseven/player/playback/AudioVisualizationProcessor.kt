@@ -1,6 +1,7 @@
 package com.codeframe78.twentyfourseven.player.playback
 
 import android.content.Context
+import com.codeframe78.twentyfourseven.player.analysis.MusicAnalysisWorker
 import androidx.media3.common.C
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
@@ -24,14 +25,14 @@ internal class AudioVisualizationProcessor(
     private var lastPublishedAtMs = 0L
     private var calibratedMeter = CalibratedPcmMeter(DefaultSampleRateHz)
     private var channelCount = 0
+    private val musicWorker = MusicAnalysisWorker()
+    private var captureScratch = FloatArray(0)
 
     override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
         val supported =
             inputAudioFormat.encoding == C.ENCODING_PCM_16BIT ||
                 inputAudioFormat.encoding == C.ENCODING_PCM_FLOAT
         return if (supported) {
-            channelCount = inputAudioFormat.channelCount
-            calibratedMeter.configure(inputAudioFormat.sampleRate)
             inputAudioFormat
         }
         else AudioProcessor.AudioFormat.NOT_SET
@@ -49,9 +50,23 @@ internal class AudioVisualizationProcessor(
     // Media3 still invokes this lifecycle callback for AudioProcessor implementations.
     // Keep the reset local until its replacement contract is available upstream.
     @Suppress("OVERRIDE_DEPRECATION")
-    override fun onFlush() = resetVisualization()
+    override fun onFlush() {
+        resetVisualization()
+        if (inputAudioFormat.bytesPerFrame > 0 && inputAudioFormat.channelCount in 1..32 &&
+            inputAudioFormat.sampleRate in 100..384000) {
+            channelCount = inputAudioFormat.channelCount
+            calibratedMeter.configure(inputAudioFormat.sampleRate)
+            captureScratch = FloatArray(1024 * channelCount)
+            musicWorker.configure(inputAudioFormat.sampleRate, channelCount)
+        }
+    }
 
     override fun onReset() = resetVisualization()
+
+    fun close() {
+        musicWorker.close()
+        visualization.clear()
+    }
 
     private fun publishVisualization() {
         val nowMs = android.os.SystemClock.elapsedRealtime()
@@ -60,7 +75,9 @@ internal class AudioVisualizationProcessor(
         val calibratedReading = calibratedMeter.reading
         visualization.publish(
             AudioVisualizationState(
+                music = musicWorker.latest(),
                 energy = calibratedReading.energy,
+                sampledAtElapsedRealtimeMs = nowMs,
                 leftEnergy = calibratedReading.energy,
                 rightEnergy = calibratedReading.energy,
                 leftDbfs = calibratedReading.leftDbfs,
@@ -81,6 +98,7 @@ internal class AudioVisualizationProcessor(
         if (frames <= 0) return
         val duplicate = inputBuffer.duplicate().order(ByteOrder.nativeOrder())
         val channels = inputAudioFormat.channelCount
+        var capturedSamples = 0
         repeat(frames) {
             var mono = 0f
             var left = 0f
@@ -91,17 +109,26 @@ internal class AudioVisualizationProcessor(
                 } else {
                     duplicate.getShort().toFloat() / Short.MAX_VALUE
                 }
+                if (captureScratch.isNotEmpty()) captureScratch[capturedSamples++] = sample
                 mono += sample
                 if (channel == 0) left = sample
                 if (channel == 1) right = sample
             }
             calibratedMeter.accept(mono / channels, left, if (channels > 1) right else left)
+            if (capturedSamples == captureScratch.size && capturedSamples > 0) {
+                musicWorker.offer(captureScratch, capturedSamples, android.os.SystemClock.elapsedRealtime())
+                capturedSamples = 0
+            }
         }
+        if (capturedSamples > 0) musicWorker.offer(captureScratch, capturedSamples, android.os.SystemClock.elapsedRealtime())
     }
 
     private fun resetVisualization() {
         lastPublishedAtMs = 0L
         calibratedMeter.reset()
+        musicWorker.clear()
+        captureScratch = FloatArray(0)
+        channelCount = 0
         visualization.clear()
     }
 

@@ -1,5 +1,7 @@
 package com.codeframe78.twentyfourseven.player.ui
 
+import com.codeframe78.twentyfourseven.player.domain.IdleScreenStartDelay
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.LinearEasing
@@ -106,6 +108,7 @@ import com.codeframe78.twentyfourseven.player.domain.PlaybackStatus
 import com.codeframe78.twentyfourseven.player.domain.QueueLoadStatus
 import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
+import com.codeframe78.twentyfourseven.player.domain.IonTunnelPalette
 import com.codeframe78.twentyfourseven.player.domain.LavaLampPalette
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingOverlayMode
 import com.codeframe78.twentyfourseven.player.domain.Station
@@ -132,11 +135,13 @@ internal fun TvRadioApp(
     onPause: () -> Unit,
     onSetSleepTimer: (Long) -> Unit,
     onCancelSleepTimer: () -> Unit,
+    onSetIdleScreenStartDelay: (IdleScreenStartDelay) -> Unit,
     onSetAutomaticIdleScreenEnabled: (Boolean) -> Unit,
     onSelectIdleVisualizer: (IdleVisualizerStyle) -> Unit,
     onSetNowPlayingOverlay: (NowPlayingOverlayMode) -> Unit,
     onSetReduceVisualIntensity: (Boolean) -> Unit,
     onSetLavaLampPalette: (LavaLampPalette) -> Unit,
+    onSetIonTunnelPalette: (IonTunnelPalette) -> Unit,
 ) {
     val style = tvStationStyle(state.selectedStation?.id)
     val hostView = LocalView.current
@@ -159,12 +164,13 @@ internal fun TvRadioApp(
         hostView.keepScreenOn = state.playback.status == PlaybackStatus.Playing
         onDispose { hostView.keepScreenOn = false }
     }
-    LaunchedEffect(state.playback.status, menuDestination, interactionRevision, fullScreenPreviewRequested, state.idleScreen.automaticIdleScreenEnabled) {
+    LaunchedEffect(state.playback.status, menuDestination, interactionRevision, fullScreenPreviewRequested, state.idleScreen.automaticIdleScreenEnabled, state.idleScreen.startDelay) {
         updateTvIdleScreenActivation(
             playing = state.playback.status == PlaybackStatus.Playing,
             menuOpen = menuDestination != null,
             previewRequested = fullScreenPreviewRequested,
             automaticEnabled = state.idleScreen.automaticIdleScreenEnabled,
+            startDelay = state.idleScreen.startDelay,
         ) { idleVisualizerActive = it }
     }
     LaunchedEffect(interactionRevision) {
@@ -270,8 +276,10 @@ internal fun TvRadioApp(
                     style = fullScreenPreviewStyle ?: state.idleScreen.visualizer,
                     audioState = visualization,
                     stationName = state.selectedStation?.name,
+                    stationId = state.playback.stationId ?: state.selectedStation?.id,
                     reduceVisualIntensity = state.idleScreen.reduceVisualIntensity,
                     lavaLampPalette = state.idleScreen.lavaLampPalette,
+                    ionTunnelPalette = state.idleScreen.ionTunnelPalette,
                     onExit = {
                         if (fullScreenPreviewRequested) {
                             fullScreenPreviewRequested = false
@@ -371,6 +379,7 @@ internal fun TvRadioApp(
                         onOpenSleepTimer = { menuDestination = TvMenuDestination.SleepTimer },
                         onOpenIdleScreen = { menuDestination = TvMenuDestination.IdleScreen },
                         onOpenLavaLampColours = { menuDestination = TvMenuDestination.LavaLampColours },
+                        onOpenIonTunnelColours = { menuDestination = TvMenuDestination.IonTunnelColours },
                         onOpenAccessibilityAndMotion = { menuDestination = TvMenuDestination.AccessibilityAndMotion },
                         onOpenAboutAndSupport = { menuDestination = TvMenuDestination.AboutAndSupport },
                         onDismiss = { menuDestination = menuDestination.backDestination() },
@@ -396,6 +405,7 @@ internal fun TvRadioApp(
                 TvIdleScreenSheet(
                         state = state,
                         visualization = visualization,
+                        onSetIdleScreenStartDelay = onSetIdleScreenStartDelay,
                         onSetAutomaticIdleScreenEnabled = onSetAutomaticIdleScreenEnabled,
                         onSelectVisualizer = onSelectIdleVisualizer,
                         onPreviewFullScreen = { previewStyle ->
@@ -405,6 +415,11 @@ internal fun TvRadioApp(
                         },
                         onDismiss = { menuDestination = menuDestination.backDestination() },
                     )
+                }
+
+                TvMenuDestination.IonTunnelColours -> {
+                    TvIonTunnelColoursSheet(state.idleScreen.ionTunnelPalette, onSetIonTunnelPalette,
+                        onDismiss = { menuDestination = menuDestination.backDestination() })
                 }
 
                 TvMenuDestination.LavaLampColours -> {
@@ -626,6 +641,7 @@ private fun TvGeneralOptionsSheet(
     onOpenSleepTimer: () -> Unit,
     onOpenIdleScreen: () -> Unit,
     onOpenLavaLampColours: () -> Unit,
+    onOpenIonTunnelColours: () -> Unit,
     onOpenAccessibilityAndMotion: () -> Unit,
     onOpenAboutAndSupport: () -> Unit,
     onDismiss: () -> Unit,
@@ -634,7 +650,7 @@ private fun TvGeneralOptionsSheet(
         TvOptionAction(
             title = "Idle Screen",
             summary = if (state.idleScreen.automaticIdleScreenEnabled) {
-                "${state.idleScreen.visualizer.displayName} · starts after 10 minutes"
+                "${state.idleScreen.visualizer.displayName} · starts after ${state.idleScreen.startDelay.displayName}"
             } else {
                 "Automatic idle screen: Off · manual previews available"
             },
@@ -650,6 +666,10 @@ private fun TvGeneralOptionsSheet(
             },
             onClick = onOpenSleepTimer,
         )
+        if (state.idleScreen.visualizer == IdleVisualizerStyle.IonTransit) {
+            TvOptionAction(title = "Tunnel Colors", summary = state.idleScreen.ionTunnelPalette.displayName,
+                onClick = onOpenIonTunnelColours)
+        }
         if (state.idleScreen.visualizer == IdleVisualizerStyle.LavaLamp) {
             TvOptionAction(
                 title = "Lava Lamp Colors",
@@ -672,6 +692,18 @@ private fun TvGeneralOptionsSheet(
             onClick = onOpenAboutAndSupport,
         )
         TvOptionAction(title = "Close", summary = "Return to the player", onClick = onDismiss)
+    }
+}
+
+@Composable
+internal fun TvIonTunnelColoursSheet(selectedPalette: IonTunnelPalette, onSelectPalette: (IonTunnelPalette) -> Unit, onDismiss: () -> Unit) {
+    TvOptionsSheet(title = "Tunnel Colors", onDismiss = onDismiss) { firstAction ->
+        IonTunnelPalette.entries.forEachIndexed { index, palette ->
+            TvOptionAction(title = palette.displayName, summary = palette.description,
+                onClick = { onSelectPalette(palette) }, selected = palette == selectedPalette,
+                modifier = if (index == 0) Modifier.focusRequester(firstAction) else Modifier)
+        }
+        TvOptionAction("Back", "Return to General Options", onDismiss)
     }
 }
 
@@ -795,13 +827,14 @@ private fun TvIdleNowPlayingOverlay(state: TvRadioUiState, modifier: Modifier = 
 internal fun TvIdleScreenSheet(
     state: TvRadioUiState,
     visualization: StateFlow<AudioVisualizationState>,
+    onSetIdleScreenStartDelay: (IdleScreenStartDelay) -> Unit,
     onSetAutomaticIdleScreenEnabled: (Boolean) -> Unit,
     onSelectVisualizer: (IdleVisualizerStyle) -> Unit,
     onPreviewFullScreen: (IdleVisualizerStyle) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val selectedAction = remember { FocusRequester() }
-    val styles = IdleVisualizerStyle.entries.toList()
+    val styles = com.codeframe78.twentyfourseven.player.domain.AvailableIdleVisualizerStyles
     val selectorListState = rememberLazyListState()
     var previewStyle by remember { mutableStateOf(state.idleScreen.visualizer) }
     var lastActivatedStyle by remember { mutableStateOf<IdleVisualizerStyle?>(null) }
@@ -829,8 +862,10 @@ internal fun TvIdleScreenSheet(
             style = previewStyle,
             audioState = visualization,
             stationName = state.selectedStation?.name,
+            stationId = state.playback.stationId ?: state.selectedStation?.id,
             reduceVisualIntensity = state.idleScreen.reduceVisualIntensity,
             lavaLampPalette = state.idleScreen.lavaLampPalette,
+            ionTunnelPalette = state.idleScreen.ionTunnelPalette,
             modifier = Modifier.fillMaxSize(),
         )
         Box(
@@ -859,6 +894,8 @@ internal fun TvIdleScreenSheet(
                 // The color picker is available for the persisted active style, matching Menu routing.
                 if (previewStyle == IdleVisualizerStyle.LavaLamp) {
                     previewStyle.description + " · Press Menu for colors"
+                } else if (previewStyle == IdleVisualizerStyle.IonTransit) {
+                    previewStyle.description + " · Press Menu for tunnel colors"
                 } else {
                     previewStyle.description
                 },
@@ -891,13 +928,19 @@ internal fun TvIdleScreenSheet(
             TvOptionAction(
                 title = "Automatic idle screen: ${if (state.idleScreen.automaticIdleScreenEnabled) "On" else "Off"}",
                 summary = if (state.idleScreen.automaticIdleScreenEnabled) {
-                    "Starts after 10 minutes · select to turn off"
+                    "Starts after ${state.idleScreen.startDelay.displayName} · select to turn off"
                 } else {
                     "Dashboard stays visible · select to turn on"
                 },
                 onClick = { onSetAutomaticIdleScreenEnabled(!state.idleScreen.automaticIdleScreenEnabled) },
                 enabled = selectorInteractive,
                 modifier = Modifier.focusRequester(selectedAction),
+            )
+            TvOptionAction(
+                title = "Start delay: ${state.idleScreen.startDelay.displayName}",
+                summary = "Time without remote input · select to change",
+                onClick = { onSetIdleScreenStartDelay(state.idleScreen.startDelay.next()) },
+                enabled = selectorInteractive,
             )
             Box(
                 modifier = Modifier
@@ -914,6 +957,7 @@ internal fun TvIdleScreenSheet(
                     items(styles, key = { it.name }) { style ->
                         TvVisualizerListRow(
                             style = style,
+                            lavaLampPalette = state.idleScreen.lavaLampPalette,
                             selected = style == state.idleScreen.visualizer,
                             enabled = selectorInteractive,
                             onClick = {
@@ -999,6 +1043,7 @@ private fun TvVisualizerScrollIndicator(
 @Composable
 private fun TvVisualizerListRow(
     style: IdleVisualizerStyle,
+    lavaLampPalette: LavaLampPalette,
     selected: Boolean,
     enabled: Boolean,
     onClick: () -> Unit,
@@ -1039,7 +1084,7 @@ private fun TvVisualizerListRow(
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(4.dp)),
             ) {
-                TvVisualizerPreview(style = style, modifier = Modifier.fillMaxSize())
+                TvVisualizerPreview(style = style, modifier = Modifier.fillMaxSize(), lavaLampPalette = lavaLampPalette)
             }
             Box(
                 modifier = Modifier

@@ -11,6 +11,7 @@ internal enum class TvMenuDestination {
     AccessibilityAndMotion,
     AboutAndSupport,
     Diagnostics,
+    IonTunnelColours,
 }
 
 internal fun TvMenuDestination?.backDestination(): TvMenuDestination? = when (this) {
@@ -19,6 +20,7 @@ internal fun TvMenuDestination?.backDestination(): TvMenuDestination? = when (th
     TvMenuDestination.SleepTimer,
     TvMenuDestination.IdleScreen,
     TvMenuDestination.LavaLampColours,
+    TvMenuDestination.IonTunnelColours,
     TvMenuDestination.AccessibilityAndMotion,
     TvMenuDestination.AboutAndSupport,
     TvMenuDestination.Diagnostics,

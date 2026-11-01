@@ -1,8 +1,7 @@
 package com.codeframe78.twentyfourseven.player.ui
 
 import kotlinx.coroutines.delay
-
-internal const val TvIdleScreenDelayMillis = 10 * 60 * 1_000L
+import com.codeframe78.twentyfourseven.player.domain.IdleScreenStartDelay
 
 /** Runs in a keyed LaunchedEffect so interaction and preference changes cancel pending activation. */
 internal suspend fun updateTvIdleScreenActivation(
@@ -10,6 +9,7 @@ internal suspend fun updateTvIdleScreenActivation(
     menuOpen: Boolean,
     previewRequested: Boolean,
     automaticEnabled: Boolean,
+    startDelay: IdleScreenStartDelay = IdleScreenStartDelay.TenMinutes,
     setActive: (Boolean) -> Unit,
 ) {
     if (previewRequested && !menuOpen) {
@@ -17,7 +17,7 @@ internal suspend fun updateTvIdleScreenActivation(
     } else {
         setActive(false)
         if (playing && !menuOpen && automaticEnabled) {
-            delay(TvIdleScreenDelayMillis)
+            delay(startDelay.millis)
             setActive(true)
         }
     }

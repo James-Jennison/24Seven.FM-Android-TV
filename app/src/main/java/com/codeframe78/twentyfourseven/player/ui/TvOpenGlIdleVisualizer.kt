@@ -1,6 +1,12 @@
 package com.codeframe78.twentyfourseven.player.ui
 
 import android.content.Context
+import android.content.res.Resources
+import android.graphics.BitmapFactory
+import android.graphics.Bitmap
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import android.opengl.GLUtils
 import android.app.ActivityManager
 import android.graphics.Paint as AndroidPaint
 import android.graphics.Typeface
@@ -42,6 +48,9 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.viewinterop.AndroidView
+import com.codeframe78.twentyfourseven.player.domain.StationId
+import com.codeframe78.twentyfourseven.player.ui.theme.StationPalette
+import com.codeframe78.twentyfourseven.player.ui.theme.stationPalette
 import com.codeframe78.twentyfourseven.player.R
 import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState
 import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationBandCount
@@ -49,6 +58,7 @@ import com.codeframe78.twentyfourseven.player.domain.AudioWaveformSampleCount
 import com.codeframe78.twentyfourseven.player.domain.CalibratedBandCount
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerRenderProfile
+import com.codeframe78.twentyfourseven.player.domain.IonTunnelPalette
 import com.codeframe78.twentyfourseven.player.domain.LavaLampPalette
 import com.codeframe78.twentyfourseven.player.domain.metadata
 import kotlinx.coroutines.flow.StateFlow
@@ -56,6 +66,9 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicReference
+import com.codeframe78.twentyfourseven.player.domain.MusicReactiveState
+import com.codeframe78.twentyfourseven.player.ui.visualization.NeonMusicMapper
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.PI
@@ -73,11 +86,17 @@ internal fun TvIdleVisualizer(
     stationName: String? = null,
     reduceVisualIntensity: Boolean = false,
     lavaLampPalette: LavaLampPalette = LavaLampPalette.Neon,
+    ionTunnelPalette: IonTunnelPalette = IonTunnelPalette.AmberIce,
     onExit: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    stationId: StationId? = null,
 ) {
+    if (style != IdleVisualizerStyle.IonTransit && style.videoAsset() != null) {
+        TvVideoIdleVisualizer(style, audioState, reduceVisualIntensity, modifier, lavaLampPalette)
+        return
+    }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        TvOpenGlIdleVisualizer(style, audioState, stationName, reduceVisualIntensity, lavaLampPalette, onExit, modifier)
+        TvOpenGlIdleVisualizer(style, audioState, stationName, reduceVisualIntensity, lavaLampPalette, ionTunnelPalette, onExit, modifier, stationId)
     } else {
         TvCanvasIdleVisualizer(style, audioState, reduceVisualIntensity, lavaLampPalette, modifier)
     }
@@ -90,8 +109,10 @@ private fun TvOpenGlIdleVisualizer(
     stationName: String?,
     reduceVisualIntensity: Boolean,
     lavaLampPalette: LavaLampPalette,
+    ionTunnelPalette: IonTunnelPalette,
     onExit: (() -> Unit)?,
     modifier: Modifier,
+    stationId: StationId?,
 ) {
     var surface by remember { mutableStateOf<TvVisualizerSurfaceView?>(null) }
     var signalDeckReadings by remember { mutableStateOf(List(4) { "-30 dB" }) }
@@ -115,12 +136,12 @@ private fun TvOpenGlIdleVisualizer(
             factory = { context ->
                 TvVisualizerSurfaceView(context).also {
                     surface = it
-                    it.updateStyle(style, lavaLampPalette)
+                    it.updateStyle(style, lavaLampPalette, ionTunnelPalette, stationId)
                     it.setOnBackRequested(onExit)
                 }
             },
             update = {
-                it.updateStyle(style, lavaLampPalette)
+                it.updateStyle(style, lavaLampPalette, ionTunnelPalette, stationId)
                 it.setOnBackRequested(onExit)
             },
         )
@@ -610,7 +631,7 @@ private fun TvOpenGlIdleVisualizer(
  * is composited as an ordinary app layer and therefore latches complete buffers.
  */
 private class TvVisualizerTextureView(context: Context) : TextureView(context), TextureView.SurfaceTextureListener {
-    private val renderer = TvGeometryVisualizerRenderer()
+    private val renderer = TvGeometryVisualizerRenderer(context.applicationContext.resources)
     private val supportsEs3 = (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
         .deviceConfigurationInfo.reqGlEsVersion >= 0x30000
     private var renderThread: TvVisualizerRenderThread? = null
@@ -746,7 +767,10 @@ private fun dbfsToMasterMeter(value: Float) =
     ((value.coerceIn(MasterMeterFloorDbfs, 0f) - MasterMeterFloorDbfs) / -MasterMeterFloorDbfs).coerceIn(0f, 1f)
 
 private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context) {
-    private val renderer = TvGeometryVisualizerRenderer()
+    private val pendingAudio = AtomicReference<(() -> Unit)?>(null)
+    private val renderer = TvGeometryVisualizerRenderer(context.applicationContext.resources) {
+        pendingAudio.getAndSet(null)?.invoke()
+    }
     private val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
     private val compatibilityRendering = (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).let {
         // Old TV devices can advertise GLES 3 while still having too little GPU/heap
@@ -819,10 +843,12 @@ private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context)
         queueEvent { renderer.setDisplayRefreshRate(refreshRate) }
     }
 
-    fun updateStyle(style: IdleVisualizerStyle, lavaLampPalette: LavaLampPalette) {
+    fun updateStyle(style: IdleVisualizerStyle, lavaLampPalette: LavaLampPalette, ionTunnelPalette: IonTunnelPalette, stationId: StationId?) {
         queueEvent {
             renderer.setStyle(style.ordinal)
             renderer.setLavaLampPalette(lavaLampPalette.ordinal)
+            renderer.setIonPalette(ionTunnelPalette.ordinal)
+            renderer.setLightStationPalette(stationPalette(stationId))
         }
     }
 
@@ -845,13 +871,16 @@ private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context)
             val start = group * audio.bands.size / BandCount
             val end = ((group + 1) * audio.bands.size / BandCount).coerceAtLeast(start + 1)
             var total = 0f
-            for (index in start until end) total += audio.bands[index]
+            for (index in start until end) total += audio.bands.getOrElse(index) { 0f }
             total / (end - start) * responseGain
         }
         val rawSpectrum = FloatArray(AudioVisualizationBandCount) { audio.bands.getOrElse(it) { 0f } * responseGain }
         val rawWaveform = FloatArray(AudioWaveformSampleCount) { audio.waveform.getOrElse(it) { 0f } * responseGain }
-        queueEvent {
+        pendingAudio.set {
+            renderer.setIonAudio(audio)
             renderer.setAudioTarget(
+                music = audio.music,
+                reduced = reduceVisualIntensity,
                 energy = audio.energy * responseGain,
                 bands = compact,
                 transient = audio.transient * transientGain,
@@ -869,7 +898,36 @@ private class TvVisualizerSurfaceView(context: Context) : GLSurfaceView(context)
     fun releaseRenderer() = onPause()
 }
 
-private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
+private class TvGeometryVisualizerRenderer(
+    private val resources: Resources,
+    private val consumeAudio: () -> Unit = {},
+) : GLSurfaceView.Renderer {
+    private var ionPalette = 0
+    fun setIonPalette(palette: Int) { ionPalette = palette.coerceIn(0, 3) }
+    private var ionAudio = AudioVisualizationState()
+    private val ionDrive = IonTunnelDrive()
+    private val ionProgram = IonTunnelProgram()
+    private val lightTrailsProgram = LightTrailsProgram(resources)
+    private val lightTrailsDrive = LightTrailsDrive()
+    private var lightStationPalette = stationPalette(null)
+    fun setLightStationPalette(palette: StationPalette) { lightStationPalette = palette }
+    fun setIonAudio(audio: AudioVisualizationState) { ionAudio = audio }
+    private var musicTarget: MusicReactiveState? = null
+    private var musicReduced = false
+    private var laserStageDecode: Future<Bitmap?>? = null
+    private var laserStageLoadFailed = false
+    private val laserStageTexture = IntArray(1)
+    private var laserStageProgram = 0
+    private var concertProgram = 0
+    private var concertPosition = 0
+    private var concertStart = 0
+    private var concertAxis = 0
+    private var concertWidths = 0
+    private var concertLength = 0
+    private var concertAspect = 0
+    private var concertColor = 0
+    private var laserStagePosition = 0
+    private var laserStageSampler = 0
     private val vertices: FloatBuffer = ByteBuffer.allocateDirect(MaxVertices * 2 * Float.SIZE_BYTES)
         .order(ByteOrder.nativeOrder()).asFloatBuffer()
     private val feedbackQuad: FloatBuffer = ByteBuffer.allocateDirect(4 * 4 * Float.SIZE_BYTES)
@@ -904,6 +962,8 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     private var transient = 0f
     private var impact = 0f
     private var impactPhase = 0f
+    private val laserChoreography = LaserChoreography()
+    private val laserCues = LaserCueChoreography()
     // Lava receives a deliberately slow, global heat signal. It is not driven by
     // individual FFT attacks, so wax remains heavy instead of turning into fireballs.
     private var lavaThermalEnergy = 0f
@@ -975,8 +1035,10 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     fun setStyle(style: Int) {
         val previouslyUsedRenderBuffer = usesRenderBuffer()
         val styleChanged = this.style != style
+        if (styleChanged && this.style == IdleVisualizerStyle.LightTrails.ordinal) lightTrailsProgram.release()
         if (styleChanged) clearFeedback = true
         this.style = style
+        if (styleChanged) { laserCues.reset(); ionDrive.reset(); lightTrailsDrive.reset() }
         if (styleChanged && performanceDiagnosticsEnabled) {
             resetTimingWindow()
         }
@@ -1036,13 +1098,27 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         rightMeterLevel: Float = 0f,
         calibratedMeterLevels: FloatArray? = null,
         waveformSamples: FloatArray? = null,
+        music: MusicReactiveState? = null,
+        reduced: Boolean = false,
     ) {
-        val incomingEnergy = unitInterval(energy)
+        musicTarget = music
+        musicReduced = reduced
+        val mapped = if (style == IdleVisualizerStyle.NeonKaleidoscope.ordinal) {
+            music?.let { NeonMusicMapper.map(it, SystemClock.elapsedRealtime(), reduced) }
+        } else null
+        fun incomingBand(index: Int): Float = mapped?.let {
+            when { index < 2 -> it.bass; index < 5 -> it.mid; else -> it.treble }
+        } ?: unitInterval(bands.getOrElse(index) { 0f })
+        val incomingEnergy = mapped?.energy ?: unitInterval(energy)
         var frequencyChange = 0f
-        for (index in targets.indices) frequencyChange += abs(unitInterval(bands.getOrElse(index) { 0f }) - targets[index])
+        for (index in targets.indices) frequencyChange += abs(incomingBand(index) - targets[index])
         targetImpulse = (abs(incomingEnergy - targetEnergy) * 1.6f + frequencyChange / BandCount * 4.8f).coerceIn(0f, 1f)
         targetEnergy = incomingEnergy
-        val incomingTransient = unitInterval(transient)
+        val incomingTransient = mapped?.impact ?: unitInterval(transient)
+        if (style == IdleVisualizerStyle.PulseQuilt.ordinal) {
+            laserCues.accept(SystemClock.elapsedRealtimeNanos() / 1_000_000_000.0,
+                incomingTransient, incomingEnergy)
+        }
         if (incomingTransient > targetTransient + .035f) {
             impact = maxOf(impact, incomingTransient)
             impactPhase += 2.17f + incomingTransient * 3.6f
@@ -1058,13 +1134,23 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         waveformSamples?.let { source ->
             waveformTargets.indices.forEach { index -> waveformTargets[index] = signedUnit(source.getOrElse(index) { 0f }) }
         }
-        targets.indices.forEach { index -> targets[index] = unitInterval(bands.getOrElse(index) { 0f }) }
+        targets.indices.forEach { index -> targets[index] = incomingBand(index) }
         rawSpectrum?.let { source ->
             spectrumTargets.indices.forEach { index -> spectrumTargets[index] = unitInterval(source.getOrElse(index) { 0f }) }
         }
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
+        ionProgram.contextCreated()
+        lightTrailsProgram.contextCreated()
+        laserCues.reset()
+        laserStageDecode?.cancel(true)
+        laserStageDecode = null
+        laserStageLoadFailed = false
+        // Names from a lost context cannot be reused in the new one.
+        laserStageTexture[0] = 0
+        laserStageProgram = 0
+        concertProgram = 0
         EGL14.eglSwapInterval(EGL14.eglGetCurrentDisplay(), 1)
         program = linkProgram(compileShader(GLES20.GL_VERTEX_SHADER, VertexShader), compileShader(GLES20.GL_FRAGMENT_SHADER, FragmentShader))
         positionHandle = GLES20.glGetAttribLocation(program, "aPosition")
@@ -1140,6 +1226,29 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
     }
 
     override fun onDrawFrame(gl: GL10?) {
+        consumeAudio()
+        if (style == IdleVisualizerStyle.NeonKaleidoscope.ordinal) {
+            musicTarget?.let { music ->
+                val mapped = NeonMusicMapper.map(music, SystemClock.elapsedRealtime(), musicReduced)
+                targetEnergy = mapped.energy
+                targetTransient = mapped.impact
+                if (mapped.energy == 0f && mapped.impact == 0f) targetImpulse = 0f
+                for (index in targets.indices) targets[index] = when {
+                    index < 2 -> mapped.bass
+                    index < 5 -> mapped.mid
+                    else -> mapped.treble
+                }
+            }
+        }
+        if (style != 20) {
+            laserStageDecode?.cancel(true)
+            laserStageDecode = null
+            laserStageLoadFailed = false
+        }
+        if (style != 20 && laserStageTexture[0] != 0) {
+            GLES20.glDeleteTextures(1, laserStageTexture, 0)
+            laserStageTexture[0] = 0
+        }
         val now = SystemClock.elapsedRealtimeNanos()
         val rawFrameNanos = if (previousNanos == 0L) FrameIntervalNanos else now - previousNanos
         val delta = (rawFrameNanos / NanosPerSecond).toFloat().coerceIn(0f, .05f)
@@ -1163,7 +1272,15 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         impulse += (targetImpulse - impulse) * (1f - exp((-delta * ImpulseSmoothing).toDouble()).toFloat())
         transient += (targetTransient - transient) * (1f - exp((-delta * TransientSmoothing).toDouble()).toFloat())
         impact *= exp((-delta * ImpactDecay).toDouble()).toFloat()
-        if (usesSceneBuffer()) {
+        if (style == IdleVisualizerStyle.PulseQuilt.ordinal) {
+            laserCues.advance((rawFrameNanos / NanosPerSecond).toFloat())
+            laserChoreography.update(delta, band(0) * .7f + band(1) * .3f,
+                band(3) * .25f + band(4) * .45f + band(5) * .30f, energy)
+        } else {
+            laserChoreography.reset()
+            laserCues.reset()
+        }
+        if (style == IdleVisualizerStyle.LavaLamp.ordinal) {
             val bassHeat = (band(0) * .72f + band(1) * .28f).coerceIn(0f, 1f)
             val heatSmoothing = 1f - exp((-delta / LavaThermalRelaxationSeconds).toDouble()).toFloat()
             lavaThermalEnergy += (bassHeat - lavaThermalEnergy) * heatSmoothing
@@ -1187,13 +1304,13 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
             else -> 2.4f
         }
         phase += delta * (energy * 6.2f + impulse * 7.8f + transient * 6f + impact * impactMotion)
+        if (style == IdleVisualizerStyle.IonTransit.ordinal) ionDrive.update(ionAudio, SystemClock.elapsedRealtime(), delta, musicReduced)
+        if (style == IdleVisualizerStyle.LightTrails.ordinal) lightTrailsDrive.update(ionAudio, SystemClock.elapsedRealtime(), delta, musicReduced)
         frameNumber++
 
-        if (style == IdleVisualizerStyle.LavaLamp.ordinal) {
-            // Lava is an opaque analytical field. Shade its expensive metaballs in
-            // the capped buffer, then present a single filtered texture at panel
-            // resolution. This preserves the liquid silhouette without asking a
-            // living-room GPU to run the full field at every display pixel.
+        if (usesSceneBuffer()) {
+            // Opaque analytical scenes render offscreen, then use one filtered
+            // texture sample per display pixel. No temporal feedback is added.
             renderSceneBase()
             renderSceneGeometry()
             presentSceneBuffer()
@@ -1237,10 +1354,11 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
             17 -> ribbonReactor()
             18 -> prismGarden()
             19 -> moonlitTides()
-            20 -> pulseQuilt()
+            20 -> laserLightShow()
             21 -> echoReef()
             22 -> velvetVortex()
             23 -> lanternDrift()
+            IdleVisualizerStyle.IonTransit.ordinal -> ionProgram.draw(feedbackWidth, feedbackHeight, ionDrive.frame, ionPalette)
             else -> kaleidoscope()
         }
         GLES20.glDisableVertexAttribArray(positionHandle)
@@ -1251,7 +1369,9 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         ?.metadata
         ?.renderProfile == IdleVisualizerRenderProfile.Feedback
 
-    private fun usesSceneBuffer() = style == IdleVisualizerStyle.LavaLamp.ordinal
+    private fun usesSceneBuffer() = style == IdleVisualizerStyle.LavaLamp.ordinal ||
+        style == IdleVisualizerStyle.NeonKaleidoscope.ordinal || style == IdleVisualizerStyle.IonTransit.ordinal ||
+        style == IdleVisualizerStyle.LightTrails.ordinal
 
     private fun usesRenderBuffer() = usesFeedback() || usesSceneBuffer()
 
@@ -1343,14 +1463,10 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         }
     }
 
-    /**
-     * A layered, long-exposure scene.  The broad strips give the waves body on a TV,
-     * while the fine cores and fading echoes preserve the detail of a real analyser.
-     * It deliberately uses only small, bounded vertex batches so it remains suitable
-     * for the lowest-profiled TV GPU.
-     */
+    /** Curved long exposures on wet asphalt, independent of the legacy feedback ribbons. */
     private fun lightTrails() {
-        feedbackCurrent()
+        val frame = lightTrailsDrive.frame
+        lightTrailsProgram.draw(feedbackWidth, feedbackHeight, frame.travel, frame.energy, frame.bass, frame.attack, frame.reduced, frame.sky, frame.sweep, lightStationPalette)
     }
 
     /** The flagship: sparse live currents, made rich by the low-resolution feedback field. */
@@ -2308,37 +2424,185 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
         }
     }
 
-    /** Large irregular mosaic tiles make every band group readable across the room. */
-    private fun pulseQuilt() {
-        val rows = 3
-        val columns = 5
+    // Aperture centers measured from the bundled 1672 x 941 backplate.
+    private fun laserLensX(fixture: Int): Float = when (fixture) {
+        0 -> -.712f
+        1 -> -.432f
+        2 -> -.146f
+        3 -> .143f
+        4 -> .432f
+        5 -> .713f
+        6 -> -.707f
+        else -> .708f
+    }
+
+    private fun drawLaserStageBackplate(): Boolean {
+        if (laserStageLoadFailed) return false
+        if (laserStageTexture[0] == 0) {
+            val decodeSample = if (compatibilityRendering) 2 else 1
+            val pending = laserStageDecode ?: LaserStageDecoder.submit<Bitmap?> {
+                BitmapFactory.decodeResource(resources, R.drawable.laser_stage_led_slim,
+                    BitmapFactory.Options().apply { inScaled = false; inSampleSize = decodeSample })
+            }.also { laserStageDecode = it }
+            // Never block the GL thread waiting for disk/decompression.
+            if (!pending.isDone) return false
+            val bitmap = try { pending.get() } catch (_: java.util.concurrent.ExecutionException) { null }
+                ?: run { laserStageLoadFailed = true; return false }
+            GLES20.glGenTextures(1, laserStageTexture, 0)
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, laserStageTexture[0])
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+            try { GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0) } finally { bitmap.recycle() }
+            laserStageDecode = null
+        }
+        if (laserStageProgram == 0) {
+            laserStageProgram = linkProgram(
+                compileShader(GLES20.GL_VERTEX_SHADER, LavaMetaballVertexShader),
+                compileShader(GLES20.GL_FRAGMENT_SHADER, LaserStageFragmentShader),
+            )
+            laserStagePosition = GLES20.glGetAttribLocation(laserStageProgram, "aPosition")
+            laserStageSampler = GLES20.glGetUniformLocation(laserStageProgram, "uStage")
+        }
+        GLES20.glDisable(GLES20.GL_BLEND)
+        GLES20.glUseProgram(laserStageProgram)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, laserStageTexture[0])
+        GLES20.glUniform1i(laserStageSampler, 0)
         begin(); vertex(-1f, -1f); vertex(1f, -1f); vertex(-1f, 1f); vertex(1f, 1f)
-        triangleStrip(4, Rgba(.018f, .012f, .036f, 1f))
-        repeat(rows) { row ->
-            repeat(columns) { column ->
-                val index = row * columns + column
-                val local = (band(index) * .70f + band(index + 4) * .30f).coerceIn(0f, 1f)
-                val centreX = -.73f + column * .37f + if (row % 2 == 0) 0f else .07f
-                val centreY = -.48f + row * .48f
-                val radius = .13f + local * .10f + transient * .025f
-                val sides = if ((row + column) % 2 == 0) 5 else 6
+        vertices.position(0)
+        GLES20.glEnableVertexAttribArray(laserStagePosition)
+        GLES20.glVertexAttribPointer(laserStagePosition, 2, GLES20.GL_FLOAT, false, 0, vertices)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
+        GLES20.glDisableVertexAttribArray(laserStagePosition)
+        GLES20.glUseProgram(program)
+        GLES20.glEnableVertexAttribArray(positionHandle)
+        GLES20.glEnable(GLES20.GL_BLEND)
+        return true
+    }
+
+    /** Concert cues: soft volumetric-looking cones with live audio-driven narrow cores. */
+    private fun laserLightShow() {
+        val bass = band(0) * .7f + band(1) * .3f
+        // Positions are held cue targets; only incoming PCM attacks advance them.
+        fun ellipse(x: Float, y: Float, rx: Float, ry: Float, colour: Rgba) {
+            begin(); vertex(x, y)
+            repeat(25) { i ->
+                val a = i * Tau / 24f
+                vertex(x + cos(a) * rx, y + sin(a) * ry)
+            }
+            triangleFan(26, colour)
+        }
+        if (!drawLaserStageBackplate()) return
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE)
+
+        // Low-intensity foreground wash; final bank has one lens in the generated plate.
+        // All endpoints lie outside the viewport so the photographed floor cannot cut them off.
+        repeat(LaserStageLayout.bankCount) { bank ->
+            val x = LaserStageLayout.bankX(bank) * 2f - 1f
+            val y = 1f - LaserStageLayout.lensY * 2f
+            val drive = laserAudioDrive(band(bank), bass, laserChoreography.bassHit)
+            val chase = laserCues.floorActivity(bank)
+            val colour = if (bank % 3 == 0) Rgba(1f, .72f, .34f, 1f) else Rgba(.30f, .66f, 1f, 1f)
+            val endX = x * 1.8f + laserCues.aim(bank) * .5f
+            repeat(3) { layer ->
+                val width = (.65f + drive * .65f) * (1f - layer * .25f)
                 begin()
-                vertex(centreX, centreY)
-                repeat(sides + 1) { point ->
-                    val angle = point * Tau / sides + if (sides == 5) -.30f else 0f
-                    val irregularity = 1f + sin(angle * 2f + index) * .10f
-                    vertex(centreX + cos(angle) * radius * irregularity * aspect(), centreY + sin(angle) * radius * irregularity)
+                vertex(x - .065f, y); vertex(x + .065f, y)
+                vertex(endX - width, 1.8f); vertex(endX + width, 1.8f)
+                triangleStrip(4, colour.withAlpha((.003f + drive * .023f) * (.3f + chase * .7f)))
+            }
+            repeat(2) { lamp ->
+                val index = bank * 2 + lamp
+                if (index < LaserStageLayout.lensCount) {
+                    ellipse(LaserStageLayout.lensX(index) * 2f - 1f, y,
+                        .016f * aspect(), .005f,
+                        colour.withAlpha(.12f + drive * .65f * (.3f + chase * .7f)))
                 }
-                triangleFan(sides + 2, palette(index + row, .15f + local * .44f))
-                begin()
-                repeat(sides) { point ->
-                    val angle = point * Tau / sides + if (sides == 5) -.30f else 0f
-                    val irregularity = 1f + sin(angle * 2f + index) * .10f
-                    vertex(centreX + cos(angle) * radius * irregularity * aspect(), centreY + sin(angle) * radius * irregularity)
-                }
-                lineLoop(sides, White.withAlpha(.10f + local * .25f), .9f + local * 1.25f)
             }
         }
+
+        repeat(6) { fixture ->
+            val x = laserLensX(fixture)
+            val y = .573f
+            val bank = if (fixture < 3) 0 else 3
+            val local = (band(bank) + band(bank + 1) + band(bank + 2)) / 3f
+            val drive = laserAudioDrive(local, bass, 0f)
+            val colour = if (fixture % 3 == 0) Rgba(1f, .78f, .48f, 1f) else Rgba(.38f, .72f, 1f, 1f)
+            val hit = laserCues.pulse
+            val activity = laserCues.activity(fixture) * (.25f + hit * .75f)
+            val centre = laserCues.aim(fixture)
+            val endY = -1.8f
+            val dx = (centre - x) / aspect()
+            val dy = endY - y
+            val length = sqrt(dx * dx + dy * dy).coerceAtLeast(.001f)
+            val nx = -dy / length * aspect()
+            val ny = dx / length
+            val width = .20f + laserCues.spread(fixture) * .35f + hit * .85f
+            begin()
+            vertex(x + nx * .009f, y + ny * .009f); vertex(x - nx * .009f, y - ny * .009f)
+            vertex(centre + nx * width, endY + ny * width); vertex(centre - nx * width, endY - ny * width)
+            softConcertBeam(x, y, dx / length, dy / length, length, width,
+                colour.withAlpha(activity * (.084f + drive * .385f + hit * .245f)))
+            val accent = (.12f + drive * .10f + hit * .78f) * laserCues.activity(fixture)
+            if (accent > .001f) {
+                begin()
+                repeat(3) { ray ->
+                    val tip = centre + (ray - 1) * laserCues.spread(fixture) * (.25f + hit * 1.5f)
+                    vertex(x + nx * .002f, y + ny * .002f); vertex(x - nx * .002f, y - ny * .002f)
+                    vertex(tip + nx * .006f, endY + ny * .006f)
+                    vertex(tip + nx * .006f, endY + ny * .006f); vertex(x - nx * .002f, y - ny * .002f)
+                    vertex(tip - nx * .006f, endY - ny * .006f)
+                }
+                // Near-white cores remain readable against the photographed stage at low audio levels.
+                triangles(18, Rgba(.75f + colour.r * .25f, .75f + colour.g * .25f,
+                    .75f + colour.b * .25f, accent * (.70f + drive * .30f)))
+            }
+        }
+
+        // Live aperture glow stays anchored to the photographed glass, not a second cabinet.
+        repeat(6) { fixture ->
+            val x = laserLensX(fixture)
+            val y = .573f
+            val colour = if (fixture % 3 == 0) Rgba(1f, .78f, .48f, 1f) else Rgba(.38f, .72f, 1f, 1f)
+            val activity = maxOf(laserCues.activity(fixture) * .25f,
+                concertLaserStrength(band(fixture), laserCues.pulse, laserCues.pulse))
+            val drive = laserAudioDrive(band(fixture), bass, laserChoreography.snareHit)
+            val radius = .008f + drive * .012f
+            ellipse(x, y, radius * aspect(), radius, colour.withAlpha(activity * (.12f + drive * .55f)))
+            ellipse(x, y, .004f * aspect(), .004f, White.withAlpha(activity * (.15f + drive * .75f)))
+        }
+    }
+
+    /** One bounded quad per beam; analytic edge falloff avoids visible nested-cone bands. */
+    private fun softConcertBeam(x: Float, y: Float, ax: Float, ay: Float, length: Float, width: Float, color: Rgba) {
+        if (concertProgram == 0) {
+            concertProgram = linkProgram(compileShader(GLES20.GL_VERTEX_SHADER, LavaMetaballVertexShader),
+                compileShader(GLES20.GL_FRAGMENT_SHADER, ConcertBeamFragmentShader))
+            concertPosition = GLES20.glGetAttribLocation(concertProgram, "aPosition")
+            concertStart = GLES20.glGetUniformLocation(concertProgram, "uStart")
+            concertAxis = GLES20.glGetUniformLocation(concertProgram, "uAxis")
+            concertWidths = GLES20.glGetUniformLocation(concertProgram, "uWidths")
+            concertLength = GLES20.glGetUniformLocation(concertProgram, "uLength")
+            concertAspect = GLES20.glGetUniformLocation(concertProgram, "uAspect")
+            concertColor = GLES20.glGetUniformLocation(concertProgram, "uColor")
+        }
+        GLES20.glUseProgram(concertProgram)
+        GLES20.glUniform2f(concertStart, x / aspect(), y)
+        GLES20.glUniform2f(concertAxis, ax, ay)
+        GLES20.glUniform2f(concertWidths, .009f, width)
+        GLES20.glUniform1f(concertLength, length)
+        GLES20.glUniform1f(concertAspect, aspect())
+        GLES20.glUniform4f(concertColor, color.r, color.g, color.b, color.a)
+        vertices.position(0)
+        GLES20.glEnableVertexAttribArray(concertPosition)
+        GLES20.glVertexAttribPointer(concertPosition, 2, GLES20.GL_FLOAT, false, 0, vertices)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        GLES20.glDisableVertexAttribArray(concertPosition)
+        GLES20.glUseProgram(program)
+        GLES20.glEnableVertexAttribArray(positionHandle)
     }
 
     /** A dense paired reef: shared bases and short branches make a full underwater canopy. */
@@ -2780,7 +3044,15 @@ private class TvGeometryVisualizerRenderer : GLSurfaceView.Renderer {
      */
     private fun createFeedbackBuffers() {
         releaseFeedbackBuffers()
-        val feedbackScale = if (compatibilityRendering) CompatibilityFeedbackResolutionFraction else FeedbackResolutionFraction
+        // Neon is a single opaque analytical pass. Bound its pixel cost independently
+        // of the TV output resolution, then use the existing filtered presentation pass.
+        val feedbackScale = if (style == IdleVisualizerStyle.NeonKaleidoscope.ordinal) {
+            minOf(1f, 640f / width, 360f / height)
+        } else if (style == IdleVisualizerStyle.LightTrails.ordinal) {
+            minOf(1f, (if (compatibilityRendering) 480f else 576f) / width, (if (compatibilityRendering) 270f else 324f) / height)
+        } else if (style == IdleVisualizerStyle.IonTransit.ordinal) {
+            minOf(1f, (if (compatibilityRendering) 640f else 704f) / width, (if (compatibilityRendering) 360f else 396f) / height)
+        } else if (compatibilityRendering) CompatibilityFeedbackResolutionFraction else FeedbackResolutionFraction
         feedbackWidth = (width * feedbackScale).toInt().coerceAtLeast(MinFeedbackWidth)
         feedbackHeight = (height * feedbackScale).toInt().coerceAtLeast(MinFeedbackHeight)
         GLES20.glGenTextures(2, feedbackTextures, 0)
@@ -3030,6 +3302,11 @@ private val Palette = arrayOf(
     Rgba(1f, .28f, .14f), Rgba(1f, .74f, .08f), Rgba(.42f, 1f, .12f), Rgba(.08f, .95f, .70f),
 )
 
+// One process-wide decoder bounds concurrent image work across surface recreation.
+private val LaserStageDecoder = Executors.newSingleThreadExecutor { task ->
+    Thread(task, "laser-stage-decoder").apply { isDaemon = true }
+}
+
 private const val VertexShader = """
 attribute vec2 aPosition;
 uniform float uPointSize;
@@ -3040,6 +3317,35 @@ private const val FragmentShader = """
 precision mediump float;
 uniform vec4 uColor;
 void main() { gl_FragColor = uColor; }
+"""
+
+private const val LaserStageFragmentShader = """
+precision mediump float;
+varying vec2 vPosition;
+uniform sampler2D uStage;
+void main() {
+    vec2 uv = vec2(vPosition.x * 0.5 + 0.5, 0.5 - vPosition.y * 0.5);
+    gl_FragColor = texture2D(uStage, uv);
+}
+"""
+
+private const val ConcertBeamFragmentShader = """
+precision mediump float;
+varying vec2 vPosition;
+uniform vec2 uStart;
+uniform vec2 uAxis;
+uniform vec2 uWidths;
+uniform float uLength;
+uniform float uAspect;
+uniform vec4 uColor;
+void main() {
+    vec2 p = vec2(vPosition.x / uAspect, vPosition.y) - uStart;
+    float t = clamp(dot(p, uAxis) / uLength, 0.0, 1.0);
+    float radius = mix(uWidths.x, uWidths.y, t);
+    float across = abs(p.x * uAxis.y - p.y * uAxis.x) / max(radius, 0.001);
+    float falloff = 1.0 - smoothstep(0.0, 1.0, across);
+    gl_FragColor = vec4(uColor.rgb, uColor.a * falloff * (1.0 - 0.30 * t));
+}
 """
 
 private const val LavaMetaballVertexShader = """

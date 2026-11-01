@@ -33,6 +33,9 @@ class TvIdleScreenSheetTest {
             TvIdleScreenSheet(
                 state = state.value,
                 visualization = MutableStateFlow(AudioVisualizationState()),
+                onSetIdleScreenStartDelay = { delay ->
+                    state.value = state.value.copy(idleScreen = state.value.idleScreen.copy(startDelay = delay))
+                },
                 onSetAutomaticIdleScreenEnabled = { enabled ->
                     state.value = state.value.copy(idleScreen = state.value.idleScreen.copy(automaticIdleScreenEnabled = enabled))
                 },
@@ -54,6 +57,10 @@ class TvIdleScreenSheetTest {
             .outputStream().use { screenshot.compress(Bitmap.CompressFormat.PNG, 100, it) }
         compose.onNodeWithText("Automatic idle screen: Off")
             .performKeyInput { pressKey(Key.DirectionDown) }
+        compose.onNodeWithText("Start delay: 10 minutes").assertIsFocused()
+            .performKeyInput { pressKey(Key.DirectionCenter) }
+        compose.onNodeWithText("Start delay: 15 minutes").assertIsFocused()
+            .performKeyInput { pressKey(Key.DirectionDown) }
         compose.onNode(hasText(IdleVisualizerStyle.NeonKaleidoscope.displayName) and hasClickAction()).assertIsFocused()
             .performKeyInput { pressKey(Key.DirectionCenter) }
         compose.onNode(hasText(IdleVisualizerStyle.NeonKaleidoscope.displayName) and hasClickAction())
@@ -63,6 +70,8 @@ class TvIdleScreenSheetTest {
             assertFalse(state.value.idleScreen.automaticIdleScreenEnabled)
         }
         compose.onNode(hasText(IdleVisualizerStyle.NeonKaleidoscope.displayName) and hasClickAction())
+            .performKeyInput { pressKey(Key.DirectionUp) }
+        compose.onNodeWithText("Start delay: 15 minutes").assertIsFocused()
             .performKeyInput { pressKey(Key.DirectionUp) }
         compose.onNodeWithText("Automatic idle screen: Off").assertIsFocused()
             .performKeyInput { pressKey(Key.DirectionCenter) }

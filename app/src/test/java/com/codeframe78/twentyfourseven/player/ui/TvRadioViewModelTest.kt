@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -51,6 +53,32 @@ class TvRadioViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `frame-clock audio reads stay live without collectors and after collector timeout`() = runTest(dispatcher) {
+        val audio = InMemoryAudioVisualizationRepository()
+        val viewModel = TvRadioViewModel(
+            BootstrapStationRepository(), FakePlaybackController(), FakeNowPlayingRepository(), FakeQueueRepository(),
+            InMemoryIdleScreenPreferencesRepository(), audio,
+        )
+        val first = com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState(
+            energy = .4f, channelCount = 2, sampledAtElapsedRealtimeMs = 1_000,
+        )
+        audio.publish(first)
+        runCurrent()
+        assertEquals("A frame-clock read must not need a collector", first, viewModel.visualization.value)
+        val collector = backgroundScope.launch { viewModel.visualization.collect() }
+        runCurrent()
+        collector.cancel()
+        advanceTimeBy(6_000)
+        runCurrent()
+        val next = first.copy(energy = .8f, sampledAtElapsedRealtimeMs = 7_000)
+        audio.publish(next)
+        runCurrent()
+        assertEquals("Leaving a collecting renderer must not freeze a polling renderer", next, viewModel.visualization.value)
+        audio.clear()
+        assertEquals(0, viewModel.visualization.value.channelCount)
     }
 
     @Test
@@ -219,7 +247,7 @@ class TvRadioViewModelTest {
     }
 
     @Test
-    fun `TV idle screen exposes all twenty-four styles and retains the selected visualizer`() = runTest(dispatcher) {
+    fun `TV idle screen exposes all thirty-four styles and retains the selected visualizer`() = runTest(dispatcher) {
         val preferences = InMemoryIdleScreenPreferencesRepository()
         val viewModel = TvRadioViewModel(
             BootstrapStationRepository(),
@@ -232,8 +260,10 @@ class TvRadioViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()
 
-        assertEquals(24, IdleVisualizerStyle.entries.size)
+        assertEquals(34, IdleVisualizerStyle.entries.size)
         assertEquals("DJ Soff Snep", IdleVisualizerStyle.DjConsole.displayName)
+        assertEquals("Laser Light Show", IdleVisualizerStyle.PulseQuilt.displayName)
+        assertEquals(20, IdleVisualizerStyle.PulseQuilt.ordinal)
         assertEquals(
             listOf(
                 "NeonKaleidoscope", "AuroraDrift", "OscilloscopeTunnel", "SpectralMandala",
@@ -242,6 +272,9 @@ class TvRadioViewModelTest {
                 "DjConsole", "PsychedelicScene", "LavaLamp", "SignalRain", "ContourIslands",
                 "RibbonReactor", "PrismGarden", "MoonlitTides", "PulseQuilt", "EchoReef",
                 "VelvetVortex", "LanternDrift",
+                "EmeraldResonance", "AuroraVeil", "SpectralSilk", "OrbitalPulse",
+                "ChromaticBlossom", "ElectricSynapse", "StardustIgnition", "VioletCircuit",
+                "PrismaticPassage", "IonTransit",
             ),
             IdleVisualizerStyle.entries.map { it.name },
         )
@@ -263,6 +296,9 @@ class TvRadioViewModelTest {
         advanceUntilIdle()
         assertTrue(viewModel.uiState.value.idleScreen.automaticIdleScreenEnabled)
         val initialPlayCalls = playback.playCalls
+        viewModel.setIdleScreenStartDelay(com.codeframe78.twentyfourseven.player.domain.IdleScreenStartDelay.OneMinute)
+        advanceUntilIdle()
+        assertEquals(com.codeframe78.twentyfourseven.player.domain.IdleScreenStartDelay.OneMinute, viewModel.uiState.value.idleScreen.startDelay)
         viewModel.setAutomaticIdleScreenEnabled(false)
         advanceUntilIdle()
         assertFalse(viewModel.uiState.value.idleScreen.automaticIdleScreenEnabled)
@@ -271,6 +307,7 @@ class TvRadioViewModelTest {
             preferences, InMemoryAudioVisualizationRepository(),
         )
         assertFalse(recreated.uiState.value.idleScreen.automaticIdleScreenEnabled)
+        assertEquals(com.codeframe78.twentyfourseven.player.domain.IdleScreenStartDelay.OneMinute, recreated.uiState.value.idleScreen.startDelay)
         viewModel.setAutomaticIdleScreenEnabled(true)
         advanceUntilIdle()
         assertTrue(viewModel.uiState.value.idleScreen.automaticIdleScreenEnabled)
@@ -298,11 +335,13 @@ class TvRadioViewModelTest {
         viewModel.setNowPlayingOverlay(NowPlayingOverlayMode.Always)
         viewModel.setReduceVisualIntensity(true)
         viewModel.setLavaLampPalette(LavaLampPalette.Arctic)
+        viewModel.setIonTunnelPalette(com.codeframe78.twentyfourseven.player.domain.IonTunnelPalette.VioletCyan)
         advanceUntilIdle()
 
         assertEquals(NowPlayingOverlayMode.Always, viewModel.uiState.value.idleScreen.nowPlayingOverlay)
         assertTrue(viewModel.uiState.value.idleScreen.reduceVisualIntensity)
         assertEquals(LavaLampPalette.Arctic, viewModel.uiState.value.idleScreen.lavaLampPalette)
+        assertEquals(com.codeframe78.twentyfourseven.player.domain.IonTunnelPalette.VioletCyan, viewModel.uiState.value.idleScreen.ionTunnelPalette)
     }
 
     @Test

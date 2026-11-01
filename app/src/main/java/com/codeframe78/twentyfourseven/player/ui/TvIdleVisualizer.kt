@@ -12,6 +12,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import android.graphics.BitmapFactory
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.unit.IntSize
+import com.codeframe78.twentyfourseven.player.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.CornerRadius
@@ -23,6 +32,8 @@ import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipRect
 import com.codeframe78.twentyfourseven.player.domain.AudioVisualizationState
 import com.codeframe78.twentyfourseven.player.domain.IdleVisualizerStyle
 import com.codeframe78.twentyfourseven.player.domain.LavaLampPalette
@@ -41,7 +52,12 @@ internal fun TvCanvasIdleVisualizer(
     lavaLampPalette: LavaLampPalette = LavaLampPalette.Neon,
     modifier: Modifier = Modifier,
 ) {
+    if (style.videoAsset() != null) {
+        TvVideoIdleVisualizer(style, audioState, reduceVisualIntensity, modifier, lavaLampPalette)
+        return
+    }
     val audio by audioState.collectAsState()
+    val laserStage = rememberLaserStage(style, 2)
     val responseGain = if (reduceVisualIntensity) .68f else 1f
     val energy = audio.energy * responseGain
     val bands = audio.bands.map { it * responseGain }
@@ -391,14 +407,7 @@ internal fun TvCanvasIdleVisualizer(
                         }
                         drawPath(path, hue(tide + 5, .52f), style = Stroke(1.8f))
                     }
-                    IdleVisualizerStyle.PulseQuilt -> repeat(24) { tile ->
-                        val column = tile % 6
-                        val row = tile / 6
-                        val x = size.width * (.07f + column * .155f)
-                        val y = size.height * (.13f + row * .205f)
-                        val scale = .75f + band(tile) * .42f
-                        drawRoundRect(hue(tile, .30f + band(tile) * .45f), Offset(x, y), Size(size.width * .115f * scale, size.height * .145f * scale), CornerRadius(8f))
-                    }
+                    IdleVisualizerStyle.PulseQuilt -> laserStage?.let { drawLaserStagePreview(motion * 2f * PI.toFloat(), energy, it) }
                     IdleVisualizerStyle.EchoReef -> repeat(24) { branch ->
                         val x = size.width * (.04f + (branch % 12) * .084f)
                         val bottom = size.height * .94f
@@ -421,6 +430,7 @@ internal fun TvCanvasIdleVisualizer(
                     else -> Unit
                 }
             }
+            else -> Unit // Video candidates are handled above without a Canvas renderer.
         }
     }
 }
@@ -430,7 +440,13 @@ internal fun TvCanvasIdleVisualizer(
 internal fun TvVisualizerPreview(
     style: IdleVisualizerStyle,
     modifier: Modifier = Modifier,
+    lavaLampPalette: LavaLampPalette = LavaLampPalette.Neon,
 ) {
+    if (style.videoAsset() != null) {
+        TvVideoVisualizerPoster(style, modifier, lavaLampPalette)
+        return
+    }
+    val laserStage = rememberLaserStage(style, 4)
     Canvas(modifier = modifier) {
         val center = Offset(size.width / 2f, size.height / 2f)
         val minimum = minOf(size.width, size.height)
@@ -643,11 +659,7 @@ internal fun TvVisualizerPreview(
                         }
                         drawPath(path, color(tide + 4, .58f), style = Stroke(1.7f))
                     }
-                    IdleVisualizerStyle.PulseQuilt -> repeat(24) { tile ->
-                        val column = tile % 6
-                        val row = tile / 6
-                        drawRoundRect(color(tile, .64f), Offset(size.width * (.08f + column * .15f), size.height * (.14f + row * .20f)), Size(size.width * .105f, size.height * .13f), CornerRadius(6f))
-                    }
+                    IdleVisualizerStyle.PulseQuilt -> laserStage?.let { drawLaserStagePreview(0f, .5f, it) }
                     IdleVisualizerStyle.EchoReef -> repeat(20) { branch ->
                         val x = size.width * (.06f + (branch % 10) * .10f)
                         drawLine(color(branch + 4, .70f), Offset(x, size.height * .90f), Offset(x + if (branch % 2 == 0) 8f else -8f, size.height * (.36f + (branch % 4) * .08f)), 2f)
@@ -667,7 +679,84 @@ internal fun TvVisualizerPreview(
                     else -> Unit
                 }
             }
+            else -> Unit // Video candidates are handled above without a Canvas renderer.
         }
+    }
+}
+
+/** Cheap gallery/fallback rendering of the same full-width stage and projector topology. */
+@Composable
+private fun rememberLaserStage(style: IdleVisualizerStyle, sample: Int): ImageBitmap? {
+    val resources = LocalContext.current.resources
+    val image by produceState<ImageBitmap?>(null, style, sample, resources) {
+        value = null
+        if (style == IdleVisualizerStyle.PulseQuilt) value = withContext(Dispatchers.IO) {
+            BitmapFactory.decodeResource(resources, R.drawable.laser_stage_led_slim,
+                BitmapFactory.Options().apply { inScaled = false; inSampleSize = sample })?.asImageBitmap()
+        }
+    }
+    return image
+}
+
+private fun DrawScope.drawLaserStagePreview(time: Float, energy: Float, stage: ImageBitmap) = clipRect {
+    val drive = energy.coerceIn(0f, 1f)
+    fun point(x: Float, y: Float) = Offset(size.width * x, size.height * y)
+    drawImage(stage, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
+    repeat(LaserStageLayout.bankCount) { bank ->
+        val x = LaserStageLayout.bankX(bank)
+        val chase = .5f + .5f * sin(time * 4f - bank * .7f)
+        val c = if (bank % 3 == 0) Color(1f, .72f, .34f) else Color(.30f, .66f, 1f)
+        val endX = .5f + (x - .5f) * 1.8f + sin(time * 4f) * .65f
+        repeat(3) { layer ->
+            val width = (.325f + drive * .325f) * (1f - layer * .25f)
+            val wash = Path().apply {
+                moveTo(size.width * (x - .0325f), size.height * LaserStageLayout.lensY)
+                lineTo(size.width * (x + .0325f), size.height * LaserStageLayout.lensY)
+                lineTo(size.width * (endX + width), size.height * -.4f)
+                lineTo(size.width * (endX - width), size.height * -.4f)
+                close()
+            }
+            drawPath(wash, c.copy(alpha = (.003f + drive * .023f) * (.3f + chase * .7f)))
+        }
+        repeat(2) { lamp ->
+            val index = bank * 2 + lamp
+            if (index < LaserStageLayout.lensCount) {
+                val centre = point(LaserStageLayout.lensX(index), LaserStageLayout.lensY)
+                drawOval(c.copy(alpha = .12f + drive * .65f * (.3f + chase * .7f)),
+                    topLeft = centre - Offset(size.height * .008f, size.height * .0025f),
+                    size = Size(size.height * .016f, size.height * .005f))
+            }
+        }
+    }
+    repeat(6) { fixture ->
+        val x = when (fixture) { 0 -> .144f; 1 -> .284f; 2 -> .427f; 3 -> .5715f; 4 -> .716f; else -> .8565f }
+        val c = if (fixture % 3 == 0) Color(1f, .78f, .48f) else Color(.38f, .72f, 1f)
+        val activity = concertActivity(time, fixture)
+        val start = point(x, .2135f)
+        val end = point(.5f + concertAim(time, fixture) * .5f, 1.4f)
+        val difference = end - start
+        val length = difference.getDistance().coerceAtLeast(1f)
+        val normal = Offset(-difference.y / length, difference.x / length)
+        repeat(7) { layer ->
+            val width = (.65f + drive * .35f) * (1f - layer * .12f) * size.height * .5f
+            val near = normal * (size.height * .0045f)
+            val far = normal * width
+            val beam = Path().apply {
+                moveTo((start + near).x, (start + near).y)
+                lineTo((start - near).x, (start - near).y)
+                lineTo((end - far).x, (end - far).y)
+                lineTo((end + far).x, (end + far).y)
+                close()
+            }
+            drawPath(beam, c.copy(alpha = activity * (.012f + drive * .055f)))
+        }
+        val accent = concertLaserStrength(drive, 0f, 0f)
+        repeat(3) { ray ->
+            drawLine(c.copy(alpha = accent * (.45f + drive * .55f)), start,
+                end + Offset((ray - 1) * (.06f + drive * .275f) * size.width, 0f), size.height * .002f)
+        }
+        drawCircle(c.copy(alpha = activity * .3f), size.height * .012f, start)
+        drawCircle(Color.White.copy(alpha = activity * (.15f + drive * .75f)), size.height * .002f, start)
     }
 }
 

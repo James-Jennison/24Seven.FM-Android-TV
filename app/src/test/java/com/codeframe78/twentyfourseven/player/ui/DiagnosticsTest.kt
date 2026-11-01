@@ -125,9 +125,9 @@ class DiagnosticsTest {
 
     @Test
     fun `visualizer metadata keeps stable profiles for feedback styles`() {
-        assertEquals(IdleVisualizerRenderProfile.Feedback, IdleVisualizerStyle.LavaLamp.metadata.renderProfile)
-        assertEquals(IdleVisualizerRenderProfile.Feedback, IdleVisualizerStyle.LightTrails.metadata.renderProfile)
-        assertEquals(IdleVisualizerRenderProfile.Direct, IdleVisualizerStyle.OscilloscopeTunnel.metadata.renderProfile)
+        assertEquals(IdleVisualizerRenderProfile.Video, IdleVisualizerStyle.LavaLamp.metadata.renderProfile)
+        assertEquals(IdleVisualizerRenderProfile.Direct, IdleVisualizerStyle.LightTrails.metadata.renderProfile)
+        assertEquals(IdleVisualizerRenderProfile.Video, IdleVisualizerStyle.OscilloscopeTunnel.metadata.renderProfile)
     }
 
     @Test

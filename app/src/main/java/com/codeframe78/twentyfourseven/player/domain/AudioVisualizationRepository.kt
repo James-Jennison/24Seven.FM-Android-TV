@@ -3,7 +3,11 @@ package com.codeframe78.twentyfourseven.player.domain
 import kotlinx.coroutines.flow.StateFlow
 
 data class AudioVisualizationState(
+    /** Optional while legacy/synthetic sources migrate. Consumers must handle absent analysis. */
+    val music: MusicReactiveState? = null,
     val energy: Float = 0f,
+    /** Monotonic publication time; zero denotes no decoded PCM measurement. */
+    val sampledAtElapsedRealtimeMs: Long = 0L,
     /** Per-channel RMS envelopes from the decoded PCM path; equal for mono sources. */
     val leftEnergy: Float = 0f,
     val rightEnergy: Float = 0f,

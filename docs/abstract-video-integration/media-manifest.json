@@ -1,0 +1,405 @@
+[
+  {
+    "style_key": "AuroraDrift",
+    "display_name": "Fluid Bloom",
+    "asset": "app/src/main/assets/visualizers/abstract_fluid_bloom.mp4",
+    "source_sha256": "3a5f9086cff48401071c76a5d7f2ef669ead8bb09f5eda657c7db957f8284ea5",
+    "sha256": "3415b9b7f1a89d411fea708446f4e32b4cee60a853eb574c3e401137f52d3c16",
+    "bytes": 6286350,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "OscilloscopeTunnel",
+    "display_name": "Signal Scope",
+    "asset": "app/src/main/assets/visualizers/abstract_signal_scope.mp4",
+    "source_sha256": "f4c512db79aa8daa0b47d1cce324be8b9fab65487e0804dd7b2218857f7f5427",
+    "sha256": "265b661bb0383abe02ab475157472218c4f4895c679abdfe83184b79854e81b0",
+    "bytes": 6277448,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "SpectralMandala",
+    "display_name": "Mirror Script",
+    "asset": "app/src/main/assets/visualizers/abstract_mirror_script.mp4",
+    "source_sha256": "af80c7d03f230a921a7d686f437456fdce7c0d3e54abff8d3dbf9ee07b506df0",
+    "sha256": "efef6ee535c4966de164a0618314f737eec480b2c0bcadae700da565d3a1dd89",
+    "bytes": 6060951,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "ParticleNebula",
+    "display_name": "Orbit Bloom",
+    "asset": "app/src/main/assets/visualizers/abstract_orbit_bloom.mp4",
+    "source_sha256": "1f9dd1337405bb3c0fac03644e792e754c9841c39c3610ddb713ac441cdf1e2a",
+    "sha256": "2111c67668d455488f97d62c3a4f16451643d36aac8a24500a5bd1f6c53ad534",
+    "bytes": 6285897,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "LiquidPrism",
+    "display_name": "Facet Forge",
+    "asset": "app/src/main/assets/visualizers/abstract_facet_forge.mp4",
+    "source_sha256": "8a7e7d76ad9c9829f783f4c48548600058b3b0c8193554f622e7f7b90d0911a5",
+    "sha256": "dad9c6b2136f7f1bad5cff7ca77f6594bc1531ffc5cae6ef4d58f293f99f39dd",
+    "bytes": 3381553,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "LaserGrid",
+    "display_name": "Vector Switchboard",
+    "asset": "app/src/main/assets/visualizers/abstract_vector_switchboard.mp4",
+    "source_sha256": "4fb8347faa375c1adf618c632cbb69cb659c42b5e1f2dea0dc6fed8b5cf90ac7",
+    "sha256": "5b7cd20bf002ff06c9eefa67ef6226d50e1c0b8724d2bb2c4cc4c1be6e774ab1",
+    "bytes": 3576953,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "StarfieldWarp",
+    "display_name": "Pulse Observatory",
+    "asset": "app/src/main/assets/visualizers/abstract_pulse_observatory.mp4",
+    "source_sha256": "1013a0b02662e42ea2fffe72e1e371855a5a1bede02146740ffa754d43aef599",
+    "sha256": "502346a9f7352d23953ea2d4d32bfe10f1e471dd3bcc08da8eadbd8acc6a2e37",
+    "bytes": 6290026,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "ChromaticTerrain",
+    "display_name": "Chromafield",
+    "asset": "app/src/main/assets/visualizers/abstract_chromafield.mp4",
+    "source_sha256": "afd45184af324cdd3b23e37eed13a6bab0d089f7c8e3d08ce30d691c9fe76042",
+    "sha256": "db3daf809764a2f31d385f0fa946f405eee97490c0b1a59867117b8812aaa677",
+    "bytes": 3986800,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "600"
+        }
+      ],
+      "format": {
+        "duration": "20.000000"
+      }
+    },
+    "concept": "Liquid Spectrum",
+    "source": "outputs/chromafield-liquid-spectrum/source/render.py",
+    "shader_sha256": "3bd4695de10597a0a966da6fd9503a1fdb64c8245c3274ad1ea37e5fe8d1cc46"
+  },
+  {
+    "style_key": "PsychedelicScene",
+    "display_name": "Psychedelic Scene",
+    "asset": "app/src/main/assets/visualizers/abstract_psychedelic_scene.mp4",
+    "source_sha256": "4b8e8507f8e9e59a76123e887c172f39d276d5379dc77dc85011c42375242013",
+    "sha256": "f97d027616d72d1cb7858dcfdec716a2a65185fa639f25fe98018cad289c46f5",
+    "bytes": 2356458,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "SignalRain",
+    "display_name": "Harmonic Gate",
+    "asset": "app/src/main/assets/visualizers/abstract_harmonic_gate.mp4",
+    "source_sha256": "bde91c3b54c237f195afe8a4eca81c3f37292f689ceb42b8b688fe3fc9fb8598",
+    "sha256": "78c6da607b1121cf9ff8fd7f695fbd56260bb275e880f88d7f2f27b1dd1118e4",
+    "bytes": 3554402,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "ContourIslands",
+    "display_name": "Contour Islands",
+    "asset": "app/src/main/assets/visualizers/abstract_contour_islands.mp4",
+    "source_sha256": "44b2c0a573132832b90e351b28b8f0d5d49a1d0e7dfae29ccdfca4370e459507",
+    "sha256": "742ef5906d1c83f838d97e1791175eac3b7f9ef080470c692ee8c0ae2b6ee586",
+    "bytes": 5585423,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "RibbonReactor",
+    "display_name": "Woven Current",
+    "asset": "app/src/main/assets/visualizers/abstract_woven_current.mp4",
+    "source_sha256": "0973b00e7ac801f527e1f6d393e1b83bac685784395486beb0017652dda7f114",
+    "sha256": "02a579ff660ac1f7c8e3accfa97fa160d7a6fe9d3e2d80d6a2b840e601b2699c",
+    "bytes": 6281060,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "PrismGarden",
+    "display_name": "Prism Garden",
+    "asset": "app/src/main/assets/visualizers/abstract_prism_garden.mp4",
+    "source_sha256": "3001a291b59ae48a5bd758fa5fd744521e0ae9c8e8efdf664eaf87e4f526ac59",
+    "sha256": "4400f2520a2eff948a693df1f714aca5b52174eba3a576c6f85241e4a80f9d86",
+    "bytes": 2921316,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "MoonlitTides",
+    "display_name": "Dusk Lattice",
+    "asset": "app/src/main/assets/visualizers/abstract_dusk_lattice.mp4",
+    "source_sha256": "3c7720f74fdcc4b362de21203fe26c716d9547f14b55d4d6d0e2d5c4e0378312",
+    "sha256": "3688af627fa45d46071bf61782783185c6852effdbc4901e79f4ded499ea90f5",
+    "bytes": 6290459,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "EchoReef",
+    "display_name": "Echo Reef",
+    "asset": "app/src/main/assets/visualizers/abstract_echo_reef.mp4",
+    "source_sha256": "fde7bcc349e5bbcd51d2bcf69465e067baf6ca7a012e275324cda6d98155dae2",
+    "sha256": "0ac2d331bc3f9e14bf0ee832e690afa97ab750cdc839b32259407a21f5b43869",
+    "bytes": 6284957,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  },
+  {
+    "style_key": "VelvetVortex",
+    "display_name": "Magnetic Fields",
+    "asset": "app/src/main/assets/visualizers/abstract_magnetic_fields.mp4",
+    "source_sha256": "757254f66878ecf858b0e828a8af3f672595ee8344143543506e1474b5110823",
+    "sha256": "e2dd4368810625b6c1b5e7bc7f0cd04190af1d8db15fcc013ce28d8750c5dc43",
+    "bytes": 6264945,
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "nb_read_frames": "480"
+        }
+      ],
+      "format": {
+        "duration": "16.000000"
+      }
+    }
+  }
+]
