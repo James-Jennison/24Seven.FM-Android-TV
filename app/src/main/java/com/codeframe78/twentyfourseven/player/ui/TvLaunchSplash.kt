@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
@@ -29,16 +30,29 @@ import kotlinx.coroutines.delay
 internal const val TV_LAUNCH_SPLASH_HOLD_MILLIS = 1_100L
 internal const val TV_LAUNCH_SPLASH_FADE_MILLIS = 300
 
+/** Safety cap: if the window never gains focus the splash still leaves, so it cannot hold keys back indefinitely. */
+internal const val TV_LAUNCH_SPLASH_MAX_MILLIS = 6_000L
+
 /**
  * The app's own launch screen: the 24seven.FM antenna mark going on air over the launch background, drawn by the
  * app because Google TV does not render the system splash screen. It plays once per cold start, then fades out and
- * calls [onFinished] so the caller can remove it. It is decorative, so it exposes nothing to accessibility.
+ * calls [onFinished] so the caller can remove it. The hold starts once the window has focus. It is decorative, so it exposes nothing to accessibility.
  */
 @Composable
 internal fun TvLaunchSplash(onFinished: () -> Unit) {
     val alpha = remember { FloatAnimatable(1f) }
-    LaunchedEffect(Unit) {
+    // Count the hold from when the window is actually focused (visible to the viewer). The first frame is composed well
+    // before Google TV lets the app window appear (about a second on a release build), so a timer started at
+    // composition would run out unseen.
+    val windowFocused = LocalWindowInfo.current.isWindowFocused
+    LaunchedEffect(windowFocused) {
+        if (!windowFocused) return@LaunchedEffect
         delay(TV_LAUNCH_SPLASH_HOLD_MILLIS)
+        alpha.animateTo(0f, tween(TV_LAUNCH_SPLASH_FADE_MILLIS))
+        onFinished()
+    }
+    LaunchedEffect(Unit) {
+        delay(TV_LAUNCH_SPLASH_MAX_MILLIS)
         alpha.animateTo(0f, tween(TV_LAUNCH_SPLASH_FADE_MILLIS))
         onFinished()
     }
