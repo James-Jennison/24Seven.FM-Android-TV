@@ -11,8 +11,9 @@
 #       [--activity <class>] [--expect-model <ro.product.model>] [--timeout <seconds>] \
 #       [-- <command to run once focused>]
 #
-# Exit codes: 0 focused (and the trailing command's status, if given), 2 usage error,
-# 3 wrong device, 4 timeout waiting for focus, 5 adb unavailable or device offline.
+# Exit codes: 0 focused (no trailing command); with a trailing command, that command's own
+# exit status; 2 usage error, 3 wrong device, 4 no focus within the timeout (the wait may
+# overrun the timeout by at most one adb call plus 0.5 s), 5 adb missing or failing.
 set -euo pipefail
 
 usage() { sed -n '2,15p' "$0" >&2; exit 2; }
@@ -46,9 +47,18 @@ if [[ -n $expect_model ]]; then
 fi
 
 deadline=$((SECONDS + timeout))
+warned_unparsed=0
 while :; do
-  focus=$(adb -s "$device" shell dumpsys window 2>/dev/null | tr -d '\r' \
-    | sed -n 's/^[[:space:]]*mCurrentFocus=Window{[^ ]* [^ ]* \([^ }]*\)}.*/\1/p' | head -n 1) || focus=
+  window_dump=$(adb -s "$device" shell dumpsys window 2>&1) \
+    || fail 5 "adb failed reading window state from $device: ${window_dump:-no output}"
+  window_dump=$(printf '%s' "$window_dump" | tr -d '\r')
+  focus_line=$(printf '%s\n' "$window_dump" | grep -m1 '^[[:space:]]*mCurrentFocus=' || true)
+  if [[ -z $focus_line && $warned_unparsed == 0 ]]; then
+    printf 'focus-wait=warning: no mCurrentFocus line in dumpsys output; waiting\n' >&2
+    warned_unparsed=1
+  fi
+  focus=$(printf '%s\n' "$focus_line" \
+    | sed -n 's/^[[:space:]]*mCurrentFocus=Window{[^ ]* [^ ]* \([^ }]*\)}.*/\1/p')
   if [[ -n $focus ]]; then
     focused_package=${focus%%/*}
     focused_activity=${focus#*/}
@@ -57,9 +67,11 @@ while :; do
       break
     fi
   fi
-  ((SECONDS < deadline)) || fail 4 "no focus for $package${activity:+/$activity} on $device within ${timeout}s (last focus: ${focus:-none})"
+  remaining=$((deadline - SECONDS))
+  ((remaining > 0)) || fail 4 "no focus for $package${activity:+/$activity} on $device within ${timeout}s (last focus: ${focus:-none})"
   sleep 0.5
 done
 
+# With a trailing command, its exit status is propagated verbatim (exec replaces this shell).
 (($#)) && exec "$@"
 exit 0

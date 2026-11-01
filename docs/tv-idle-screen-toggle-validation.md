@@ -333,3 +333,13 @@ with a bounded timeout and distinct exit codes. Validation: six fake-adb unit te
 Streamer a debug cold launch became ready at ~4.6 s, delivered the key, and added no ANR
 (count 3 before and after); the wrong-device guard rejected the LCARS tablet (exit 3).
 The benchmark snapshot on gthost and the earlier device dexopt state were left as is.
+
+Review of the focus-wait helper (candidate `de92e37`, cycle `review-cycle-c61875a96890`,
+sanitized package and DeepSeek response kept under ignored `work/focus-wait-review/`):
+DeepSeek COMPLETE with six actionable findings (adb failures reported as timeouts, timeout
+overshoot, silent parse misses, ambiguous exit-status wording, missing tests, fake-adb
+quoting); all were fixed in the follow-up commit and the suite is now 10 tests, all
+passing, plus a repeat Streamer run (ready, key delivered, ANR count unchanged). Grok and
+Gemini FAILED at the provider ("Go policy, session, or response validation failed. Check
+truthful allowance receipt and durable evidence."): review UNAVAILABLE for those two, not
+approved; no substitute reviewer was used. The remediated candidate has no closure review.

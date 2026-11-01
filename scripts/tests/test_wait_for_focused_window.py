@@ -17,27 +17,30 @@ def focus_line(component: str) -> str:
 
 
 class WaitForFocusedWindowTest(unittest.TestCase):
-    def run_script(self, focus_sequence, *args, model="Google TV Streamer", timeout="3"):
+    def run_script(self, focus_sequence, *args, model="Google TV Streamer", timeout="3", dumpsys_fail=False):
         """Fake adb replays `focus_sequence` (one entry per dumpsys call, last one repeats)."""
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             (tmp_path / "seq").write_text("\n".join(focus_sequence) + "\n")
             adb = tmp_path / "adb"
-            adb.write_text(textwrap.dedent(f"""\
+            adb.write_text(textwrap.dedent("""\
                 #!/usr/bin/env bash
                 shift 2  # -s <serial>
-                if [[ $1 == shell && $2 == getprop ]]; then echo '{model}'; exit 0; fi
+                if [[ $1 == shell && $2 == getprop ]]; then echo "$FAKE_MODEL"; exit 0; fi
                 if [[ $1 == shell && $2 == dumpsys ]]; then
-                  n=$(cat "{tmp}/n" 2>/dev/null || echo 0); echo $((n+1)) > "{tmp}/n"
-                  total=$(wc -l < "{tmp}/seq")
-                  line=$(sed -n "$(( n < total ? n+1 : total ))p" "{tmp}/seq")
+                  if [[ -n ${FAKE_DUMPSYS_FAIL:-} ]]; then echo "error: device offline" >&2; exit 1; fi
+                  n=$(cat "$FAKE_TMP/n" 2>/dev/null || echo 0); echo $((n+1)) > "$FAKE_TMP/n"
+                  total=$(wc -l < "$FAKE_TMP/seq")
+                  line=$(sed -n "$(( n < total ? n+1 : total ))p" "$FAKE_TMP/seq")
                   [[ $line == NULL ]] && echo '  mCurrentFocus=null' || printf '%b\\n' "$line"
                   exit 0
                 fi
                 exit 1
             """))
             adb.chmod(0o755)
-            env = {**os.environ, "PATH": f"{tmp}:{os.environ['PATH']}"}
+            env = {**os.environ, "PATH": f"{tmp}:{os.environ['PATH']}", "FAKE_MODEL": model, "FAKE_TMP": tmp}
+            if dumpsys_fail:
+                env["FAKE_DUMPSYS_FAIL"] = "1"
             return subprocess.run(
                 [str(SCRIPT), "--device", "SERIAL", "--package", PKG, "--timeout", timeout, *args],
                 env=env, capture_output=True, text=True, timeout=30,
@@ -70,6 +73,26 @@ class WaitForFocusedWindowTest(unittest.TestCase):
     def test_wrong_device_model_rejected_before_waiting(self):
         app = focus_line(f"{PKG}/{ACT}").strip()
         result = self.run_script([app], "--expect-model", "Google TV Streamer", model="LCARS_PADD")
+        self.assertEqual(result.returncode, 3)
+
+    def test_adb_failure_exits_5_promptly(self):
+        result = self.run_script(["NULL"], timeout="10", dumpsys_fail=True)
+        self.assertEqual(result.returncode, 5)
+        self.assertIn("device offline", result.stderr)
+
+    def test_unparseable_dumpsys_warns_and_times_out(self):
+        result = self.run_script(["  something=else"], timeout="1")
+        self.assertEqual(result.returncode, 4)
+        self.assertIn("no mCurrentFocus line", result.stderr)
+
+    def test_trailing_command_status_propagates(self):
+        app = focus_line(f"{PKG}/{ACT}").strip()
+        result = self.run_script([app], "--", "bash", "-c", "exit 7")
+        self.assertEqual(result.returncode, 7)
+
+    def test_model_with_quote_is_handled(self):
+        app = focus_line(f"{PKG}/{ACT}").strip()
+        result = self.run_script([app], "--expect-model", "Google TV Streamer", model="it's; $(touch x)")
         self.assertEqual(result.returncode, 3)
 
     def test_usage_errors(self):
