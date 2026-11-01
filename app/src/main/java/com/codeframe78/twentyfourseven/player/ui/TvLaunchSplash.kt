@@ -50,6 +50,10 @@ internal const val TV_LAUNCH_SPLASH_TRANSITION_MILLIS = 350L
  */
 internal const val TV_LAUNCH_SPLASH_MAX_MILLIS = 10_000L
 
+/** True once the splash has been drawn, false if [cap] milliseconds pass first. Internal so the cap can be tested. */
+internal suspend fun awaitSplashFirstDraw(firstDraw: CompletableDeferred<Unit>, cap: Long): Boolean =
+    withTimeoutOrNull(cap) { firstDraw.await() } != null
+
 /**
  * The app's own launch screen: the 24seven.FM antenna mark going on air over the launch background, drawn by the
  * app because Google TV does not render the system splash screen. It plays once per cold start, then fades out and
@@ -70,8 +74,13 @@ internal fun TvLaunchSplash(onFinished: () -> Unit) {
     DisposableEffect(drawable) { onDispose { (drawable as? Animatable)?.stop() } }
     // One coroutine owns the whole lifecycle, so exactly one path fades the splash and calls onFinished.
     LaunchedEffect(Unit) {
-        val drawn = withTimeoutOrNull(TV_LAUNCH_SPLASH_MAX_MILLIS) { firstDraw.await() } != null
-        if (drawn && drawable != null) {
+        val drawn = awaitSplashFirstDraw(firstDraw, TV_LAUNCH_SPLASH_MAX_MILLIS)
+        if (!drawn) {
+            // Never drawn, so there are no frames to animate a fade on: leave at once rather than wait on the frame clock.
+            onFinished()
+            return@LaunchedEffect
+        }
+        if (drawable != null) {
             delay(TV_LAUNCH_SPLASH_TRANSITION_MILLIS)
             markVisible = true
             (drawable as? Animatable)?.start()

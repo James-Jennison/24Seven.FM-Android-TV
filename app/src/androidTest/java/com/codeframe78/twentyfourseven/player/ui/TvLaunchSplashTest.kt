@@ -7,7 +7,8 @@ import org.junit.Test
 
 /**
  * The in-app launch splash must finish exactly once, not before its hold has run, and not hang on. Time is driven by
- * the Compose test clock, so these checks are deterministic.
+ * the Compose test clock, so these checks are deterministic. The never-drawn cap path is covered by the JVM test
+ * TvLaunchSplashCapTest because a composed splash always draws.
  */
 class TvLaunchSplashTest {
     @get:Rule val compose = createComposeRule()
@@ -29,7 +30,7 @@ class TvLaunchSplashTest {
         assertEquals("exactly one completion even after the safety cap would have elapsed", 1, finished)
     }
 
-    @Test fun neverTakesLongerThanTheSafetyCapPlusTheFade() {
+    @Test fun finishesWithinTheDrawnPathBoundNotTheCap() {
         var finished = 0
         compose.mainClock.autoAdvance = false
         compose.setContent { TvLaunchSplash(onFinished = { finished++ }) }

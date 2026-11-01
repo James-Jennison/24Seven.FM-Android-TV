@@ -34,8 +34,8 @@ has its own writer: change shared files there first, then copy them here unchang
   Streamer), so `TvLaunchSplash` draws the same `splash_icon_animated` mark in-app once per cold start over
   `splash_background`. Nothing is timed from composition (the first frame takes over a second to draw on a release
   build): after the splash's own first draw it waits 350 ms for the launch transition, starts the animation, holds
-  the mark for 1.5 s and fades for 300 ms (about 1.9 s on screen). A single coroutine owns this; if the splash is
-  never drawn within 10 s it just leaves. A first-use dialog is a separate window and covers the splash on the very
+  the mark for 1.5 s and fades for 300 ms (about 1.9 s on screen, measured on a minified debug-signed release variant of an earlier candidate and about 2.2-2.4 s on a debug build). A single coroutine owns this; if the splash is
+  never drawn within 10 s it leaves at once (keys are swallowed, Back excepted, for at most that wait plus the splash). A first-use dialog is a separate window and covers the splash on the very
   first run of a fresh install. It is decorative: it does not gate startup work, but while it is
   visible the activity swallows every key except Back, so a press cannot act on UI the viewer cannot see. The
   system-splash layer is wired and the system creates it, but it has never been observed on screen on the acceptance
