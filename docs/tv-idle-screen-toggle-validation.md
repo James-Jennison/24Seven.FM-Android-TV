@@ -358,3 +358,29 @@ residual risks (8 recorded). Broker closure `closure-e76900836df3`: READY_WITH_R
 TECHNICALLY_READY, REVIEW_APPROVED; Owner acceptance NOT recorded; release NOT granted.
 The input ANR was still not reproduced on demand and is not claimed fixed. Review inputs and
 records: GTHost `review-inputs/tv-focus-wait-20261101`, local `work/focus-wait-review/`.
+
+## TV branding alignment with the mobile Player — 2026-11-01
+
+Under the Owner's branding-alignment authorization (AGENTS.md): regenerated the clipped
+`tv_banner.png` (320x180, 19 px right margin) from the shared logo and palette, changed the
+debug label to "24Seven.FM TV (Debug)", added `docs/BRANDING.md`, the read-only
+`scripts/check-branding-parity.sh` (12 shared files, passes against the mobile checkout, which
+was not modified) and a README link. Application IDs unchanged.
+
+Build: commit `b65e473` on gthost, `:app:assembleDebug :app:lintDebug` completed, lint 0 errors /
+78 warnings (no baseline compared); no Kotlin changed, unit tests not run. The GTHost debug key
+differs from the installed one, so the APK (`3bb6799a…`) was re-signed with the workstation debug
+key (`629e3f46…`, identical in all 966 non-signature entries) and installed over the Streamer's
+debug app without wiping its data. Launch via `wait-for-focused-window.sh` was ready. The
+Streamer's Google TV launcher (Home "Your apps", Apps tab) shows only round app icons and never
+renders `android:banner`, so the banner is verified from the packaged resource and a rendered
+image, not on a launcher.
+
+Review: first cycle `review-cycle-4e9c6af2c585` (change `tv-branding-alignment-20261101`) led to a
+BRANDING.md correction; superseding change `tv-branding-alignment-20261101-v2`, candidate
+`3c40797` (docs-only after the build), panel architecture-synthetic / platform-together /
+deepseek, cycle `review-cycle-dbc55e04c901` COMPLETE, evidence `evidence-cycle-216acebe0241` PASS.
+Closure `closure-1e8939016fc9`: READY_WITH_RESIDUAL_RISK, TECHNICALLY_READY, REVIEW_APPROVED; Owner
+acceptance not recorded; release not granted. Residuals include the reviewer-rated-HIGH
+"banner not seen on a launcher" (writer-assessed MEDIUM) and the label scheme awaiting Owner
+approval. The earlier change's first cycle is left unclosed as history.
