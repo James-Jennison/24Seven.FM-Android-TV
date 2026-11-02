@@ -264,4 +264,13 @@ class PairingHostTest {
         assertTrue(h.state.value is PairingUiState.ShowingCode)
         h.close()
     }
+
+    @Test fun aPhoneCanReconnectAfterItsOwnEarlierConnectionClosed() {
+        val h = host()
+        val first = connect(h); first.close()
+        val second = connect(h)
+        send(second, pairFrame(proof(h.offer.qrSecret)))
+        assertEquals("pair_ok", recv(second)!!.getString("type"))
+        h.close()
+    }
 }
