@@ -267,6 +267,16 @@ internal fun endedText(reason: EndReason) = when (reason) {
     EndReason.ProtocolError, EndReason.UnsupportedVersion -> "The phone and this TV could not agree on how to talk. Update both apps."
 }
 
+/** Short labels for crowded rows such as the station choices. */
+internal fun stationShortName(id: String) = when (id) {
+    "sst" -> "SST"
+    "1980s" -> "1980s"
+    "afm" -> "Adagio"
+    "dfm" -> "Death"
+    "efm" -> "Entranced"
+    else -> id
+}
+
 internal fun stationName(id: String) = when (id) {
     "sst" -> "StreamingSoundtracks.com"
     "1980s" -> "1980s.FM"

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -115,16 +116,17 @@ private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogB
     val focusManager = LocalFocusManager.current
     // Start on the Song chip, not in the text field, so the on-screen keyboard stays down until the listener goes to the field.
     LaunchedEffect(Unit) { runCatching { firstChip.requestFocus() } }
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+    // Scrolls so five station buttons plus the suggestion cards still fit; nothing here is a lazy list.
+    Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.Center) {
         Text("Find a song", style = MaterialTheme.typography.displaySmall)
         Text("Request a track on ${stationName(station)}", style = MaterialTheme.typography.titleLarge, color = PairingPalette.Muted)
         if (stationChoices.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                stationChoices.forEach { id -> Pill(stationName(id), selected = id == station, onClick = { onStation(id) }) }
+                stationChoices.forEach { id -> Pill(stationShortName(id), selected = id == station, onClick = { onStation(id) }) }
             }
         }
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(if (stationChoices.isEmpty()) 28.dp else 16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             CatalogField.entries.forEach { field ->
                 Pill(
@@ -167,7 +169,7 @@ private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogB
             Pill("Search", filled = true, onClick = { browser.search(text) })
             Pill("Back", onClick = onExit)
         }
-        Spacer(Modifier.height(36.dp))
+        Spacer(Modifier.height(if (stationChoices.isEmpty()) 36.dp else 20.dp))
         Text("Or let the station pick", style = MaterialTheme.typography.titleMedium, color = PairingPalette.Muted)
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
