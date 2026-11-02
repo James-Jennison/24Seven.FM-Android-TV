@@ -23,6 +23,8 @@ val sourceRevision = providers.environmentVariable("TWENTYFOURSEVEN_SOURCE_REVIS
     ?.takeIf { it.matches(Regex("[0-9a-f]{40}")) }
     ?: "unverified"
 
+val pairingEnabledForDebug = providers.environmentVariable("TWENTYFOURSEVEN_PAIRING_ENABLED").orNull == "true"
+
 require(!hasAnyUploadSigningValue || hasCompleteUploadSigning) {
     "Incomplete Play upload signing environment. Supply all four TWENTYFOURSEVEN_UPLOAD_* values or none."
 }
@@ -40,7 +42,10 @@ android {
         manifestPlaceholders["appLabel"] = "24Seven.FM TV"
         manifestPlaceholders["buildRevision"] = sourceRevision
     }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     signingConfigs {
         if (hasCompleteUploadSigning) {
             create("playUpload") {
@@ -55,9 +60,12 @@ android {
         getByName("debug") {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            // Companion pairing is off unless a debug build is made with TWENTYFOURSEVEN_PAIRING_ENABLED=true.
+            buildConfigField("boolean", "PAIRING_ENABLED", pairingEnabledForDebug.toString())
             manifestPlaceholders["appLabel"] = "24Seven.FM TV (Debug)"
         }
         getByName("release") {
+            buildConfigField("boolean", "PAIRING_ENABLED", "false")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))

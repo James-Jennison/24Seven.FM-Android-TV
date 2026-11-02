@@ -61,7 +61,7 @@ internal class PairingHost(
     private val monotonicMillis: () -> Long,
     private val epochMillis: () -> Long,
     private val random: SecureRandom = SecureRandom(),
-    private val codeLifetimeMillis: Long = 5 * 60_000L,
+    private val codeLifetimeMillis: Long = 120_000L,
     private val timeouts: PairingTimeouts = PairingTimeouts(),
     private val keepAlive: KeepAlive = KeepAlive(),
 ) {
