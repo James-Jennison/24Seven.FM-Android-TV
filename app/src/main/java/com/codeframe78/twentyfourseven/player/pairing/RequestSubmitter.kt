@@ -124,8 +124,22 @@ private val REJECTION = listOf(
 /** Same-origin HTTPS GET with the session's Cookie header; bounded; redirects stay on the station. */
 internal class HttpSessionPageFetch(
     private val connect: (URI) -> HttpURLConnection = { it.toURL().openConnection() as HttpURLConnection },
+    /** Diagnostics only: status, redirects, elapsed time and failure class. Never URLs with cookies, never cookie values. */
+    private val diag: (String) -> Unit = {},
+    private val clock: () -> Long = System::nanoTime,
 ) : SessionPageFetch {
     override fun get(uri: URI, referer: URI, session: StationSession): String {
+        val began = clock()
+        fun ms() = (clock() - began) / 1_000_000
+        try {
+            return fetchOnce(uri, referer, session) { diag("hop ${it}") }.also { diag("reply read: ${it.length} chars in ${ms()} ms") }
+        } catch (e: Exception) {
+            diag("fetch failed after ${ms()} ms: ${e.javaClass.simpleName}: ${e.message}")
+            throw e
+        }
+    }
+
+    private fun fetchOnce(uri: URI, referer: URI, session: StationSession, hop: (String) -> Unit): String {
         val start = uri
         var current = uri
         repeat(MAX_REDIRECTS + 1) { n ->
@@ -138,6 +152,7 @@ internal class HttpSessionPageFetch(
                 c.setRequestProperty("Referer", referer.toString())
                 c.setRequestProperty("Cookie", session.cookies.joinToString("; ") { "${it.name}=${it.value}" })
                 val status = c.responseCode
+                hop("status=$status path=${current.path} redirect=${status in setOf(301, 302, 303, 307, 308)} contentType=${c.contentType}")
                 if (status in setOf(301, 302, 303, 307, 308)) {
                     if (n == MAX_REDIRECTS) throw IOException("Too many redirects")
                     current = TrustedStationNavigation.resolveRedirect(current, c.getHeaderField("Location"), start)

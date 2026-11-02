@@ -42,6 +42,7 @@ internal class PairingController(
     private val accountCheck: StationAccountCheck = HomePageAccountCheck(),
     private val submitter: RequestSubmitter = RequestSubmitter(
         enabled = com.codeframe78.twentyfourseven.player.BuildConfig.TV_REQUESTS_ENABLED,
+        fetch = HttpSessionPageFetch(diag = { android.util.Log.i("PairingHost", "tv request: $it") }),
         queue = QueueCheck { station, _, songId ->
             val payload = com.codeframe78.twentyfourseven.player.data.PlayerQueueRemoteDataSource()
                 .fetchForVerification(com.codeframe78.twentyfourseven.player.domain.StationId(station))
