@@ -13,6 +13,7 @@ import java.security.spec.ECGenParameterSpec
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLServerSocket
+import javax.net.ssl.X509KeyManager
 import javax.security.auth.x500.X500Principal
 
 /**
@@ -48,6 +49,8 @@ internal class PairingKey private constructor(
         fun generate(random: SecureRandom = SecureRandom()): PairingKey {
             val alias = "pairing-" + ByteArray(8).also(random::nextBytes).toHex()
             val store = KeyStore.getInstance(KEYSTORE).apply { load(null) }
+            // A pairing key left behind by an earlier process death must never be offered again.
+            store.aliases().toList().filter { it.startsWith("pairing-") }.forEach { runCatching { store.deleteEntry(it) } }
             KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, KEYSTORE).apply {
                 initialize(
                     KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_SIGN)
@@ -61,8 +64,15 @@ internal class PairingKey private constructor(
                 .digest(store.getCertificate(alias).publicKey.encoded)
             val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
             kmf.init(store, null)
-            val context = SSLContext.getInstance("TLS").apply { init(kmf.keyManagers, null, null) }
+            // The default manager serves whichever matching key it finds first, so pin it to this alias.
+            val managers = kmf.keyManagers.map { if (it is X509KeyManager) FixedAliasKeyManager(it, alias) else it }
+            val context = SSLContext.getInstance("TLS").apply { init(managers.toTypedArray(), null, null) }
             return PairingKey(alias, hash, context)
         }
     }
+}
+
+/** Always presents [alias] as the server identity, whatever else the keystore holds. */
+private class FixedAliasKeyManager(private val delegate: X509KeyManager, private val alias: String) : X509KeyManager by delegate {
+    override fun chooseServerAlias(keyType: String?, issuers: Array<out java.security.Principal>?, socket: java.net.Socket?) = alias
 }
