@@ -23,6 +23,8 @@ val sourceRevision = providers.environmentVariable("TWENTYFOURSEVEN_SOURCE_REVIS
     ?.takeIf { it.matches(Regex("[0-9a-f]{40}")) }
     ?: "unverified"
 
+// TV-side station requests stay off unless a debug build is made with TWENTYFOURSEVEN_TV_REQUESTS_ENABLED=true.
+val tvRequestsEnabledForDebug = providers.environmentVariable("TWENTYFOURSEVEN_TV_REQUESTS_ENABLED").orNull == "true"
 val pairingEnabledForDebug = providers.environmentVariable("TWENTYFOURSEVEN_PAIRING_ENABLED").orNull == "true"
 
 require(!hasAnyUploadSigningValue || hasCompleteUploadSigning) {
@@ -62,10 +64,12 @@ android {
             versionNameSuffix = "-debug"
             // Companion pairing is off unless a debug build is made with TWENTYFOURSEVEN_PAIRING_ENABLED=true.
             buildConfigField("boolean", "PAIRING_ENABLED", pairingEnabledForDebug.toString())
+            buildConfigField("boolean", "TV_REQUESTS_ENABLED", (pairingEnabledForDebug && tvRequestsEnabledForDebug).toString())
             manifestPlaceholders["appLabel"] = "24Seven.FM TV (Debug)"
         }
         getByName("release") {
             buildConfigField("boolean", "PAIRING_ENABLED", "false")
+            buildConfigField("boolean", "TV_REQUESTS_ENABLED", "false")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
