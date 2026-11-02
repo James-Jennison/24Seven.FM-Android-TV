@@ -64,12 +64,18 @@ internal class PairingHost(
     private val codeLifetimeMillis: Long = 120_000L,
     private val timeouts: PairingTimeouts = PairingTimeouts(),
     private val keepAlive: KeepAlive = KeepAlive(),
+    /** Diagnostics only: connection and frame-type events, never codes, proofs, secrets or key material. */
+    private val log: (String) -> Unit = {},
 ) {
     internal data class KeepAlive(
         val pingEveryMillis: Long = 15_000,
         /** Two missed keep-alives: nothing received for this long means the phone is gone. */
         val silenceMillis: Long = 35_000,
-        val firstFrameMillis: Long = 10_000,
+        /**
+         * An unpaired connection may sit idle while the listener compares the fingerprint on the phone
+         * before the phone sends `pair`, so this must outlast that (the code itself lives 120 s).
+         */
+        val firstFrameMillis: Long = 125_000,
         /** A paired link is read with a timeout past [silenceMillis], so the tick, not the socket, decides. */
         val boundReadMillis: Long = 40_000,
         val tickMillis: Long = 500,
@@ -157,10 +163,11 @@ internal class PairingHost(
         while (scope.isActive && !server.isClosed) {
             val socket = try { server.accept() } catch (_: Exception) { return }
             val conn = Conn(socket)
+            log("accepted connection from ${socket.inetAddress?.hostAddress}")
             val admitted = synchronized(conns) {
                 (conns.size < keepAlive.maxUnbound + 1).also { if (it) conns.add(conn) }
             }
-            if (!admitted) { conn.close(); continue }
+            if (!admitted) { log("refused connection: too many unbound"); conn.close(); continue }
             scope.launch(Dispatchers.IO) { readLoop(conn) }
         }
     }
@@ -171,6 +178,7 @@ internal class PairingHost(
             while (true) {
                 val text = FrameCodec.read(conn.socket.getInputStream()) ?: break
                 conn.lastRx = monotonicMillis()
+                log("frame received: ${frameName(PairingJson.parsePhoneFrame(text))}")
                 when (val parsed = PairingJson.parsePhoneFrame(text)) {
                     is ParsedFrame.Frame -> events.send(Event.Received(conn, parsed.frame))
                     // Answered here, before the socket closes, so the error actually reaches the phone.
@@ -179,13 +187,20 @@ internal class PairingHost(
                     is ParsedFrame.Malformed -> break
                 }
             }
-        } catch (_: EOFException) {
-        } catch (_: FrameException) {
-        } catch (_: java.io.IOException) {
+        } catch (_: EOFException) { log("connection closed by peer")
+        } catch (e: FrameException) { log("connection closed: bad frame (${e.message})")
+        } catch (e: java.io.IOException) { log("connection closed: ${e.javaClass.simpleName}")
         } finally {
             conn.close()
             events.send(Event.Closed(conn))
         }
+    }
+
+    private fun frameName(parsed: ParsedFrame) = when (parsed) {
+        is ParsedFrame.Frame -> parsed.frame::class.simpleName
+        ParsedFrame.UnsupportedVersion -> "unsupported_version"
+        ParsedFrame.UnknownType -> "unknown_type"
+        is ParsedFrame.Malformed -> "malformed(${parsed.reason})"
     }
 
     private suspend fun ticker() {
@@ -226,6 +241,7 @@ internal class PairingHost(
         // Once paired, a second `pair` on the bound connection is answered by the session as already_paired.
         val before = session.isPaired
         val reaction = session.onFrame(frame, now)
+        if (frame is PhoneFrame.Pair) log("pair result: ${reaction.frames.firstOrNull()?.let { it::class.simpleName } ?: "none"}")
         if (!isBound && !before && session.isPaired) {
             bound = conn
             conn.socket.soTimeout = keepAlive.boundReadMillis.toInt()

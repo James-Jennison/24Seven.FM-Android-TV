@@ -53,6 +53,7 @@ internal class PairingController(
                 supportedStations = SUPPORTED_STATION_IDS.mapTo(mutableSetOf()) { it.value },
                 monotonicMillis = SystemClock::elapsedRealtime,
                 epochMillis = System::currentTimeMillis,
+                log = { android.util.Log.i("PairingHost", it) },
             )
             key = newKey
             host = newHost
