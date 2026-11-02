@@ -27,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -35,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Button
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.darkColorScheme
 import androidx.tv.material3.Text
@@ -56,6 +57,8 @@ class PairingActivity : AppCompatActivity() {
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 val screen by controller.state.collectAsStateWithLifecycle()
+                // Outside a Surface the content colour is black; this screen draws on the theme background.
+                CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
                 PairingScreen(
                     screen = screen,
                     onNewCode = controller::begin,
@@ -64,6 +67,7 @@ class PairingActivity : AppCompatActivity() {
                     onDisconnect = controller::revoke,
                     onClose = ::finish,
                 )
+                }
             }
         }
     }
@@ -166,7 +170,6 @@ private fun CodeScreen(offer: PairingOffer, onNewCode: () -> Unit, onClose: () -
             Text(
                 if (remaining > 0) "Code expires in ${remaining / 60000}:${"%02d".format(remaining / 1000 % 60)}" else "Code expired",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.Unspecified,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Button(onClick = onNewCode, modifier = Modifier.focusRequester(focus)) { Text("New code") }
