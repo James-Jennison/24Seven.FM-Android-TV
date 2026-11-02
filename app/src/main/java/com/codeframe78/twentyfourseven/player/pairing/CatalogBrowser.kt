@@ -5,6 +5,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.launch
 
 internal sealed interface CatalogUi {
@@ -85,6 +87,7 @@ internal class CatalogBrowser(
                 runCatching { android.util.Log.w("PairingCatalog", "load failed: ${e.javaClass.simpleName}: ${e.message}") }
                 CatalogUi.Message("The station's request page could not be read. Check the connection and try again.")
             }
+            coroutineContext.ensureActive() // a result whose load was cancelled by Back must not become a stale level
             // Every outcome, including a message, is a level of its own, so Back returns to the screen before it.
             stack.addLast(result)
             _ui.value = result

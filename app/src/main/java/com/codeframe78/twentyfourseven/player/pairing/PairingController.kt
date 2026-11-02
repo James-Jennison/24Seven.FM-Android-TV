@@ -29,7 +29,7 @@ internal sealed interface PairingScreenState {
 internal sealed interface TvRequestUi {
     data class Confirming(val track: CatalogTrack, val station: String) : TvRequestUi
     data class Sending(val track: CatalogTrack) : TvRequestUi
-    data class Done(val track: CatalogTrack, val result: TvRequestResult) : TvRequestUi
+    data class Done(val track: CatalogTrack, val station: String, val result: TvRequestResult) : TvRequestUi
 }
 
 internal data class StationAccount(val label: String, val station: String, val state: SignInState)
@@ -48,7 +48,7 @@ internal class PairingController(
                 .fetchForVerification(com.codeframe78.twentyfourseven.player.domain.StationId(station))
             payload.upcoming.any { it.songId == songId }
         },
-        onReplyText = { android.util.Log.i("PairingHost", "station reply: $it") },
+        onReplyText = { android.util.Log.i("PairingHost", "tv request: $it") },
     ),
 ) {
     /** The TV's own request flow (only with TV_REQUESTS_ENABLED): confirm on the TV, send once, show the result. */
@@ -69,7 +69,7 @@ internal class PairingController(
             val session = runCatching { store.load(current.station) }.getOrNull()
             val result = submitter.submit(session, current.track, current.station)
             android.util.Log.i("PairingHost", "tv request: ${result::class.simpleName}")
-            _request.value = TvRequestUi.Done(current.track, result)
+            _request.value = TvRequestUi.Done(current.track, current.station, result)
         }
     }
 
@@ -126,7 +126,8 @@ internal class PairingController(
             verify(session)
             // A phone signed in to several stations sends one frame each, so the link stays a little longer after each hand-over.
             closeJob?.cancel()
-            closeJob = scope.launch { kotlinx.coroutines.delay(HANDOVER_GRACE_MILLIS); end() }
+            val pairing = host
+            closeJob = scope.launch { kotlinx.coroutines.delay(HANDOVER_GRACE_MILLIS); if (host === pairing) end() }
             null
         } catch (_: Exception) {
             "storage_failed"
@@ -176,6 +177,9 @@ internal class PairingController(
     /** Stops listening, drops every connection and deletes the key. */
     fun end() {
         if (host != null) android.util.Log.i("PairingHost", "controller.end: pairing screen left or restarted")
+        // A pending hand-over timer belongs to the pairing being ended; it must never close a later one.
+        closeJob?.cancel()
+        closeJob = null
         watcher?.cancel()
         watcher = null
         host?.close()

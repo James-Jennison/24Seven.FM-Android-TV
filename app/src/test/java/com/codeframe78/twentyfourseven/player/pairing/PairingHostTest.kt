@@ -141,9 +141,11 @@ class PairingHostTest {
 
     @Test fun secondConnectionAfterPairingIsRefusedAndDoesNotDisturbTheFirst() {
         val h = host(); val phone = pairedPhone(h)
-        val other = connect(h)
-        // The listener is closed once paired, so a late connection never gets in.
-        val refused = try { send(other, pairFrame(proof(h.offer.qrSecret))); recv(other) } catch (_: java.io.IOException) { null }
+        // The listener is closed once paired, so a late connection is refused outright or never answered.
+        val refused = try {
+            val other = connect(h)
+            send(other, pairFrame(proof(h.offer.qrSecret))); recv(other)
+        } catch (_: java.io.IOException) { null }
         assertTrue(refused == null || refused.getString("type") == "pair_refused")
         assertTrue(h.state.value is PairingUiState.PairedIdle)
         send(phone, """{"v":1,"type":"ping"}""")
@@ -235,6 +237,29 @@ class PairingHostTest {
         send(s, sessionFrame())
         assertNull(runCatching { recv(s) }.getOrNull())
         assertTrue(handed.isEmpty())
+        h.close()
+    }
+
+    @Test fun theListenerClosesOnceAPhoneIsPaired() {
+        val h = host(); val phone = pairedPhone(h)
+        val late = runCatching { Socket(InetAddress.getLoopbackAddress(), h.offer.port).also { sockets += it } }
+        // A connection may be accepted by the OS backlog before close lands; it must never get a frame answered.
+        if (late.isSuccess) {
+            val s = late.getOrThrow(); s.soTimeout = 1500
+            runCatching { send(s, pairFrame(proof(h.offer.qrSecret))) }
+            assertNull(runCatching { recv(s) }.getOrNull())
+        }
+        assertEquals(phone.isClosed, false)
+        h.close()
+    }
+
+    @Test fun oneSourceCannotFillTheUnpairedSlots() {
+        val h = host()
+        val first = connect(h); val second = connect(h); val third = connect(h)
+        third.soTimeout = 1500
+        // The third connection from the same address is dropped by the host.
+        assertNull(runCatching { recv(third) }.getOrNull())
+        assertFalse(first.isClosed && second.isClosed)
         h.close()
     }
 }

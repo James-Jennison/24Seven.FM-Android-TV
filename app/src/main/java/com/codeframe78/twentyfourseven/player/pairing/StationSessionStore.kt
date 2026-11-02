@@ -19,6 +19,8 @@ internal class StationSession(
     val cookies: List<StoredCookie>,
     /** The gate the phone vouched for at hand-over time. */
     val gate: GateAttestation = GateAttestation(),
+    /** When the phone vouched for the gate (epoch millis); the vouching expires so a revoked consent cannot linger. */
+    val handedOverAtMillis: Long = 0L,
 ) {
     override fun toString() = "StationSession(station=$station, cookies=${cookies.size})"
 }
@@ -63,7 +65,7 @@ internal class AndroidKeystoreStationSessionStore(
                 StoredCookie(c.getString("name"), c.getString("value"), if (c.has("exp")) c.getLong("exp") else null)
             }.filter { it.expiresAtEpochMillis == null || it.expiresAtEpochMillis > now }
             if (cookies.isEmpty() || json.getString("station") != station) { clear(station); null }
-            else StationSession(station, json.getString("account"), cookies, gateFrom(json.optJSONObject("gate")))
+            else StationSession(station, json.getString("account"), cookies, gateFrom(json.optJSONObject("gate")), json.optLong("at", 0L))
         } catch (_: Exception) {
             clear(station) // unreadable (key lost, corrupted): never keep a blob we cannot use
             null
@@ -86,6 +88,7 @@ internal class AndroidKeystoreStationSessionStore(
         val json = JSONObject()
             .put("station", session.station)
             .put("account", session.account)
+            .put("at", session.handedOverAtMillis)
             .put("gate", JSONObject().put("adult", session.gate.adult).put("terms", session.gate.termsVersion ?: JSONObject.NULL).put("visible", session.gate.communityVisible))
             .put("cookies", JSONArray().apply {
                 session.cookies.forEach { c ->
@@ -135,7 +138,7 @@ internal class AndroidKeystoreStationSessionStore(
 
     private companion object {
         const val LEGACY_KEY = "session"
-        val SUPPORTED_STATIONS = listOf("sst", "1980s", "afm", "dfm", "efm")
+        val SUPPORTED_STATIONS = com.codeframe78.twentyfourseven.player.domain.SUPPORTED_STATION_IDS.map { it.value }
         const val ALIAS = "tv-station-session-key"
         const val TRANSFORMATION = "AES/GCM/NoPadding"
     }
@@ -146,6 +149,7 @@ internal fun stationSessionFrom(frame: PhoneFrame.Session, nowMillis: Long): Sta
     station = frame.station,
     account = frame.account,
     gate = frame.gate,
+    handedOverAtMillis = nowMillis,
     cookies = frame.cookies.map { c ->
         // maxAge -1 is a browser-session cookie; cap long lifetimes at one year.
         val expires = if (c.maxAgeSeconds > 0) nowMillis + minOf(c.maxAgeSeconds, ONE_YEAR_SECONDS) * 1000 else null

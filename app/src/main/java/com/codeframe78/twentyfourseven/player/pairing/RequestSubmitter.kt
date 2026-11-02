@@ -45,11 +45,16 @@ internal class RequestSubmitter(
     private val queue: QueueCheck = QueueCheck { _, _, _ -> false },
     /** Receives the station's reply text (public page text, never cookies) so the exact answer can be reported. */
     private val onReplyText: (String) -> Unit = {},
+    private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
     suspend fun submit(session: StationSession?, track: CatalogTrack, station: String): TvRequestResult {
         if (!enabled) return TvRequestResult.NotAllowed("Requests from the TV are not enabled in this build.")
         if (session == null) return TvRequestResult.NotAllowed("No phone session on this TV. Pair with your phone first.")
         if (session.station != station) return TvRequestResult.NotAllowed("The stored session is for another station.")
+        // The phone's vouching expires: a consent revoked on the phone must not outlive the stored session for long.
+        if (nowMillis() - session.handedOverAtMillis > MAX_GATE_AGE_MILLIS) {
+            return TvRequestResult.NotAllowed("This TV's sign-in is old. Pair with your phone again to renew it.")
+        }
         // Re-checked on every request: a stale terms version blocks writes until the phone hands over again.
         session.gate.refusalReason?.let {
             return TvRequestResult.NotAllowed(
@@ -66,10 +71,11 @@ internal class RequestSubmitter(
         val html = try {
             withContext(Dispatchers.IO) { fetch.get(reqUri, referer, session) }
         } catch (e: Exception) {
-            runCatching { onReplyText("no readable reply after sending: ${e.javaClass.simpleName}: ${e.message}") }
+            runCatching { onReplyText("no readable reply after sending: ${e.javaClass.simpleName}") }
             return TvRequestResult.CheckQueue("The station did not answer clearly.")
         }
-        runCatching { onReplyText(Jsoup.parse(html).text().replace(Regex("\\s+"), " ").trim().take(400)) }
+        // Diagnostics carry the size only: a station page can hold account-identifying text and is never logged.
+        runCatching { onReplyText("reply read: ${html.length} chars") }
         return when (val outcome = classifyRequestPage(html)) {
             RequestPageOutcome.SignInRequired -> TvRequestResult.SignInExpired
             is RequestPageOutcome.Rejected -> TvRequestResult.Rejected(outcome.message)
@@ -83,6 +89,7 @@ internal class RequestSubmitter(
     private fun enc(v: String) = URLEncoder.encode(v, "UTF-8")
 
     private companion object {
+        const val MAX_GATE_AGE_MILLIS = 30L * 24 * 3600 * 1000
         val SAFE_ALBUM_ID = Regex("[A-Za-z0-9_-]{1,64}")
         val NUMERIC_ID = Regex("\\d{1,20}")
     }
@@ -98,11 +105,19 @@ internal sealed interface RequestPageOutcome {
 /** The Player's classification of the station's reply, kept in step with its patterns. */
 internal fun classifyRequestPage(html: String): RequestPageOutcome {
     val text = Jsoup.parse(html).text().replace(Regex("\\s+"), " ").trim()
-    if (text.contains("log in", true) || text.contains("login", true) && text.contains("request", true)) return RequestPageOutcome.SignInRequired
+    // A clear station verdict wins over the word "login", which most station pages carry in a header or footer link.
     if (ACCEPTANCE.any { it.containsMatchIn(text) }) return RequestPageOutcome.Acknowledged
     REJECTION.firstOrNull { it.first.containsMatchIn(text) }?.let { return RequestPageOutcome.Rejected(it.second) }
+    if (SIGN_IN_REQUIRED.any { it.containsMatchIn(text) }) return RequestPageOutcome.SignInRequired
     return RequestPageOutcome.Unrecognized
 }
+
+private val SIGN_IN_REQUIRED = listOf(
+    Regex("(?:please )?log in to (?:request|continue)", RegexOption.IGNORE_CASE),
+    Regex("you (?:must|need to) (?:be )?(?:log(?:ged)? ?in|sign(?:ed)? ?in)", RegexOption.IGNORE_CASE),
+    Regex("(?:login|log in) required", RegexOption.IGNORE_CASE),
+    Regex("please log in", RegexOption.IGNORE_CASE),
+)
 
 private val ACCEPTANCE = listOf(
     Regex("request successful", RegexOption.IGNORE_CASE),
@@ -129,6 +144,9 @@ internal class HttpSessionPageFetch(
     private val clock: () -> Long = System::nanoTime,
 ) : SessionPageFetch {
     override fun get(uri: URI, referer: URI, session: StationSession): String {
+        // The session may only ever be sent to its own station's origin, whatever the caller passed in.
+        val expected = StationOrigins.of(session.station)?.let(::URI)
+        require(expected != null && uri.host.equals(expected.host, ignoreCase = true)) { "session does not belong to this origin" }
         val began = clock()
         fun ms() = (clock() - began) / 1_000_000
         try {

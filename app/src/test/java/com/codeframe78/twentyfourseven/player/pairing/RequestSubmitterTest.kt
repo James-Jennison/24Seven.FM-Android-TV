@@ -9,12 +9,13 @@ import java.io.IOException
 class RequestSubmitterTest {
     private val good = GateAttestation(adult = true, termsVersion = CURRENT_COMMUNITY_TERMS_VERSION, communityVisible = true)
     private fun session(gate: GateAttestation = good, station: String = "sst") =
-        StationSession(station, "dj_x", listOf(StoredCookie("PHPSESSID", "secret-value", null)), gate)
+        StationSession(station, "dj_x", listOf(StoredCookie("PHPSESSID", "secret-value", null)), gate, handedOverAtMillis = NOW)
     private val track = CatalogTrack("B00000JC79", "224947", "Peter Gunn", "Henry Mancini", "Peter Gunn", "2:00", true)
+    private companion object { const val NOW = 1_800_000_000_000L }
     private var calls = 0
     private var requested: String? = null
     private fun submitter(enabled: Boolean = true, html: String? = "<p>Request Successful</p>", queued: Boolean = true, fail: Boolean = false) =
-        RequestSubmitter(enabled, { uri, _, _ -> calls++; requested = uri.toString(); if (fail) throw IOException("x"); html!! }, { _, _, _ -> queued })
+        RequestSubmitter(enabled, { uri, _, _ -> calls++; requested = uri.toString(); if (fail) throw IOException("x"); html!! }, { _, _, _ -> queued }, nowMillis = { NOW + 1000 })
 
     private fun run(s: RequestSubmitter, session: StationSession? = session(), t: CatalogTrack = track) =
         runBlocking { s.submit(session, t, "sst") }
@@ -60,5 +61,36 @@ class RequestSubmitterTest {
         assertEquals(RequestPageOutcome.Unrecognized, classifyRequestPage("<p>Hello</p>"))
         assertTrue(run(submitter(html = "<p>please log in</p>")) == TvRequestResult.SignInExpired)
         assertTrue(run(submitter(html = "<p>Hello</p>")) is TvRequestResult.CheckQueue)
+    }
+
+    @Test fun anOldHandOverSendsNothing() {
+        val old = session().let { StationSession(it.station, it.account, it.cookies, it.gate, handedOverAtMillis = NOW - 31L * 24 * 3600 * 1000) }
+        assertTrue(run(submitter(), old) is TvRequestResult.NotAllowed)
+        assertEquals(0, calls)
+    }
+
+    @Test fun aClearStationVerdictBeatsTheWordLogin() {
+        val page = "<a href=\"/login\">Login</a><p>Request Successful</p>"
+        assertEquals(RequestPageOutcome.Acknowledged, classifyRequestPage(page))
+        assertTrue(classifyRequestPage("<a>Login</a><p>This track was played recently</p>") is RequestPageOutcome.Rejected)
+        assertEquals(RequestPageOutcome.Unrecognized, classifyRequestPage("<a href=\"/login\">Login</a><p>Welcome back</p>"))
+        assertEquals(RequestPageOutcome.SignInRequired, classifyRequestPage("<p>Please log in to request songs</p>"))
+    }
+
+    @Test fun diagnosticsNeverCarryThePageText() {
+        val seen = mutableListOf<String>()
+        val s = RequestSubmitter(true, { _, _, _ -> "<p>Request Successful for secret-account-name</p>" }, { _, _, _ -> true }, onReplyText = { seen += it }, nowMillis = { NOW + 1 })
+        runBlocking { s.submit(session(), track, "sst") }
+        assertTrue(seen.isNotEmpty())
+        assertTrue(seen.none { it.contains("secret-account-name") })
+    }
+
+    @Test fun aSessionIsNeverSentToAnotherStationsOrigin() {
+        val fetch = HttpSessionPageFetch(connect = { throw AssertionError("must not connect") })
+        val session = session(station = "sst")
+        val failure = runCatching { fetch.get(java.net.URI("https://evil.example/"), java.net.URI("https://streamingsoundtracks.com/"), session) }.exceptionOrNull()
+        assertTrue(failure is IllegalArgumentException)
+        val other = runCatching { fetch.get(java.net.URI("https://1980s.fm/"), java.net.URI("https://1980s.fm/"), session) }.exceptionOrNull()
+        assertTrue(other is IllegalArgumentException)
     }
 }

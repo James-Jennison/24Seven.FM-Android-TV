@@ -214,7 +214,7 @@ internal class StationRequestCatalog(
         parser.parseSuggestion(get(origin, "modules.php?name=Requests&${mode.wire}=1&searchpgstart=1"), origin)
     }
 
-    private fun origin(station: String) = ORIGINS[station] ?: throw IOException("Unsupported station")
+    private fun origin(station: String) = StationOrigins.of(station) ?: throw IOException("Unsupported station")
 
     private fun get(origin: String, path: String): String {
         val expected = URI(origin)
@@ -254,12 +254,5 @@ internal class StationRequestCatalog(
         const val MAX_CHARS = 512_000
         const val MAX_REDIRECTS = 5
         val REDIRECTS = setOf(301, 302, 303, 307, 308)
-        val ORIGINS = mapOf(
-            "sst" to "https://streamingsoundtracks.com/",
-            "1980s" to "https://1980s.fm/",
-            "afm" to "https://adagio.fm/",
-            "dfm" to "https://death.fm/",
-            "efm" to "https://entranced.fm/",
-        )
     }
 }

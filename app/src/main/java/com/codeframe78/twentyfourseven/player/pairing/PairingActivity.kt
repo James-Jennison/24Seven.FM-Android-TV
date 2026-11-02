@@ -91,12 +91,6 @@ class PairingActivity : AppCompatActivity() {
     }
 
     companion object {
-        /**
-         * A link test only: the phone cannot resolve this reference, so it answers `declined` and nothing is
-         * ever submitted to a station. Real requests come from catalog search, which is not built yet.
-         */
-        internal val LINK_TEST_TRACK = ProposedTrack("sst", "TEST:0", "Link test", "24Seven.FM TV", "No request is sent")
-
         fun intent(context: Context) = Intent(context, PairingActivity::class.java)
     }
 }
@@ -220,9 +214,18 @@ private fun CodeScreen(offer: PairingOffer, onNewCode: () -> Unit, onClose: () -
             Text("Pair your phone", style = MaterialTheme.typography.headlineLarge)
             Text("Open 24Seven.FM Player on your phone, choose Pair a TV, and scan this code.", style = MaterialTheme.typography.bodyLarge)
             Text("Or type this code on the phone:", style = MaterialTheme.typography.bodyLarge)
-            Text(offer.typedCode.chunked(3).joinToString(" "), fontSize = 48.sp, style = MaterialTheme.typography.displaySmall)
+            Text(
+                offer.typedCode.chunked(3).joinToString(" "),
+                fontSize = 48.sp,
+                style = MaterialTheme.typography.displaySmall,
+                modifier = Modifier.semantics { contentDescription = "Pairing code " + offer.typedCode.toList().joinToString(", ") },
+            )
             Text("${offer.host}   port ${offer.port}", style = MaterialTheme.typography.titleLarge)
-            Text("Security check: the phone must show ${offer.fingerprint}", style = MaterialTheme.typography.titleLarge)
+            Text(
+                "Security check: the phone must show ${offer.fingerprint}",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.semantics { contentDescription = "Security check. The phone must show " + offer.fingerprint.filter { it != ' ' }.toList().joinToString(", ") },
+            )
             Text(
                 if (remaining > 0) "Code expires in ${remaining / 60000}:${"%02d".format(remaining / 1000 % 60)}" else "Code expired",
                 style = MaterialTheme.typography.bodyLarge,
@@ -291,7 +294,7 @@ internal fun tvRequestText(result: TvRequestResult) = when (result) {
     TvRequestResult.Queued -> "Requested. It is in the station's Queue."
     is TvRequestResult.CheckQueue -> "${result.why} Check the Queue before requesting again. It was not resent."
     is TvRequestResult.Rejected -> result.message
-    TvRequestResult.SignInExpired -> "The station says you are signed out. Pair with your phone again. Nothing was requested."
+    TvRequestResult.SignInExpired -> "The station asked for a sign-in, so the request was probably not made. Pair with your phone again, and check the Queue before requesting again."
     is TvRequestResult.NotAllowed -> "${result.why} Nothing was requested."
 }
 

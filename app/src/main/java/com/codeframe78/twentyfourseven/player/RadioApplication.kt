@@ -57,6 +57,10 @@ class AppContainer(application: Application) {
     }
 
     init {
+        // A build with the companion feature off must not keep a station login from an earlier build: nothing in it could clear one.
+        if (!BuildConfig.PAIRING_ENABLED) {
+            runCatching { com.codeframe78.twentyfourseven.player.pairing.AndroidKeystoreStationSessionStore(application).clearAll() }
+        }
         // Prime public metadata independently of the live stream's first ICY metadata block.
         applicationScope.launch {
             stationRepository.observeSelectedStation().collectLatest { station ->

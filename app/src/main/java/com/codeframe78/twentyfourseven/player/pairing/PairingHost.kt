@@ -82,6 +82,7 @@ internal class PairingHost(
         val boundReadMillis: Long = 40_000,
         val tickMillis: Long = 500,
         val maxUnbound: Int = 4,
+        val maxUnboundPerSource: Int = 2,
     )
 
     private class Conn(val socket: Socket) {
@@ -94,7 +95,9 @@ internal class PairingHost(
             close()
             false
         }
-        fun close() = runCatching { socket.close() }
+        /** Frees this connection's slot the moment it closes, so a quick retry from a real phone is never refused by a stale slot. */
+        @Volatile var onClose: (() -> Unit)? = null
+        fun close() { runCatching { socket.close() }; onClose?.invoke() }
     }
 
     private sealed interface Event {
@@ -165,9 +168,12 @@ internal class PairingHost(
         while (scope.isActive && !server.isClosed) {
             val socket = try { server.accept() } catch (_: Exception) { return }
             val conn = Conn(socket)
+            conn.onClose = { synchronized(conns) { conns.remove(conn) } }
             log("accepted connection from ${socket.inetAddress?.hostAddress}")
             val admitted = synchronized(conns) {
-                (conns.size < keepAlive.maxUnbound + 1).also { if (it) conns.add(conn) }
+                // A cap per source address too, so one LAN peer cannot fill every slot and starve the real phone.
+                val sameSource = conns.count { it.socket.inetAddress == socket.inetAddress }
+                (conns.size < keepAlive.maxUnbound + 1 && sameSource < keepAlive.maxUnboundPerSource).also { if (it) conns.add(conn) }
             }
             if (!admitted) { log("refused connection: too many unbound"); conn.close(); continue }
             scope.launch(Dispatchers.IO) { readLoop(conn) }
@@ -193,8 +199,11 @@ internal class PairingHost(
         } catch (_: EOFException) { log("connection closed by peer")
         } catch (e: FrameException) { log("connection closed: bad frame (${e.message})")
         } catch (e: java.io.IOException) { log("connection closed: ${e.javaClass.simpleName}: ${e.message}")
+        } catch (e: Exception) { log("connection closed: unexpected ${e.javaClass.simpleName}")
+        } catch (e: StackOverflowError) { log("connection closed: hostile frame")
         } finally {
             conn.close()
+            synchronized(conns) { conns.remove(conn) } // free the slot at once, not when the actor gets to it
             events.send(Event.Closed(conn))
         }
     }
@@ -249,8 +258,9 @@ internal class PairingHost(
         if (!isBound && !before && session.isPaired) {
             bound = conn
             conn.socket.soTimeout = keepAlive.boundReadMillis.toInt()
-            // Everyone else is shut out the moment the pairing succeeds.
+            // Everyone else is shut out the moment the pairing succeeds, and nobody new can connect: the listener closes.
             synchronized(conns) { conns.filter { it !== conn }.forEach { it.close() } }
+            closeServer()
         }
         send(conn, reaction)
     }

@@ -139,4 +139,12 @@ class PairingProtocolTest {
         assertEquals("terms_out_of_date", gate("""{"adultAgeGate":true,"termsVersion":"2025-01-01","communityVisible":true}""").refusalReason)
         assertEquals("gate_not_passed", gate("""{}""").refusalReason)
     }
+
+    @Test fun deeplyNestedJsonIsRejectedBeforeParsing() {
+        val deep = "[".repeat(5000) + "]".repeat(5000)
+        assertTrue(PairingJson.parsePhoneFrame("""{"v":1,"type":"ping","x":$deep}""") is ParsedFrame.Malformed)
+        // Brackets inside strings do not count as nesting.
+        val ok = PairingJson.parsePhoneFrame("""{"v":1,"type":"ping","x":"[[[[[[[[[[[[[[[[[[[[[["}""")
+        assertTrue(ok is ParsedFrame.Frame)
+    }
 }

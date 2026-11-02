@@ -1,11 +1,11 @@
 # TV companion pairing: TV half (design and status)
 
-Status: draft, 2026-11-02. Scope: the Owner said in chat on 2026-11-02 "TV pairing work is now in scope". The repository `AGENTS.md` still lists pairing as excluded and has not been updated to match; the Owner's chat directive is the authority until it is. Nothing here is implemented. Release, signing and publication stay out of scope. The mobile half is owned by the mobile writer; see the mobile draft `docs/tv-companion-pairing-design.md` (Player PR 145). The mobile repository is read-only for this project, and protocol changes are negotiated through the mobile session.
+Status: implemented behind off-by-default flags, 2026-11-02; the sections below marked superseded were decisions before the Owner's later directives (session hand-over, phone-vouched gate, several stations). Scope: the Owner said in chat on 2026-11-02 "TV pairing work is now in scope". The repository `AGENTS.md` still lists pairing as excluded and has not been updated to match; the Owner's chat directive is the authority until it is. Nothing here is implemented. Release, signing and publication stay out of scope. The mobile half is owned by the mobile writer; see the mobile draft `docs/tv-companion-pairing-design.md` (Player PR 145). The mobile repository is read-only for this project, and protocol changes are negotiated through the mobile session.
 
 ## What the TV does and does not do
 
-- The TV stays anonymous. It never holds credentials, cookies, tokens or an account identity; it shows only a phone-supplied display label.
-- The TV searches the public catalog and presents a selected album and track. It never submits a station request itself. The phone submits through its existing safety gate.
+- (Superseded by the Owner's session hand-over decision, below.) The TV used to stay anonymous; it now holds the phone's per-station station-site session, encrypted, and shows the account label for each.
+- The TV searches the public catalog. (Superseded) With `TV_REQUESTS_ENABLED` it submits a request itself from the stored session after a TV confirm screen; the phone's vouched gate is re-checked each time and expires after 30 days.
 - The TV is not an authority on the result. It displays what the phone returns, and an uncertain outcome stays uncertain and points to the Queue.
 - Playback is never interrupted by pairing screens.
 
@@ -93,3 +93,11 @@ Owner (chat, 2026-11-02): the paired phone hands its station session to the TV, 
 ### Several stations (Owner decision 2026-11-02)
 
 A phone signed in to several stations hands over one session per station. The TV keeps one encrypted session per station (the old single-session blob is migrated on first read), accepts one `session` frame per station per pairing (`already_handed_over` repeats are refused, an unknown station is `unsupported_station`; the pair frame's station no longer limits it), and keeps the link open for 20 seconds after each hand-over so the next frame can arrive. The pairing screen lists every signed-in station with its account and a per-station sign-out; Request a Song shows a station row when more than one is signed in and starts on the station the TV is playing.
+
+### Independent review round 1 (cycle review-cycle-e1bb599a2858, candidate 1d27289) and dispositions
+
+Fixed after the review: the hand-over grace timer is cancelled by `end()` and bound to its pairing (arch-1, plat-1, deep-5); reply classification checks the station's verdict before the word "login" (arch-2, plat-7); sessions are wiped at start-up when the feature flag is off (arch-3); the listener closes once a phone is paired (arch-4); the phone's vouching expires after 30 days (arch-5); station origins have one table and the Done screen shows the station the request went to (arch-6, arch-8); stale code removed (arch-7); a session is never sent to another station's origin, enforced inside the fetch (plat-3); station reply text is no longer logged (plat-9, deep-3); JSON nesting is bounded before parsing, closing a pre-pairing crash vector (plat-14); at most two unpaired connections per source address (deep-2); the pairing code and fingerprint have spoken descriptions (deep-10).
+
+Accepted or disputed, with reasons: the QR carries the one-time secret and key hash by design of the shared protocol, is shown only on the owner's own TV for 120 seconds and is single-use (deep-1); a station session cannot be proven by the TV, so a stranger who obtained the live code could hand over their own station account, which the TV then shows by name (plat-2, REQUIRES OWNER DECISION: an on-TV accept step); station TLS uses the platform trust store, like the mobile Player (deep-4); the single queue check after the one request GET is read-only and bounded by the same timeouts, not a retry (plat-6); release builds hard-code both flags to false (plat-4); the session key is a non-exportable KeyStore key, backups are disabled and an unreadable blob is deleted (plat-8, deep-6); the account list is loaded synchronously before the listener decision (plat-11); the catalog keeps one browser per station (plat-13); the typed code allows three guesses per 120-second code on the local network, recorded as a known bound (deep-2, arch-9).
+
+Open: PRIVACY.md and Play data-safety wording, Owner acceptance, TalkBack and lint runs, and a closure review of the fixes.

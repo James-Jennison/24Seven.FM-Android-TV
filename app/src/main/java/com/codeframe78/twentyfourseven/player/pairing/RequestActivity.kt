@@ -113,7 +113,7 @@ internal fun RequestScreen(
                     is TvRequestUi.Sending -> Text("Sending the request…", style = MaterialTheme.typography.headlineMedium)
                     is TvRequestUi.Done -> TrackCard(
                         track = request.track,
-                        station = station.orEmpty(),
+                        station = request.station,
                         headline = tvRequestHeadline(request.result),
                         note = tvRequestText(request.result),
                         primary = "OK" to onDismiss,
