@@ -109,15 +109,22 @@ internal fun CatalogScreen(
 private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogBrowser, onExit: () -> Unit) {
     var text by remember { mutableStateOf("") }
     val input = remember { FocusRequester() }
+    val firstChip = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
-    LaunchedEffect(Unit) { runCatching { input.requestFocus() } }
+    // Start on the Song chip, not in the text field, so the on-screen keyboard stays down until the listener goes to the field.
+    LaunchedEffect(Unit) { runCatching { firstChip.requestFocus() } }
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
         Text("Find a song", style = MaterialTheme.typography.displaySmall)
         Text("Request a track on ${stationName(station)}", style = MaterialTheme.typography.titleLarge, color = PairingPalette.Muted)
         Spacer(Modifier.height(28.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             CatalogField.entries.forEach { field ->
-                Pill(field.label, selected = field == state.field, onClick = { browser.setField(field) })
+                Pill(
+                    field.label,
+                    selected = field == state.field,
+                    onClick = { browser.setField(field) },
+                    modifier = if (field == CatalogField.entries.first()) Modifier.focusRequester(firstChip) else Modifier,
+                )
             }
         }
         Spacer(Modifier.height(20.dp))

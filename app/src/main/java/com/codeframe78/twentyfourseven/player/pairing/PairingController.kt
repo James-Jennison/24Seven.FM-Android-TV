@@ -112,6 +112,8 @@ internal class PairingController(
             store.save(session)
             _account.value = StationAccount(session.account, session.station, SignInState.Unknown)
             verify(session)
+            // The phone is no longer needed once the TV holds the session: close the listener after the reply has left.
+            scope.launch { kotlinx.coroutines.delay(1_500); end() }
             null
         } catch (_: Exception) {
             "storage_failed"

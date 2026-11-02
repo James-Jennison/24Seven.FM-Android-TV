@@ -64,10 +64,8 @@ class PairingActivity : AppCompatActivity() {
                 PairingScreen(
                     screen = screen,
                     account = account,
-                    onSignOut = controller::signOutOnThisTv,
+                    onSignOut = { controller.signOutOnThisTv(); controller.begin() },
                     onNewCode = controller::begin,
-                    onTestRequest = { controller.propose(LINK_TEST_TRACK) },
-                    onOpenRequests = { startActivity(RequestActivity.intent(this@PairingActivity)) },
                     onDone = controller::acknowledgeResult,
                     onDisconnect = controller::revoke,
                     onClose = ::finish,
@@ -79,7 +77,11 @@ class PairingActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        if (BuildConfig.PAIRING_ENABLED) { controller.refreshAccount(); controller.begin() }
+        if (BuildConfig.PAIRING_ENABLED) {
+            controller.refreshAccount()
+            // A TV that is already signed in shows its status and opens no listener; a code appears only when there is no session.
+            if (controller.account.value == null) controller.begin()
+        }
     }
 
     override fun onStop() {
@@ -103,9 +105,7 @@ internal fun PairingScreen(
     screen: PairingScreenState,
     account: StationAccount?,
     onSignOut: () -> Unit,
-    onOpenRequests: () -> Unit,
     onNewCode: () -> Unit,
-    onTestRequest: () -> Unit,
     onDone: () -> Unit,
     onDisconnect: () -> Unit,
     onClose: () -> Unit,
@@ -115,17 +115,18 @@ internal fun PairingScreen(
         modifier = Modifier.fillMaxSize().padding(horizontal = 64.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.Center,
     ) {
-        val pairedStation = ((screen as? PairingScreenState.Active)?.ui as? PairingUiState.PairedIdle)?.station
+        if (account != null) {
+            AccountStatus(account, onSignOut = onSignOut, onClose = onClose)
+            return@Column
+        }
         when (screen) {
             is PairingScreenState.Unavailable -> Message(unavailableText(screen.why), "Back", onClose)
             PairingScreenState.Closed -> Message("Starting…", "Back", onClose)
             is PairingScreenState.Active -> when (val ui = screen.ui) {
                 is PairingUiState.ShowingCode -> CodeScreen(screen.offer, onNewCode, onClose)
                 is PairingUiState.PairedIdle -> Message(
-                    "Paired with ${ui.phone} (${ui.account}) on ${stationName(ui.station)}.\nThe phone must stay open on the Player.",
-                    primary = "Request a song" to onOpenRequests,
-                    secondary = "Disconnect" to onDisconnect,
-                    tertiary = "Send link test" to onTestRequest,
+                    "${ui.phone} is connected.\nApprove \"Sign this TV in\" on your phone to finish.",
+                    primary = "Disconnect" to onDisconnect,
                 )
                 is PairingUiState.Waiting -> Message(
                     "${ui.track.title} — ${ui.track.artist}\n${waitingText(ui.phase)}",
@@ -135,18 +136,35 @@ internal fun PairingScreen(
                 is PairingUiState.Ended -> Message(endedText(ui.reason), "New code" to onNewCode, "Back" to onClose)
             }
         }
-        if (account != null) {
-            Spacer(Modifier.height(24.dp))
-            Text(accountText(account), style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                if (pairedStation == null) {
-                    Pill("Request a song", filled = true, onClick = onOpenRequests)
-                }
-                Pill("Sign out on this TV", onClick = onSignOut)
-            }
-        }
     }
+    }
+}
+
+@Composable
+private fun AccountStatus(account: StationAccount, onSignOut: () -> Unit, onClose: () -> Unit) {
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(account) { runCatching { focus.requestFocus() } }
+    val expired = account.state == SignInState.SignedOut
+    Chip(if (expired) "Session expired" else if (account.state == SignInState.SignedIn) "Signed in" else "Signed in · not checked yet",
+        if (expired) PairingPalette.Amber else PairingPalette.Green)
+    Spacer(Modifier.height(20.dp))
+    Text(if (expired) "Pair your phone again" else account.label, style = MaterialTheme.typography.displaySmall)
+    Spacer(Modifier.height(8.dp))
+    Text(
+        if (expired) "The station says this TV's session for ${account.label} on ${stationName(account.station)} has ended."
+        else "on ${stationName(account.station)}",
+        style = MaterialTheme.typography.headlineSmall,
+        color = PairingPalette.Muted,
+    )
+    if (!expired) {
+        Spacer(Modifier.height(8.dp))
+        Text("Request songs from General Options → Request a Song.", style = MaterialTheme.typography.titleMedium, color = PairingPalette.Muted)
+    }
+    Spacer(Modifier.height(32.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        // Back is the default focus: signing out must be a deliberate move, not the first button under the cursor.
+        Pill(if (expired) "Pair again" else "Sign out on this TV", filled = expired, onClick = onSignOut)
+        Pill("Back", onClick = onClose, modifier = Modifier.focusRequester(focus))
     }
 }
 
