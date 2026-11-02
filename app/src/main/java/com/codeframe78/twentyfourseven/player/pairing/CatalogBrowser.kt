@@ -76,7 +76,8 @@ internal class CatalogBrowser(
                 block().let { if (it.isEmpty()) CatalogUi.Message(empty) else it }
             } catch (e: CancellationException) {
                 throw e
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                runCatching { android.util.Log.w("PairingCatalog", "load failed: ${e.javaClass.simpleName}: ${e.message}") }
                 CatalogUi.Message("The station's request page could not be read. Check the connection and try again.")
             }
             // Every outcome, including a message, is a level of its own, so Back returns to the screen before it.

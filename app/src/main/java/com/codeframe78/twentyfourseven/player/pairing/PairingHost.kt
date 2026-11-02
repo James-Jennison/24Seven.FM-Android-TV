@@ -189,7 +189,7 @@ internal class PairingHost(
             }
         } catch (_: EOFException) { log("connection closed by peer")
         } catch (e: FrameException) { log("connection closed: bad frame (${e.message})")
-        } catch (e: java.io.IOException) { log("connection closed: ${e.javaClass.simpleName}")
+        } catch (e: java.io.IOException) { log("connection closed: ${e.javaClass.simpleName}: ${e.message}")
         } finally {
             conn.close()
             events.send(Event.Closed(conn))
@@ -259,6 +259,7 @@ internal class PairingHost(
     private fun onClosed(conn: Conn) {
         synchronized(conns) { conns.remove(conn) }
         if (conn === bound) {
+            log("bound connection gone (state=${session.state::class.simpleName})")
             bound = null
             session.onDisconnect()
             // No further connection may ever bind: the pairing is over once its link is gone.
@@ -270,6 +271,7 @@ internal class PairingHost(
         session.tick(now)
         val c = bound ?: return
         if (now - c.lastRx >= keepAlive.silenceMillis) {
+            log("closing: silence for ${now - c.lastRx} ms")
             c.close() // the reader posts Closed, which reports the disconnect once
             return
         }
@@ -284,6 +286,7 @@ internal class PairingHost(
     private fun shutdown() {
         if (finished) return
         finished = true
+        log("shutdown: listener and connections closed (state=${session.state::class.simpleName})")
         closeServer()
         synchronized(conns) { conns.toList() }.forEach { it.close() }
     }

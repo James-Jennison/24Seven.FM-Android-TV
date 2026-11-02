@@ -72,6 +72,7 @@ internal class PairingController(
 
     /** Stops listening, drops every connection and deletes the key. */
     fun end() {
+        if (host != null) android.util.Log.i("PairingHost", "controller.end: pairing screen left or restarted")
         watcher?.cancel()
         watcher = null
         host?.close()
