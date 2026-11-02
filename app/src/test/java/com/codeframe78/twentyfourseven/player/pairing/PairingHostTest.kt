@@ -255,11 +255,13 @@ class PairingHostTest {
 
     @Test fun oneSourceCannotFillTheUnpairedSlots() {
         val h = host()
-        val first = connect(h); val second = connect(h); val third = connect(h)
+        connect(h); connect(h)
+        val third = connect(h)
         third.soTimeout = 1500
-        // The third connection from the same address is dropped by the host.
+        // Even a correct pair frame from a third connection of the same address is never answered: the host dropped it.
+        runCatching { send(third, pairFrame(proof(h.offer.qrSecret))) }
         assertNull(runCatching { recv(third) }.getOrNull())
-        assertFalse(first.isClosed && second.isClosed)
+        assertTrue(h.state.value is PairingUiState.ShowingCode)
         h.close()
     }
 }

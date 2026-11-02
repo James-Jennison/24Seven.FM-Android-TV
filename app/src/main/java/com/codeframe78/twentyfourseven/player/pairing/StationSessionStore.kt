@@ -65,7 +65,13 @@ internal class AndroidKeystoreStationSessionStore(
                 StoredCookie(c.getString("name"), c.getString("value"), if (c.has("exp")) c.getLong("exp") else null)
             }.filter { it.expiresAtEpochMillis == null || it.expiresAtEpochMillis > now }
             if (cookies.isEmpty() || json.getString("station") != station) { clear(station); null }
-            else StationSession(station, json.getString("account"), cookies, gateFrom(json.optJSONObject("gate")), json.optLong("at", 0L))
+            else {
+                // A session stored before hand-over times existed starts its 30 days now, once, and is saved with that time.
+                val hadTime = json.has("at")
+                val session = StationSession(station, json.getString("account"), cookies, gateFrom(json.optJSONObject("gate")), if (hadTime) json.getLong("at") else now)
+                if (!hadTime) save(session)
+                session
+            }
         } catch (_: Exception) {
             clear(station) // unreadable (key lost, corrupted): never keep a blob we cannot use
             null

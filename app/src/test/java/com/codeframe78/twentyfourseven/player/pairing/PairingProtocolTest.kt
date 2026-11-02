@@ -143,8 +143,9 @@ class PairingProtocolTest {
     @Test fun deeplyNestedJsonIsRejectedBeforeParsing() {
         val deep = "[".repeat(5000) + "]".repeat(5000)
         assertTrue(PairingJson.parsePhoneFrame("""{"v":1,"type":"ping","x":$deep}""") is ParsedFrame.Malformed)
-        // Brackets inside strings do not count as nesting.
-        val ok = PairingJson.parsePhoneFrame("""{"v":1,"type":"ping","x":"[[[[[[[[[[[[[[[[[[[[[["}""")
-        assertTrue(ok is ParsedFrame.Frame)
+        // A single-quoted string can hide quote state from a naive scanner; the plain bracket count still rejects it.
+        val sneaky = "{\"v\":1,\"type\":\"ping\",\"x\":['\"'," + "[".repeat(5000) + "]".repeat(5000) + "]}"
+        assertTrue(PairingJson.parsePhoneFrame(sneaky) is ParsedFrame.Malformed)
+        assertTrue(PairingJson.parsePhoneFrame("""{"v":1,"type":"ping"}""") is ParsedFrame.Frame)
     }
 }

@@ -18,7 +18,7 @@ internal const val MAX_REASON_CHARS = 512
 internal const val MAX_TEXT_CHARS = 256
 internal const val MAX_TRACK_REF_CHARS = 128
 internal const val MAX_SESSION_COOKIES = 16
-internal const val MAX_JSON_DEPTH = 8
+internal const val MAX_JSON_BRACKETS = 64
 internal const val MAX_COOKIE_VALUE_CHARS = 4096
 
 class FrameException(message: String) : Exception(message)
@@ -156,25 +156,14 @@ internal object PairingJson {
     /** Visible ASCII without the characters that would split a Cookie header (`;`, `,`, space, quotes, backslash). */
     private val COOKIE_VALUE = Regex("[!#-+\\--:<-\\[\\]-~]*")
 
-    /** org.json parses recursively: bound the nesting before it sees untrusted input, or a deep frame can overflow the stack. */
-    private fun nestingTooDeep(text: String): Boolean {
-        var depth = 0
-        var inString = false
-        var escaped = false
-        for (c in text) {
-            if (inString) {
-                if (escaped) escaped = false else if (c == '\\') escaped = true else if (c == '"') inString = false
-            } else when (c) {
-                '"' -> inString = true
-                '{', '[' -> if (++depth > MAX_JSON_DEPTH) return true
-                '}', ']' -> depth--
-            }
-        }
-        return false
-    }
+    /**
+     * org.json parses recursively and accepts single-quoted strings, so no scan that tracks quoting can be trusted.
+     * Counting every opening bracket anywhere in the text over-counts safely: nesting can never exceed the count.
+     */
+    private fun tooManyBrackets(text: String): Boolean = text.count { it == '{' || it == '[' } > MAX_JSON_BRACKETS
 
     fun parsePhoneFrame(text: String): ParsedFrame {
-        if (nestingTooDeep(text)) return ParsedFrame.Malformed("nested too deeply")
+        if (tooManyBrackets(text)) return ParsedFrame.Malformed("too many brackets")
         val json = try {
             JSONObject(text)
         } catch (_: JSONException) {

@@ -52,7 +52,9 @@ internal class RequestSubmitter(
         if (session == null) return TvRequestResult.NotAllowed("No phone session on this TV. Pair with your phone first.")
         if (session.station != station) return TvRequestResult.NotAllowed("The stored session is for another station.")
         // The phone's vouching expires: a consent revoked on the phone must not outlive the stored session for long.
-        if (nowMillis() - session.handedOverAtMillis > MAX_GATE_AGE_MILLIS) {
+        val age = nowMillis() - session.handedOverAtMillis
+        // Too old, or dated in the future (a clock that was set back): either way the vouching cannot be trusted.
+        if (age > MAX_GATE_AGE_MILLIS || age < -CLOCK_SLACK_MILLIS) {
             return TvRequestResult.NotAllowed("This TV's sign-in is old. Pair with your phone again to renew it.")
         }
         // Re-checked on every request: a stale terms version blocks writes until the phone hands over again.
@@ -90,6 +92,7 @@ internal class RequestSubmitter(
 
     private companion object {
         const val MAX_GATE_AGE_MILLIS = 30L * 24 * 3600 * 1000
+        const val CLOCK_SLACK_MILLIS = 24L * 3600 * 1000
         val SAFE_ALBUM_ID = Regex("[A-Za-z0-9_-]{1,64}")
         val NUMERIC_ID = Regex("\\d{1,20}")
     }
@@ -146,13 +149,14 @@ internal class HttpSessionPageFetch(
     override fun get(uri: URI, referer: URI, session: StationSession): String {
         // The session may only ever be sent to its own station's origin, whatever the caller passed in.
         val expected = StationOrigins.of(session.station)?.let(::URI)
-        require(expected != null && uri.host.equals(expected.host, ignoreCase = true)) { "session does not belong to this origin" }
+        require(expected != null) { "session does not belong to this origin" }
+        TrustedStationNavigation.requireSameHttpsOrigin(uri, expected) // scheme, host and port, not the host alone
         val began = clock()
         fun ms() = (clock() - began) / 1_000_000
         try {
             return fetchOnce(uri, referer, session) { diag("hop ${it}") }.also { diag("reply read: ${it.length} chars in ${ms()} ms") }
         } catch (e: Exception) {
-            diag("fetch failed after ${ms()} ms: ${e.javaClass.simpleName}: ${e.message}")
+            diag("fetch failed after ${ms()} ms: ${e.javaClass.simpleName}")
             throw e
         }
     }

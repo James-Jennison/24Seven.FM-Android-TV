@@ -89,8 +89,21 @@ class RequestSubmitterTest {
         val fetch = HttpSessionPageFetch(connect = { throw AssertionError("must not connect") })
         val session = session(station = "sst")
         val failure = runCatching { fetch.get(java.net.URI("https://evil.example/"), java.net.URI("https://streamingsoundtracks.com/"), session) }.exceptionOrNull()
-        assertTrue(failure is IllegalArgumentException)
+        assertTrue(failure is java.io.IOException)
         val other = runCatching { fetch.get(java.net.URI("https://1980s.fm/"), java.net.URI("https://1980s.fm/"), session) }.exceptionOrNull()
-        assertTrue(other is IllegalArgumentException)
+        assertTrue(other is java.io.IOException)
+    }
+
+    @Test fun aSessionDatedInTheFutureIsRefused() {
+        val future = session().let { StationSession(it.station, it.account, it.cookies, it.gate, handedOverAtMillis = NOW + 10L * 24 * 3600 * 1000) }
+        assertTrue(run(submitter(), future) is TvRequestResult.NotAllowed)
+        assertEquals(0, calls)
+    }
+
+    @Test fun aSessionIsOnlySentOverHttpsToItsOwnPort() {
+        val fetch = HttpSessionPageFetch(connect = { throw AssertionError("must not connect") })
+        val s = session(station = "sst")
+        assertTrue(runCatching { fetch.get(java.net.URI("http://streamingsoundtracks.com/"), java.net.URI("https://streamingsoundtracks.com/"), s) }.exceptionOrNull() != null)
+        assertTrue(runCatching { fetch.get(java.net.URI("https://streamingsoundtracks.com:8443/"), java.net.URI("https://streamingsoundtracks.com/"), s) }.exceptionOrNull() != null)
     }
 }
