@@ -1,4 +1,4 @@
-# TV companion pairing: TV half (design draft, not implemented)
+# TV companion pairing: TV half (design and status)
 
 Status: draft, 2026-11-02. Scope: the Owner said in chat on 2026-11-02 "TV pairing work is now in scope". The repository `AGENTS.md` still lists pairing as excluded and has not been updated to match; the Owner's chat directive is the authority until it is. Nothing here is implemented. Release, signing and publication stay out of scope. The mobile half is owned by the mobile writer; see the mobile draft `docs/tv-companion-pairing-design.md` (Player PR 145). The mobile repository is read-only for this project, and protocol changes are negotiated through the mobile session.
 
@@ -66,3 +66,12 @@ The mobile `SongRequestPageParser` shows the identifiers the public Requests pag
 - No WebView, no credentials on the TV, no new stream URLs.
 - A new inbound listener needs a manifest and network-security review; `INTERNET` and `ACCESS_NETWORK_STATE` exist today and no other permission is expected to be needed.
 - No automatic retry of a submission, and no TV-side persistence of the phone's secrets beyond the pairing credential.
+
+## Implementation status (2026-11-02, local commits, not pushed, not reviewed)
+
+Built behind `BuildConfig.PAIRING_ENABLED`, which is false in release builds and in debug builds unless `TWENTYFOURSEVEN_PAIRING_ENABLED=true` is set at build time. With the flag off there is no menu entry, no listener and no activity use.
+
+- `pairing/PairingProtocol.kt`, `PairingSession.kt`, `PairingHost.kt`, `PairingKey.kt`, `PairingController.kt`, `PairingActivity.kt`, `PairingQr.kt`, `PairingFingerprint.kt`. Menu entry "Pair a Phone" under General Options only with the flag.
+- Frames and proofs follow the mobile `docs/tv-companion-pairing-protocol.md`; the independent HMAC vectors pass. QR code lifetime is 120 s; typed code and QR secret both prove the same pairing.
+- Verified: 59 new JVM tests (codec, parser, state machine, vectors, loopback host); full TV unit suite 221 passed on GTHost; on the Streamer, a fake phone completed TLS 1.3, fingerprint match, pair, ping and propose/declined, and the listener was gone after Back.
+- Not verified: a camera scan, a real phone, dictation, standby, catalog search (not built), real requests, independent reviews (CRITICAL panel), `PRIVACY.md` and Play declaration updates.
