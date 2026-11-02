@@ -65,7 +65,8 @@ internal class RequestSubmitter(
         // From here the request may have reached the station: nothing below is ever retried.
         val html = try {
             withContext(Dispatchers.IO) { fetch.get(reqUri, referer, session) }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            runCatching { onReplyText("no readable reply after sending: ${e.javaClass.simpleName}: ${e.message}") }
             return TvRequestResult.CheckQueue("The station did not answer clearly.")
         }
         runCatching { onReplyText(Jsoup.parse(html).text().replace(Regex("\\s+"), " ").trim().take(400)) }
