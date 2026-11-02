@@ -119,4 +119,14 @@ class PairingProtocolTest {
         val many = (1..17).joinToString(",", "[", "]") { """{"name":"c$it","value":"v"}""" }
         assertTrue(session(many) is ParsedFrame.Malformed)
     }
+
+    @Test fun gateAttestationIsOnlyTrustedWhenCompleteAndCurrent() {
+        fun gate(extra: String) = ((session("""[{"name":"a","value":"b"}]""", extra) as ParsedFrame.Frame).frame as PhoneFrame.Session).gate
+        assertFalse(gate("").allowsContributing)
+        assertTrue(gate(""","adultAgeGate":true,"termsVersion":"2026-07-18","communityVisible":true""").allowsContributing)
+        assertFalse(gate(""","adultAgeGate":true,"termsVersion":"2025-01-01","communityVisible":true""").allowsContributing)
+        assertFalse(gate(""","adultAgeGate":false,"termsVersion":"2026-07-18","communityVisible":true""").allowsContributing)
+        assertFalse(gate(""","adultAgeGate":true,"termsVersion":"2026-07-18","communityVisible":false""").allowsContributing)
+        assertFalse(gate(""","adultAgeGate":"true","termsVersion":"2026-07-18","communityVisible":true""").allowsContributing)
+    }
 }

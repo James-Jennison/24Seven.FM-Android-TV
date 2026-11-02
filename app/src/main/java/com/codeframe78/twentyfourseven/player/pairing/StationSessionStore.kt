@@ -17,6 +17,8 @@ internal class StationSession(
     val station: String,
     val account: String,
     val cookies: List<StoredCookie>,
+    /** The gate the phone vouched for at hand-over time. */
+    val gate: GateAttestation = GateAttestation(),
 ) {
     override fun toString() = "StationSession(station=$station, cookies=${cookies.size})"
 }
@@ -52,17 +54,21 @@ internal class AndroidKeystoreStationSessionStore(
                 val c = array.getJSONObject(i)
                 StoredCookie(c.getString("name"), c.getString("value"), if (c.has("exp")) c.getLong("exp") else null)
             }.filter { it.expiresAtEpochMillis == null || it.expiresAtEpochMillis > now }
-            if (cookies.isEmpty()) { clear(); null } else StationSession(json.getString("station"), json.getString("account"), cookies)
+            if (cookies.isEmpty()) { clear(); null } else StationSession(json.getString("station"), json.getString("account"), cookies, gateFrom(json.optJSONObject("gate")))
         } catch (_: Exception) {
             clear() // unreadable (key lost, corrupted): never keep a blob we cannot use
             null
         }
     }
 
+    private fun gateFrom(o: JSONObject?) = if (o == null) GateAttestation() else
+        GateAttestation(o.optBoolean("adult"), if (o.isNull("terms")) null else o.optString("terms"), o.optBoolean("visible"))
+
     override fun save(session: StationSession) {
         val json = JSONObject()
             .put("station", session.station)
             .put("account", session.account)
+            .put("gate", JSONObject().put("adult", session.gate.adult).put("terms", session.gate.termsVersion ?: JSONObject.NULL).put("visible", session.gate.communityVisible))
             .put("cookies", JSONArray().apply {
                 session.cookies.forEach { c ->
                     put(JSONObject().put("name", c.name).put("value", c.value).apply { c.expiresAtEpochMillis?.let { put("exp", it) } })
@@ -114,6 +120,7 @@ internal class AndroidKeystoreStationSessionStore(
 internal fun stationSessionFrom(frame: PhoneFrame.Session, nowMillis: Long): StationSession = StationSession(
     station = frame.station,
     account = frame.account,
+    gate = frame.gate,
     cookies = frame.cookies.map { c ->
         // maxAge -1 is a browser-session cookie; cap long lifetimes at one year.
         val expires = if (c.maxAgeSeconds > 0) nowMillis + minOf(c.maxAgeSeconds, ONE_YEAR_SECONDS) * 1000 else null

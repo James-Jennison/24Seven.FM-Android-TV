@@ -78,11 +78,28 @@ internal sealed interface PhoneFrame {
     data class Result(val op: String, val code: ResultCode, val reason: String?) : PhoneFrame
     data class StateChanged(val station: String, val account: String) : PhoneFrame
     /** The phone hands its station session to the TV after the listener approved it on the phone. */
-    data class Session(val station: String, val account: String, val cookies: List<SessionCookie>) : PhoneFrame
+    data class Session(
+        val station: String,
+        val account: String,
+        val cookies: List<SessionCookie>,
+        /** What the phone vouches for about the community-safety gate; absent means not vouched. */
+        val gate: GateAttestation = GateAttestation(),
+    ) : PhoneFrame
     data object Revoke : PhoneFrame
     data object Ping : PhoneFrame
     data object Pong : PhoneFrame
 }
+
+/**
+ * The phone's attestation of the Player's community-safety gate (age gate, accepted terms, content visible).
+ * The TV re-checks the terms version against its own constant and never treats missing fields as consent.
+ */
+internal data class GateAttestation(val adult: Boolean = false, val termsVersion: String? = null, val communityVisible: Boolean = false) {
+    val allowsContributing: Boolean get() = adult && communityVisible && termsVersion == CURRENT_COMMUNITY_TERMS_VERSION
+}
+
+/** The community terms version this TV build was written against; keep equal to the Player's constant. */
+internal const val CURRENT_COMMUNITY_TERMS_VERSION = "2026-07-18"
 
 /** One cookie of a handed-over session. Its value is a credential: never logged, shown or put in diagnostics. */
 internal class SessionCookie(val name: String, val value: String, val maxAgeSeconds: Long) {
@@ -182,7 +199,12 @@ internal object PairingJson {
                     SessionCookie(name, value, c.optLong("maxAge", -1L))
                 }
                 if (cookies.map { it.name }.toSet().size != cookies.size) return bad("cookies")
-                ParsedFrame.Frame(PhoneFrame.Session(station, account, cookies))
+                val gate = GateAttestation(
+                    adult = json.opt("adultAgeGate") == true,
+                    termsVersion = (json.opt("termsVersion") as? String)?.takeIf { it.length <= 32 && it.none(Char::isISOControl) },
+                    communityVisible = json.opt("communityVisible") == true,
+                )
+                ParsedFrame.Frame(PhoneFrame.Session(station, account, cookies, gate))
             }
             "revoke" -> ParsedFrame.Frame(PhoneFrame.Revoke)
             "ping" -> ParsedFrame.Frame(PhoneFrame.Ping)
