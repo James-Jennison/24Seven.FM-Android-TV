@@ -2,6 +2,8 @@ package com.codeframe78.twentyfourseven.player.pairing
 
 import com.codeframe78.twentyfourseven.player.data.TrustedStationNavigation
 import com.codeframe78.twentyfourseven.player.data.readBounded
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -144,20 +146,20 @@ internal class StationRequestCatalog(
     private val parser: CatalogParser = CatalogParser(),
     private val connect: (URI) -> HttpURLConnection = { it.toURL().openConnection() as HttpURLConnection },
 ) : RequestCatalog {
-    override suspend fun search(station: String, query: String, field: CatalogField): List<CatalogEntry> {
+    override suspend fun search(station: String, query: String, field: CatalogField): List<CatalogEntry> = withContext(Dispatchers.IO) {
         val origin = origin(station)
         val html = get(origin, "modules.php?name=Requests&searchfor=1&searchpgstart=1&searchby=${field.wire}&searchtext=${enc(query)}&search=Search")
-        return parser.parseSearch(html, origin)
+        parser.parseSearch(html, origin)
     }
 
-    override suspend fun albumsBy(station: String, artist: String): List<CatalogEntry> {
+    override suspend fun albumsBy(station: String, artist: String): List<CatalogEntry> = withContext(Dispatchers.IO) {
         val origin = origin(station)
-        return parser.parseSearch(get(origin, "modules.php?name=Requests&postartistsearch=true&artist=${enc(artist)}"), origin)
+        parser.parseSearch(get(origin, "modules.php?name=Requests&postartistsearch=true&artist=${enc(artist)}"), origin)
     }
 
-    override suspend fun album(station: String, albumId: String): CatalogAlbum {
+    override suspend fun album(station: String, albumId: String): CatalogAlbum = withContext(Dispatchers.IO) {
         val origin = origin(station)
-        return parser.parseAlbum(get(origin, "modules.php?name=Album&asin=${enc(albumId)}"), origin, albumId)
+        parser.parseAlbum(get(origin, "modules.php?name=Album&asin=${enc(albumId)}"), origin, albumId)
     }
 
     private fun origin(station: String) = ORIGINS[station] ?: throw IOException("Unsupported station")
