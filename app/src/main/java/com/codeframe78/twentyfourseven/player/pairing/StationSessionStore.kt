@@ -28,10 +28,14 @@ internal class StoredCookie(val name: String, val value: String, val expiresAtEp
 }
 
 internal interface StationSessionStore {
-    fun load(): StationSession?
+    /** Every stored session, one per station. */
+    fun loadAll(): List<StationSession>
+    fun load(station: String): StationSession? = loadAll().firstOrNull { it.station == station }
+    /** Saves the station's session, replacing only that station's. */
     fun save(session: StationSession)
-    /** Deletes the session on this TV only; it never asks the station to log the owner out. */
-    fun clear()
+    /** Deletes one station's session on this TV only; it never asks the station to log the owner out. */
+    fun clear(station: String)
+    fun clearAll()
 }
 
 /**
@@ -44,8 +48,12 @@ internal class AndroidKeystoreStationSessionStore(
 ) : StationSessionStore {
     private val preferences = context.getSharedPreferences("tv_station_session", Context.MODE_PRIVATE)
 
-    override fun load(): StationSession? {
-        val encrypted = preferences.getString(KEY, null) ?: return null
+    override fun loadAll(): List<StationSession> = SUPPORTED_STATIONS.mapNotNull { readStation(it) }
+
+    private fun readStation(station: String): StationSession? {
+        val encrypted = preferences.getString(keyFor(station), null)
+            ?: legacySession(station)
+            ?: return null
         val now = epochMillis()
         return try {
             val json = JSONObject(decrypt(encrypted))
@@ -54,11 +62,21 @@ internal class AndroidKeystoreStationSessionStore(
                 val c = array.getJSONObject(i)
                 StoredCookie(c.getString("name"), c.getString("value"), if (c.has("exp")) c.getLong("exp") else null)
             }.filter { it.expiresAtEpochMillis == null || it.expiresAtEpochMillis > now }
-            if (cookies.isEmpty()) { clear(); null } else StationSession(json.getString("station"), json.getString("account"), cookies, gateFrom(json.optJSONObject("gate")))
+            if (cookies.isEmpty() || json.getString("station") != station) { clear(station); null }
+            else StationSession(station, json.getString("account"), cookies, gateFrom(json.optJSONObject("gate")))
         } catch (_: Exception) {
-            clear() // unreadable (key lost, corrupted): never keep a blob we cannot use
+            clear(station) // unreadable (key lost, corrupted): never keep a blob we cannot use
             null
         }
+    }
+
+    /** The first version stored a single session under one key; it is read once as that station's session and moved. */
+    private fun legacySession(station: String): String? {
+        val old = preferences.getString(LEGACY_KEY, null) ?: return null
+        val owner = runCatching { JSONObject(decrypt(old)).getString("station") }.getOrNull() ?: return null
+        if (owner != station) return null
+        preferences.edit().putString(keyFor(station), old).remove(LEGACY_KEY).apply()
+        return old
     }
 
     private fun gateFrom(o: JSONObject?) = if (o == null) GateAttestation() else
@@ -74,10 +92,16 @@ internal class AndroidKeystoreStationSessionStore(
                     put(JSONObject().put("name", c.name).put("value", c.value).apply { c.expiresAtEpochMillis?.let { put("exp", it) } })
                 }
             })
-        preferences.edit().putString(KEY, encrypt(json.toString())).apply()
+        preferences.edit().putString(keyFor(session.station), encrypt(json.toString())).apply()
     }
 
-    override fun clear() { preferences.edit().remove(KEY).apply() }
+    override fun clear(station: String) { preferences.edit().remove(keyFor(station)).apply() }
+
+    override fun clearAll() {
+        preferences.edit().apply { SUPPORTED_STATIONS.forEach { remove(keyFor(it)) }; remove(LEGACY_KEY) }.apply()
+    }
+
+    private fun keyFor(station: String) = "session_$station"
 
     private fun encrypt(value: String): String {
         val cipher = Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.ENCRYPT_MODE, secretKey()) }
@@ -110,7 +134,8 @@ internal class AndroidKeystoreStationSessionStore(
     }
 
     private companion object {
-        const val KEY = "session"
+        const val LEGACY_KEY = "session"
+        val SUPPORTED_STATIONS = listOf("sst", "1980s", "afm", "dfm", "efm")
         const val ALIAS = "tv-station-session-key"
         const val TRANSFORMATION = "AES/GCM/NoPadding"
     }

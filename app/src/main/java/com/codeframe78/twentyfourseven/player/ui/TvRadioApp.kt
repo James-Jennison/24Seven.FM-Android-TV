@@ -388,7 +388,7 @@ internal fun TvRadioApp(
                             { context.startActivity(com.codeframe78.twentyfourseven.player.pairing.PairingActivity.intent(context)) }
                         } else null,
                         onOpenRequests = if (com.codeframe78.twentyfourseven.player.BuildConfig.PAIRING_ENABLED) {
-                            { context.startActivity(com.codeframe78.twentyfourseven.player.pairing.RequestActivity.intent(context)) }
+                            { context.startActivity(com.codeframe78.twentyfourseven.player.pairing.RequestActivity.intent(context, state.selectedStation?.id?.value)) }
                         } else null,
                         onDismiss = { menuDestination = menuDestination.backDestination() },
                     )

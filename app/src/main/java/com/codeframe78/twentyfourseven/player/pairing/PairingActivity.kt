@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -58,13 +59,13 @@ class PairingActivity : AppCompatActivity() {
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 val screen by controller.state.collectAsStateWithLifecycle()
-                val account by controller.account.collectAsStateWithLifecycle()
+                val accounts by controller.accounts.collectAsStateWithLifecycle()
                 // Outside a Surface the content colour is black; this screen draws on the theme background.
                 CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
                 PairingScreen(
                     screen = screen,
-                    account = account,
-                    onSignOut = { controller.signOutOnThisTv(); controller.begin() },
+                    accounts = accounts,
+                    onSignOut = { station -> controller.signOutOnThisTv(station); if (controller.accounts.value.isEmpty()) controller.begin() },
                     onNewCode = controller::begin,
                     onDone = controller::acknowledgeResult,
                     onDisconnect = controller::revoke,
@@ -78,9 +79,9 @@ class PairingActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         if (BuildConfig.PAIRING_ENABLED) {
-            controller.refreshAccount()
+            controller.refreshAccounts()
             // A TV that is already signed in shows its status and opens no listener; a code appears only when there is no session.
-            if (controller.account.value == null) controller.begin()
+            if (controller.accounts.value.isEmpty()) controller.begin()
         }
     }
 
@@ -103,8 +104,8 @@ class PairingActivity : AppCompatActivity() {
 @Composable
 internal fun PairingScreen(
     screen: PairingScreenState,
-    account: StationAccount?,
-    onSignOut: () -> Unit,
+    accounts: List<StationAccount>,
+    onSignOut: (String) -> Unit,
     onNewCode: () -> Unit,
     onDone: () -> Unit,
     onDisconnect: () -> Unit,
@@ -115,8 +116,11 @@ internal fun PairingScreen(
         modifier = Modifier.fillMaxSize().padding(horizontal = 64.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.Center,
     ) {
-        if (account != null) {
-            AccountStatus(account, onSignOut = onSignOut, onClose = onClose)
+        var addingStation by remember { mutableStateOf(false) }
+        // A finished hand-over (a new account appearing) returns to the status list.
+        LaunchedEffect(accounts.map { it.station to it.label }) { addingStation = false }
+        if (accounts.isNotEmpty() && !addingStation) {
+            AccountsStatus(accounts, onSignOut = onSignOut, onPairAnother = { addingStation = true; onNewCode() }, onClose = onClose)
             return@Column
         }
         when (screen) {
@@ -141,29 +145,39 @@ internal fun PairingScreen(
 }
 
 @Composable
-private fun AccountStatus(account: StationAccount, onSignOut: () -> Unit, onClose: () -> Unit) {
+private fun AccountsStatus(accounts: List<StationAccount>, onSignOut: (String) -> Unit, onPairAnother: () -> Unit, onClose: () -> Unit) {
     val focus = remember { FocusRequester() }
-    LaunchedEffect(account) { runCatching { focus.requestFocus() } }
-    val expired = account.state == SignInState.SignedOut
-    Chip(if (expired) "Session expired" else if (account.state == SignInState.SignedIn) "Signed in" else "Signed in · not checked yet",
-        if (expired) PairingPalette.Amber else PairingPalette.Green)
+    LaunchedEffect(accounts.size) { runCatching { focus.requestFocus() } }
+    Text("Signed in", style = MaterialTheme.typography.displaySmall)
+    Spacer(Modifier.height(6.dp))
+    Text("Request songs from General Options → Request a Song.", style = MaterialTheme.typography.titleMedium, color = PairingPalette.Muted)
     Spacer(Modifier.height(20.dp))
-    Text(if (expired) "Pair your phone again" else account.label, style = MaterialTheme.typography.displaySmall)
-    Spacer(Modifier.height(8.dp))
-    Text(
-        if (expired) "The station says this TV's session for ${account.label} on ${stationName(account.station)} has ended."
-        else "on ${stationName(account.station)}",
-        style = MaterialTheme.typography.headlineSmall,
-        color = PairingPalette.Muted,
-    )
-    if (!expired) {
-        Spacer(Modifier.height(8.dp))
-        Text("Request songs from General Options → Request a Song.", style = MaterialTheme.typography.titleMedium, color = PairingPalette.Muted)
+    accounts.forEach { account ->
+        val expired = account.state == SignInState.SignedOut
+        Row(
+            Modifier.fillMaxWidth().padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(stationName(account.station), style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    if (expired) "${account.label} · the station ended this session, pair again" else account.label,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = PairingPalette.Muted,
+                )
+            }
+            Chip(
+                when (account.state) { SignInState.SignedIn -> "Signed in"; SignInState.SignedOut -> "Expired"; SignInState.Unknown -> "Checking…" },
+                when (account.state) { SignInState.SignedIn -> PairingPalette.Green; SignInState.SignedOut -> PairingPalette.Amber; SignInState.Unknown -> PairingPalette.Lavender },
+            )
+            Pill("Sign out", onClick = { onSignOut(account.station) })
+        }
     }
-    Spacer(Modifier.height(32.dp))
+    Spacer(Modifier.height(24.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        // Back is the default focus: signing out must be a deliberate move, not the first button under the cursor.
-        Pill(if (expired) "Pair again" else "Sign out on this TV", filled = expired, onClick = onSignOut)
+        Pill("Pair another station", filled = true, onClick = onPairAnother)
+        // Back is the default focus: signing out must be a deliberate move.
         Pill("Back", onClick = onClose, modifier = Modifier.focusRequester(focus))
     }
 }
@@ -262,11 +276,6 @@ internal fun stationName(id: String) = when (id) {
     else -> id
 }
 
-internal fun accountText(account: StationAccount) = when (account.state) {
-    SignInState.SignedIn -> "Signed in as ${account.label} on ${stationName(account.station)}."
-    SignInState.SignedOut -> "The session for ${account.label} on ${stationName(account.station)} has expired. Pair with your phone again."
-    SignInState.Unknown -> "Signed in as ${account.label} on ${stationName(account.station)} (not checked yet)."
-}
 
 internal fun tvRequestText(result: TvRequestResult) = when (result) {
     TvRequestResult.Queued -> "Requested. It is in the station's Queue."

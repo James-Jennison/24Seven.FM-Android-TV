@@ -66,7 +66,7 @@ internal class PairingController(
         val current = _request.value as? TvRequestUi.Confirming ?: return
         _request.value = TvRequestUi.Sending(current.track)
         scope.launch {
-            val session = runCatching { store.load() }.getOrNull()
+            val session = runCatching { store.load(current.station) }.getOrNull()
             val result = submitter.submit(session, current.track, current.station)
             android.util.Log.i("PairingHost", "tv request: ${result::class.simpleName}")
             _request.value = TvRequestUi.Done(current.track, result)
@@ -77,30 +77,42 @@ internal class PairingController(
         if (_request.value !is TvRequestUi.Sending) _request.value = null
     }
 
-    /** The session the phone handed over, shown as "Signed in as <label>"; it outlives any pairing. */
-    private val _account = MutableStateFlow<StationAccount?>(null)
-    val account: StateFlow<StationAccount?> = _account
+    /** Every station this TV is signed in to, one account per station; they outlive any pairing. */
+    private val _accounts = MutableStateFlow<List<StationAccount>>(emptyList())
+    val accounts: StateFlow<List<StationAccount>> = _accounts
+    private var closeJob: kotlinx.coroutines.Job? = null
 
-    /** Loads a stored session (no network) so the screen can show it. Call when the pairing screen starts. */
-    fun refreshAccount() {
+    /** Loads the stored sessions (no network) so the screens can show them, then checks each with its station. */
+    fun refreshAccounts() {
         if (!enabled) return
-        val stored = runCatching { store.load() }.getOrNull()
-        _account.value = stored?.let { StationAccount(it.account, it.station, _account.value?.takeIf { a -> a.label == it.account }?.state ?: SignInState.Unknown) }
-        if (stored != null) verify(stored)
+        val stored = runCatching { store.loadAll() }.getOrDefault(emptyList())
+        val previous = _accounts.value.associateBy { it.station }
+        _accounts.value = stored.map { StationAccount(it.account, it.station, previous[it.station]?.takeIf { a -> a.label == it.account }?.state ?: SignInState.Unknown) }
+        stored.forEach(::verify)
     }
 
-    /** Deletes the session on this TV only. It does not ask the station to log out, which would end the phone's session too. */
-    fun signOutOnThisTv() {
-        store.clear()
-        _account.value = null
-        android.util.Log.i("PairingHost", "session cleared on this TV")
+    /** Deletes one station's session on this TV only. It does not ask the station to log out, which would end the phone's session too. */
+    fun signOutOnThisTv(station: String) {
+        store.clear(station)
+        _accounts.value = _accounts.value.filterNot { it.station == station }
+        android.util.Log.i("PairingHost", "session cleared on this TV: station=$station")
+    }
+
+    fun signOutAllOnThisTv() {
+        store.clearAll()
+        _accounts.value = emptyList()
+        android.util.Log.i("PairingHost", "all sessions cleared on this TV")
+    }
+
+    private fun setAccount(account: StationAccount) {
+        _accounts.value = (_accounts.value.filterNot { it.station == account.station } + account).sortedBy { it.station }
     }
 
     private fun verify(session: StationSession) {
         scope.launch {
             val state = accountCheck.check(session)
             android.util.Log.i("PairingHost", "session check: station=${session.station} signedIn=${state == SignInState.SignedIn} (${state.name})")
-            if (_account.value?.label == session.account) _account.value = StationAccount(session.account, session.station, state)
+            if (_accounts.value.any { it.station == session.station && it.label == session.account }) setAccount(StationAccount(session.account, session.station, state))
         }
     }
 
@@ -110,10 +122,11 @@ internal class PairingController(
         val session = stationSessionFrom(frame, System.currentTimeMillis())
         return try {
             store.save(session)
-            _account.value = StationAccount(session.account, session.station, SignInState.Unknown)
+            setAccount(StationAccount(session.account, session.station, SignInState.Unknown))
             verify(session)
-            // The phone is no longer needed once the TV holds the session: close the listener after the reply has left.
-            scope.launch { kotlinx.coroutines.delay(1_500); end() }
+            // A phone signed in to several stations sends one frame each, so the link stays a little longer after each hand-over.
+            closeJob?.cancel()
+            closeJob = scope.launch { kotlinx.coroutines.delay(HANDOVER_GRACE_MILLIS); end() }
             null
         } catch (_: Exception) {
             "storage_failed"
@@ -175,6 +188,8 @@ internal class PairingController(
     private fun tvName(): String = (Build.MODEL ?: "TV").trim().take(MAX_LABEL_CHARS).ifEmpty { "TV" }
 
     companion object {
+        private const val HANDOVER_GRACE_MILLIS = 20_000L
+
         /** A private-network IPv4 address on the active network, or null (not on a home network). */
         fun localAddress(context: Context): InetAddress? {
             val cm = context.getSystemService(ConnectivityManager::class.java) ?: return null

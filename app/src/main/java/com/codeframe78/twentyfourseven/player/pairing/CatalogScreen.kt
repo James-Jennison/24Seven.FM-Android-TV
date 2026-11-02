@@ -58,6 +58,8 @@ internal fun CatalogScreen(
     browser: CatalogBrowser,
     onPick: (CatalogTrack) -> Unit,
     onExit: () -> Unit,
+    stationChoices: List<String> = emptyList(),
+    onStation: (String) -> Unit = {},
 ) {
     val ui by browser.ui.collectAsStateWithLifecycle()
     val back = { if (!browser.back()) onExit() }
@@ -65,7 +67,7 @@ internal fun CatalogScreen(
     PairingBackdrop {
         Box(Modifier.fillMaxSize().padding(horizontal = 56.dp, vertical = 32.dp)) {
             when (val state = ui) {
-                is CatalogUi.Query -> QueryStep(station, state, browser, onExit)
+                is CatalogUi.Query -> QueryStep(station, state, browser, onExit, stationChoices, onStation)
                 is CatalogUi.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(state.what, style = MaterialTheme.typography.headlineMedium, color = PairingPalette.Lavender)
                 }
@@ -106,7 +108,7 @@ internal fun CatalogScreen(
 }
 
 @Composable
-private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogBrowser, onExit: () -> Unit) {
+private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogBrowser, onExit: () -> Unit, stationChoices: List<String>, onStation: (String) -> Unit) {
     var text by remember { mutableStateOf("") }
     val input = remember { FocusRequester() }
     val firstChip = remember { FocusRequester() }
@@ -116,6 +118,12 @@ private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogB
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
         Text("Find a song", style = MaterialTheme.typography.displaySmall)
         Text("Request a track on ${stationName(station)}", style = MaterialTheme.typography.titleLarge, color = PairingPalette.Muted)
+        if (stationChoices.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                stationChoices.forEach { id -> Pill(stationName(id), selected = id == station, onClick = { onStation(id) }) }
+            }
+        }
         Spacer(Modifier.height(28.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             CatalogField.entries.forEach { field ->

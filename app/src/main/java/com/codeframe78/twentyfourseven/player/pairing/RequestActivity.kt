@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -43,11 +45,12 @@ class RequestActivity : AppCompatActivity() {
         if (!BuildConfig.PAIRING_ENABLED) { finish(); return }
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
-                val account by controller.account.collectAsStateWithLifecycle()
+                val accounts by controller.accounts.collectAsStateWithLifecycle()
                 val request by controller.request.collectAsStateWithLifecycle()
                 CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
                     RequestScreen(
-                        account = account,
+                        accounts = accounts,
+                        preferredStation = intent.getStringExtra(EXTRA_STATION),
                         request = request,
                         onPick = controller::beginTvRequest,
                         onConfirm = controller::confirmTvRequest,
@@ -62,17 +65,22 @@ class RequestActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        if (BuildConfig.PAIRING_ENABLED) controller.refreshAccount()
+        if (BuildConfig.PAIRING_ENABLED) controller.refreshAccounts()
     }
 
     companion object {
-        fun intent(context: Context) = Intent(context, RequestActivity::class.java)
+        private const val EXTRA_STATION = "station"
+
+        /** [station] is the station the TV is playing; it is chosen first when the TV is signed in to it. */
+        fun intent(context: Context, station: String? = null) =
+            Intent(context, RequestActivity::class.java).apply { station?.let { putExtra(EXTRA_STATION, it) } }
     }
 }
 
 @Composable
 internal fun RequestScreen(
-    account: StationAccount?,
+    accounts: List<StationAccount>,
+    preferredStation: String?,
     request: TvRequestUi?,
     onPick: (CatalogTrack, String) -> Unit,
     onConfirm: () -> Unit,
@@ -81,9 +89,15 @@ internal fun RequestScreen(
     onClose: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    var chosen by remember { mutableStateOf<String?>(null) }
+    // The listener's pick, else the station being played, else the first signed-in station.
+    val account = accounts.firstOrNull { it.station == chosen }
+        ?: accounts.firstOrNull { it.station == preferredStation }
+        ?: accounts.firstOrNull()
     val station = account?.station
-    // Kept across a request's confirm and result screens so the listener returns to the same results.
-    val browser = remember(station) { station?.let { CatalogBrowser(StationRequestCatalog(), it, scope) } }
+    // One browser per station, kept across a request's confirm and result screens so the listener returns to the same results.
+    val browsers = remember { mutableMapOf<String, CatalogBrowser>() }
+    val browser = station?.let { st -> browsers.getOrPut(st) { CatalogBrowser(StationRequestCatalog(), st, scope) } }
     when {
         request != null -> PairingBackdrop {
             Column(Modifier.fillMaxSize().padding(horizontal = 64.dp, vertical = 16.dp), verticalArrangement = Arrangement.Center) {
@@ -115,7 +129,14 @@ internal fun RequestScreen(
             "The station says this TV's session has expired. Pair your phone again to sign in.",
             "Pair a Phone", onOpenPairing, onClose,
         )
-        else -> CatalogScreen(station, browser, onPick = { onPick(it, station) }, onExit = onClose)
+        else -> CatalogScreen(
+            station = station,
+            browser = browser,
+            onPick = { onPick(it, station) },
+            onExit = onClose,
+            stationChoices = if (accounts.size > 1) accounts.map { it.station } else emptyList(),
+            onStation = { chosen = it },
+        )
     }
 }
 

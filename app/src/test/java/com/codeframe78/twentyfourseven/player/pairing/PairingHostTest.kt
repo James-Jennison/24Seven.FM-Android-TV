@@ -200,10 +200,24 @@ class PairingHostTest {
         h.close()
     }
 
-    @Test fun sessionForAnotherStationIsRefusedAndNeverStored() {
+    @Test fun aPhoneSignedInToSeveralStationsHandsOverOneSessionEach() {
         val h = host(); val phone = pairedPhone(h)
+        send(phone, sessionFrame(station = "sst"))
+        assertEquals("session_ok", recv(phone)!!.getString("type"))
+        send(phone, sessionFrame(station = "afm", cookie = "other"))
+        val second = recv(phone)!!
+        assertEquals("session_ok", second.getString("type")); assertEquals("afm", second.getString("station"))
+        assertEquals(listOf("sst", "afm"), handed.map { it.station })
         send(phone, sessionFrame(station = "afm"))
-        assertEquals("wrong_station", recv(phone)!!.getString("reason"))
+        assertEquals("already_handed_over", recv(phone)!!.getString("reason"))
+        assertEquals(2, handed.size)
+        h.close()
+    }
+
+    @Test fun sessionForAStationTheTvDoesNotKnowIsRefusedAndNeverStored() {
+        val h = host(); val phone = pairedPhone(h)
+        send(phone, sessionFrame(station = "zzz"))
+        assertEquals("unsupported_station", recv(phone)!!.getString("reason"))
         assertTrue(handed.isEmpty())
         h.close()
     }

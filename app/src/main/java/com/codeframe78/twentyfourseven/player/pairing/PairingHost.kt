@@ -57,7 +57,7 @@ internal class PairingHost(
     keyHash: ByteArray,
     private val hostAddress: String,
     private val tvName: String,
-    supportedStations: Set<String>,
+    private val supportedStations: Set<String>,
     private val monotonicMillis: () -> Long,
     private val epochMillis: () -> Long,
     private val random: SecureRandom = SecureRandom(),
@@ -255,15 +255,16 @@ internal class PairingHost(
         send(conn, reaction)
     }
 
-    private var sessionHandedOver = false
+    /** One hand-over per station per pairing; a phone signed in to several stations sends one frame for each. */
+    private val handedOver = mutableSetOf<String>()
 
     private fun onSessionFrame(conn: Conn, frame: PhoneFrame.Session) {
         val refusal = when {
-            sessionHandedOver -> "already_handed_over"
-            frame.station != session.pairedStation -> "wrong_station"
+            frame.station in handedOver -> "already_handed_over"
+            frame.station !in supportedStations -> "unsupported_station"
             else -> acceptSession(frame)
         }
-        if (refusal == null) sessionHandedOver = true
+        if (refusal == null) handedOver += frame.station
         log("session hand-over: station=${frame.station} cookies=${frame.cookies.size} names=${frame.cookies.map { it.name }} result=${refusal ?: "stored"}")
         conn.send(if (refusal == null) TvFrame.SessionOk(frame.station) else TvFrame.SessionRefused(refusal))
     }
