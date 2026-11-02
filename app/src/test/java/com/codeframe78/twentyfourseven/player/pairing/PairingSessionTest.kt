@@ -20,7 +20,7 @@ class PairingSessionTest {
         hex(Mac.getInstance("HmacSHA256").apply { init(SecretKeySpec(s, "HmacSHA256")) }.doFinal(keyHash))
 
     private fun session(expires: Long = 1_000_000) =
-        PairingSession(secret, keyHash, expires, stations, { "session-1" }, timeouts)
+        PairingSession(listOf(secret), keyHash, expires, stations, { "session-1" }, timeouts)
 
     private fun pair(station: String = "sst", p: String = proof()) = PhoneFrame.Pair(p, "Pixel", "dj_x", station)
 

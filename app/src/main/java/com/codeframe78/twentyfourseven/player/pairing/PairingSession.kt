@@ -55,14 +55,15 @@ internal data class Reaction(val frames: List<TvFrame> = emptyList(), val close:
  * driver refuses every other connection itself and never feeds it to the session.
  */
 internal class PairingSession(
-    secret: ByteArray,
+    secrets: List<ByteArray>,
     private val keyHash: ByteArray,
     private val codeExpiresAtMillis: Long,
     private val supportedStations: Set<String>,
     private val newSessionId: () -> String,
     private val config: PairingTimeouts = PairingTimeouts(),
 ) {
-    private var secret: ByteArray? = secret.copyOf()
+    /** The QR secret and the typed-code secret; either proves the same pairing. Null once burned. */
+    private var secrets: List<ByteArray>? = secrets.map { it.copyOf() }
     private var badProofs = 0
     private var currentOp: String? = null
     private var track: ProposedTrack? = null
@@ -76,7 +77,7 @@ internal class PairingSession(
     var state: PairingUiState = PairingUiState.ShowingCode(codeExpiresAtMillis)
         private set
 
-    val isPaired: Boolean get() = secret == null && state !is PairingUiState.Ended
+    val isPaired: Boolean get() = secrets == null && state !is PairingUiState.Ended
 
     fun onFrame(frame: PhoneFrame, nowMillis: Long): Reaction {
         if (state is PairingUiState.Ended) return Reaction(close = true)
@@ -84,12 +85,12 @@ internal class PairingSession(
             is PhoneFrame.Pair -> onPair(frame, nowMillis)
             PhoneFrame.Ping -> Reaction(listOf(TvFrame.Pong))
             PhoneFrame.Pong -> Reaction()
-            else -> if (secret != null) Reaction() else onPaired(frame, nowMillis)
+            else -> if (secrets != null) Reaction() else onPaired(frame, nowMillis)
         }
     }
 
     private fun onPair(frame: PhoneFrame.Pair, now: Long): Reaction {
-        if (secret == null) return refuse(PairRefusal.AlreadyPaired)
+        if (secrets == null) return refuse(PairRefusal.AlreadyPaired)
         if (now >= codeExpiresAtMillis) {
             end(EndReason.CodeExpired)
             return Reaction(listOf(TvFrame.PairRefused(PairRefusal.Expired)), close = true)
@@ -201,7 +202,7 @@ internal class PairingSession(
     fun tick(nowMillis: Long): Reaction {
         val s = state
         when {
-            s is PairingUiState.ShowingCode && secret != null && nowMillis >= codeExpiresAtMillis -> {
+            s is PairingUiState.ShowingCode && secrets != null && nowMillis >= codeExpiresAtMillis -> {
                 wipeSecret()
                 end(EndReason.CodeExpired)
                 return Reaction(close = true)
@@ -249,18 +250,23 @@ internal class PairingSession(
     private fun refuse(reason: PairRefusal) = Reaction(listOf(TvFrame.PairRefused(reason)), close = true)
 
     private fun proofMatches(proofHex: String): Boolean {
-        val key = secret ?: return false
-        val expected = Mac.getInstance("HmacSHA256").run {
-            init(SecretKeySpec(key, "HmacSHA256"))
-            doFinal(keyHash)
-        }
+        val keys = secrets ?: return false
         val actual = hexOrNull(proofHex) ?: return false
-        return MessageDigest.isEqual(expected, actual)
+        // Check every secret (no early exit) so timing does not reveal which one matched.
+        var match = false
+        for (key in keys) {
+            val expected = Mac.getInstance("HmacSHA256").run {
+                init(SecretKeySpec(key, "HmacSHA256"))
+                doFinal(keyHash)
+            }
+            if (MessageDigest.isEqual(expected, actual)) match = true
+        }
+        return match
     }
 
     private fun wipeSecret() {
-        secret?.fill(0)
-        secret = null
+        secrets?.forEach { it.fill(0) }
+        secrets = null
     }
 }
 

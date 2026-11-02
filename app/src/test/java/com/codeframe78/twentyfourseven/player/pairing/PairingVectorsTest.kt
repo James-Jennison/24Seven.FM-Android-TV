@@ -10,7 +10,7 @@ class PairingVectorsTest {
     private val stations = setOf("sst")
 
     private fun pairs(secret: ByteArray, proof: String): Boolean {
-        val s = PairingSession(secret, keyHash, 1000, stations, { "s" }, PairingTimeouts())
+        val s = PairingSession(listOf(secret), keyHash, 1000, stations, { "s" }, PairingTimeouts())
         s.onFrame(PhoneFrame.Pair(proof, "p", "a", "sst"), 0)
         return s.state is PairingUiState.PairedIdle
     }
@@ -21,6 +21,16 @@ class PairingVectorsTest {
 
     @Test fun typedCodeVector() {
         assertTrue(pairs("123456".toByteArray(Charsets.US_ASCII), "a9b701cbd81460b50517eeec120d8a1f5771fce14aae158b549edec95d60936f"))
+    }
+
+    @Test fun bothSecretsOfOnePairingAreAccepted() {
+        val qr = ByteArray(16)
+        val typed = "123456".toByteArray(Charsets.US_ASCII)
+        for (proof in listOf("fbe4b1db0b7ee3c740efa1e88e5a3bd37e9e63d5792752f5064b43555f97b0c9", "a9b701cbd81460b50517eeec120d8a1f5771fce14aae158b549edec95d60936f")) {
+            val s = PairingSession(listOf(qr, typed), keyHash, 1000, stations, { "s" }, PairingTimeouts())
+            s.onFrame(PhoneFrame.Pair(proof, "p", "a", "sst"), 0)
+            assertTrue(s.state is PairingUiState.PairedIdle)
+        }
     }
 
     @Test fun proofIsNotAcceptedForTheOtherSecret() {
