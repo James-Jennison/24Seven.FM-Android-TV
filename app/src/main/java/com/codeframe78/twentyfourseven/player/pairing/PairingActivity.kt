@@ -59,7 +59,6 @@ class PairingActivity : AppCompatActivity() {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 val screen by controller.state.collectAsStateWithLifecycle()
                 val account by controller.account.collectAsStateWithLifecycle()
-                val tvRequest by controller.request.collectAsStateWithLifecycle()
                 // Outside a Surface the content colour is black; this screen draws on the theme background.
                 CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
                 PairingScreen(
@@ -68,13 +67,7 @@ class PairingActivity : AppCompatActivity() {
                     onSignOut = controller::signOutOnThisTv,
                     onNewCode = controller::begin,
                     onTestRequest = { controller.propose(LINK_TEST_TRACK) },
-                    onPickTrack = { station, track ->
-                        if (BuildConfig.TV_REQUESTS_ENABLED) controller.beginTvRequest(track, station)
-                        else controller.propose(ProposedTrack(station, track.trackRef, track.title, track.artist.orEmpty(), track.albumTitle.orEmpty()))
-                    },
-                    tvRequest = tvRequest,
-                    onConfirmTvRequest = controller::confirmTvRequest,
-                    onDismissTvRequest = controller::dismissTvRequest,
+                    onOpenRequests = { startActivity(RequestActivity.intent(this@PairingActivity)) },
                     onDone = controller::acknowledgeResult,
                     onDisconnect = controller::revoke,
                     onClose = ::finish,
@@ -110,12 +103,9 @@ internal fun PairingScreen(
     screen: PairingScreenState,
     account: StationAccount?,
     onSignOut: () -> Unit,
-    tvRequest: TvRequestUi?,
-    onConfirmTvRequest: () -> Unit,
-    onDismissTvRequest: () -> Unit,
+    onOpenRequests: () -> Unit,
     onNewCode: () -> Unit,
     onTestRequest: () -> Unit,
-    onPickTrack: (station: String, CatalogTrack) -> Unit,
     onDone: () -> Unit,
     onDisconnect: () -> Unit,
     onClose: () -> Unit,
@@ -125,37 +115,7 @@ internal fun PairingScreen(
         modifier = Modifier.fillMaxSize().padding(horizontal = 64.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.Center,
     ) {
-        val scope = androidx.compose.runtime.rememberCoroutineScope()
-        var browsing by remember { mutableStateOf(false) }
         val pairedStation = ((screen as? PairingScreenState.Active)?.ui as? PairingUiState.PairedIdle)?.station
-        val browseStation = pairedStation ?: account?.station
-        val browser = remember(browseStation) { browseStation?.let { CatalogBrowser(StationRequestCatalog(), it, scope) } }
-        // The catalog owns the whole screen: no other buttons (sign out, disconnect) share it, so a stray press cannot reach them.
-        if (tvRequest == null && browsing && browser != null && browseStation != null) {
-            CatalogScreen(browseStation, browser, onPick = { onPickTrack(browseStation, it) }, onExit = { browsing = false })
-            return@Column
-        }
-        if (tvRequest != null) {
-            when (tvRequest) {
-                is TvRequestUi.Confirming -> TrackCard(
-                    track = tvRequest.track,
-                    station = tvRequest.station,
-                    headline = "Request this track?",
-                    note = "This sends the request to ${stationName(tvRequest.station)} now.",
-                    primary = "Request" to onConfirmTvRequest,
-                    secondary = "Cancel" to onDismissTvRequest,
-                )
-                is TvRequestUi.Sending -> Text("Sending the request…", style = MaterialTheme.typography.headlineMedium)
-                is TvRequestUi.Done -> TrackCard(
-                    track = tvRequest.track,
-                    station = account?.station ?: "",
-                    headline = tvRequestHeadline(tvRequest.result),
-                    note = tvRequestText(tvRequest.result),
-                    primary = "OK" to onDismissTvRequest,
-                )
-            }
-            return@Column
-        }
         when (screen) {
             is PairingScreenState.Unavailable -> Message(unavailableText(screen.why), "Back", onClose)
             PairingScreenState.Closed -> Message("Starting…", "Back", onClose)
@@ -163,7 +123,7 @@ internal fun PairingScreen(
                 is PairingUiState.ShowingCode -> CodeScreen(screen.offer, onNewCode, onClose)
                 is PairingUiState.PairedIdle -> Message(
                     "Paired with ${ui.phone} (${ui.account}) on ${stationName(ui.station)}.\nThe phone must stay open on the Player.",
-                    primary = "Find a song" to { browsing = true },
+                    primary = "Request a song" to onOpenRequests,
                     secondary = "Disconnect" to onDisconnect,
                     tertiary = "Send link test" to onTestRequest,
                 )
@@ -181,7 +141,7 @@ internal fun PairingScreen(
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 if (pairedStation == null) {
-                    Pill("Find a song", filled = true, onClick = { browsing = true })
+                    Pill("Request a song", filled = true, onClick = onOpenRequests)
                 }
                 Pill("Sign out on this TV", onClick = onSignOut)
             }
@@ -308,7 +268,7 @@ internal fun tvRequestHeadline(result: TvRequestResult) = when (result) {
 
 /** Artwork on the left, the track and the decision on the right. */
 @Composable
-private fun TrackCard(
+internal fun TrackCard(
     track: CatalogTrack,
     station: String,
     headline: String,

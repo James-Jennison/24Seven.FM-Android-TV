@@ -387,6 +387,9 @@ internal fun TvRadioApp(
                         onOpenPairing = if (com.codeframe78.twentyfourseven.player.BuildConfig.PAIRING_ENABLED) {
                             { context.startActivity(com.codeframe78.twentyfourseven.player.pairing.PairingActivity.intent(context)) }
                         } else null,
+                        onOpenRequests = if (com.codeframe78.twentyfourseven.player.BuildConfig.PAIRING_ENABLED) {
+                            { context.startActivity(com.codeframe78.twentyfourseven.player.pairing.RequestActivity.intent(context)) }
+                        } else null,
                         onDismiss = { menuDestination = menuDestination.backDestination() },
                     )
                 }
@@ -650,6 +653,7 @@ private fun TvGeneralOptionsSheet(
     onOpenAccessibilityAndMotion: () -> Unit,
     onOpenAboutAndSupport: () -> Unit,
     onOpenPairing: (() -> Unit)?,
+    onOpenRequests: (() -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     TvOptionsSheet(title = "General Options", onDismiss = onDismiss) { firstAction ->
@@ -692,8 +696,11 @@ private fun TvGeneralOptionsSheet(
             },
             onClick = onOpenAccessibilityAndMotion,
         )
+        onOpenRequests?.let {
+            TvOptionAction(title = "Request a Song", summary = "Search the station's library and request a track", onClick = it)
+        }
         onOpenPairing?.let {
-            TvOptionAction(title = "Pair a Phone", summary = "Scan a code to request songs from your phone", onClick = it)
+            TvOptionAction(title = "Pair a Phone", summary = "Sign this TV in with your phone's station account", onClick = it)
         }
         TvOptionAction(
             title = "About & Support",

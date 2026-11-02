@@ -16,6 +16,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".pairing.PairingActivity" android:exported="false" android:screenOrientation="landscape" android:theme="@style/Theme.TwentyFourSevenPlayer" />
+        <activity android:name=".pairing.RequestActivity" android:exported="false" android:screenOrientation="landscape" android:theme="@style/Theme.TwentyFourSevenPlayer" />
         <service android:name=".playback.RadioPlaybackService" android:exported="true" android:foregroundServiceType="mediaPlayback">
             <intent-filter><action android:name="androidx.media3.session.MediaSessionService" /></intent-filter>
         </service>
