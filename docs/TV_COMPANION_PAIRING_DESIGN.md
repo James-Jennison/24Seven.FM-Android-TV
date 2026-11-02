@@ -32,23 +32,31 @@ Status: draft, 2026-11-02. Scope: the Owner said in chat on 2026-11-02 "TV pairi
 
 Every screen must be D-pad and Back navigable, with no touch-only step.
 
-## Verified on the Streamer (2026-11-02, read-only probes)
+## Verified on the Streamer (2026-11-02)
 
-- The Streamer is on Ethernet (`eth0`, 192.168.1.187/24), SDK 34.
-- A listener on the device accepted a TCP connection from the workstation on the LAN (toybox `nc`, shell uid, port 5599, then removed). This shows no firewall blocks inbound LAN TCP; it does not prove the same for an app uid.
-- The workstation's mDNS browser sees the Streamer (`_meshcop._udp`), so multicast works on this network at the OS level.
+Read-only probes, then a throwaway spike (a debug-only activity built in a GTHost clone with package suffix `.spike`, installed on the Google TV Streamer, SDK 34, Ethernet, and uninstalled afterwards; the spike is not in the repository):
+
+- A TLS 1.3 server socket with an AndroidKeyStore EC P-256 key and its self-signed certificate (`KeyGenParameterSpec.setCertificateSubject`) accepted a workstation LAN connection as a normal app, with no permission beyond `INTERNET`.
+- The SHA-256 of the served certificate's public key (SPKI) matched the hash the app logged, so the QR key hash pins correctly.
+- A 4-byte length plus JSON frame arrived intact (the server received it; the reply leg of my throwaway echo was not checked).
+- **The key must allow `DIGEST_NONE` as well as `SHA256`.** With SHA-256 only, Conscrypt's TLS handshake fails with "I/O error during system call" because it signs with `NONEwithECDSA`. This is a real implementation requirement.
+- `NsdManager.registerService` succeeded and the workstation's mDNS browser resolved the service with the Streamer's address and port. NSD is therefore a viable optional discovery path on Ethernet.
+- Sleep/wake is **not verified**: `KEYCODE_SLEEP` left the Streamer awake, so the listener's behavior across standby is still unknown.
 
 ## Not yet verified
 
-- App-uid inbound TCP, `NsdManager` registration and resolution, and multicast behavior while the Streamer sleeps/wakes.
-- Wi-Fi-connected Streamer behavior.
-- That the Google TV keyboard dictates into an in-app text field without microphone access (the handoff cites documentation only).
-- Reachability when the phone is on a different VLAN or guest network (expected to fail, and must show a clear error).
+- Keyboard dictation into an in-app text field (needs a human at the remote; the spike activity had a field for it).
+- Listener behavior across real standby and wake, and Wi-Fi-connected Streamer behavior.
+- Phone on a different VLAN or guest network (expected to fail, and must show a clear error).
+
+## trackRef (open item with the mobile session)
+
+The mobile `SongRequestPageParser` shows the identifiers the public Requests pages use: a station-specific album id (`asin` query value) and a numeric `songID`. Proposed `trackRef` = `<albumId>:<songId>`, opaque to the TV, validated by the phone against the paired station. The TV never forwards request URLs or button links. The TV needs only its own read-only search and album parsing (jsoup is already a dependency) to obtain these ids and the display title, artist and album. Eligibility on the page (`requestbutton_request`) is advisory only; the phone and station decide.
 
 ## Plan
 
 1. Settle the protocol shapes with the mobile session. Message shapes are not final until the Owner settles its open decisions (transport, availability, stations/accounts, release flag).
-2. Small spike on the Streamer: a throwaway debug build with a TLS listener and a QR, built on GTHost, to confirm app-uid inbound TCP, dictation, and the keystore certificate.
+2. Spike: done for TLS, keystore certificate and NSD (see above); dictation and standby remain, with the QR encoder choice.
 3. Implement behind a build flag that is off by default, with unit tests and a fake-phone peer: pairing state machine, expiry, duplicate operations, revocation, ambiguous results.
 4. `PRIVACY.md`, the Play declaration packet and release notes for Owner approval before the flag is turned on.
 5. Review under the active R6 panel (CRITICAL: networking, security, new permission surface), then joint physical acceptance with the mobile app on the Streamer and a phone.
