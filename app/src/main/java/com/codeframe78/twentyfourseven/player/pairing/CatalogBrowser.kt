@@ -55,6 +55,11 @@ internal class CatalogBrowser(
         }
     }
 
+    fun suggest(mode: SuggestionMode) = load("Picking a track…", empty = "The station has no suggestion right now.") {
+        val album = catalog.suggest(station, mode)
+        CatalogUi.Tracks(if (mode == SuggestionMode.Random) "Surprise pick" else "Rarely played pick", album.tracks)
+    }
+
     /** True when it moved up one level; false when already at the first screen. */
     fun back(): Boolean {
         job?.cancel()

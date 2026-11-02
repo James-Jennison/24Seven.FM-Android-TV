@@ -120,9 +120,9 @@ internal fun PairingScreen(
     onDisconnect: () -> Unit,
     onClose: () -> Unit,
 ) {
+    PairingBackdrop {
     Column(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 64.dp, vertical = 16.dp),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 64.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.Center,
     ) {
         val scope = androidx.compose.runtime.rememberCoroutineScope()
@@ -132,18 +132,27 @@ internal fun PairingScreen(
         val browser = remember(browseStation) { browseStation?.let { CatalogBrowser(StationRequestCatalog(), it, scope) } }
         // The catalog owns the whole screen: no other buttons (sign out, disconnect) share it, so a stray press cannot reach them.
         if (tvRequest == null && browsing && browser != null && browseStation != null) {
-            CatalogScreen(browser, onPick = { onPickTrack(browseStation, it) }, onExit = { browsing = false })
+            CatalogScreen(browseStation, browser, onPick = { onPickTrack(browseStation, it) }, onExit = { browsing = false })
             return@Column
         }
         if (tvRequest != null) {
             when (tvRequest) {
-                is TvRequestUi.Confirming -> Message(
-                    "Request \"${tvRequest.track.title}\"${tvRequest.track.artist?.let { " by $it" }.orEmpty()} on ${stationName(tvRequest.station)}?\nThis sends the request to the station now.",
+                is TvRequestUi.Confirming -> TrackCard(
+                    track = tvRequest.track,
+                    station = tvRequest.station,
+                    headline = "Request this track?",
+                    note = "This sends the request to ${stationName(tvRequest.station)} now.",
                     primary = "Request" to onConfirmTvRequest,
                     secondary = "Cancel" to onDismissTvRequest,
                 )
                 is TvRequestUi.Sending -> Text("Sending the request…", style = MaterialTheme.typography.headlineMedium)
-                is TvRequestUi.Done -> Message("${tvRequest.track.title}\n${tvRequestText(tvRequest.result)}", "OK", onDismissTvRequest)
+                is TvRequestUi.Done -> TrackCard(
+                    track = tvRequest.track,
+                    station = account?.station ?: "",
+                    headline = tvRequestHeadline(tvRequest.result),
+                    note = tvRequestText(tvRequest.result),
+                    primary = "OK" to onDismissTvRequest,
+                )
             }
             return@Column
         }
@@ -171,12 +180,13 @@ internal fun PairingScreen(
             Text(accountText(account), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                if (BuildConfig.TV_REQUESTS_ENABLED && pairedStation == null) {
-                    Button(onClick = { browsing = true }) { Text("Find a song") }
+                if (pairedStation == null) {
+                    Pill("Find a song", filled = true, onClick = { browsing = true })
                 }
-                Button(onClick = onSignOut) { Text("Sign out on this TV") }
+                Pill("Sign out on this TV", onClick = onSignOut)
             }
         }
+    }
     }
 }
 
@@ -190,9 +200,9 @@ private fun Message(text: String, primary: Pair<String, () -> Unit>, secondary: 
     Text(text, style = MaterialTheme.typography.headlineMedium)
     Spacer(Modifier.height(32.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        Button(onClick = primary.second, modifier = Modifier.focusRequester(focus)) { Text(primary.first) }
-        secondary?.let { Button(onClick = it.second) { Text(it.first) } }
-        tertiary?.let { Button(onClick = it.second) { Text(it.first) } }
+        Pill(primary.first, filled = true, onClick = primary.second, modifier = Modifier.focusRequester(focus))
+        secondary?.let { Pill(it.first, onClick = it.second) }
+        tertiary?.let { Pill(it.first, onClick = it.second) }
     }
 }
 
@@ -226,8 +236,8 @@ private fun CodeScreen(offer: PairingOffer, onNewCode: () -> Unit, onClose: () -
                 style = MaterialTheme.typography.bodyLarge,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Button(onClick = onNewCode, modifier = Modifier.focusRequester(focus)) { Text("New code") }
-                Button(onClick = onClose) { Text("Back") }
+                Pill("New code", filled = true, onClick = onNewCode, modifier = Modifier.focusRequester(focus))
+                Pill("Back", onClick = onClose)
             }
         }
     }
@@ -265,7 +275,7 @@ internal fun endedText(reason: EndReason) = when (reason) {
     EndReason.ProtocolError, EndReason.UnsupportedVersion -> "The phone and this TV could not agree on how to talk. Update both apps."
 }
 
-private fun stationName(id: String) = when (id) {
+internal fun stationName(id: String) = when (id) {
     "sst" -> "StreamingSoundtracks.com"
     "1980s" -> "1980s.FM"
     "afm" -> "Adagio.FM"
@@ -286,4 +296,42 @@ internal fun tvRequestText(result: TvRequestResult) = when (result) {
     is TvRequestResult.Rejected -> result.message
     TvRequestResult.SignInExpired -> "The station says you are signed out. Pair with your phone again. Nothing was requested."
     is TvRequestResult.NotAllowed -> "${result.why} Nothing was requested."
+}
+
+internal fun tvRequestHeadline(result: TvRequestResult) = when (result) {
+    TvRequestResult.Queued -> "Requested"
+    is TvRequestResult.CheckQueue -> "Check the Queue"
+    is TvRequestResult.Rejected -> "The station said no"
+    TvRequestResult.SignInExpired -> "Pair with your phone again"
+    is TvRequestResult.NotAllowed -> "Nothing was requested"
+}
+
+/** Artwork on the left, the track and the decision on the right. */
+@Composable
+private fun TrackCard(
+    track: CatalogTrack,
+    station: String,
+    headline: String,
+    note: String,
+    primary: Pair<String, () -> Unit>,
+    secondary: Pair<String, () -> Unit>? = null,
+) {
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(headline) { runCatching { focus.requestFocus() } }
+    Row(horizontalArrangement = Arrangement.spacedBy(48.dp), verticalAlignment = Alignment.CenterVertically) {
+        CoverArt(coverUrl(station, track.albumId), 320.dp, track.title)
+        Column(Modifier.width(760.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(headline, style = MaterialTheme.typography.titleLarge, color = PairingPalette.Lavender)
+            Text(track.title, style = MaterialTheme.typography.displaySmall, maxLines = 2)
+            track.artist?.let { Text(it, style = MaterialTheme.typography.headlineSmall, color = PairingPalette.Muted, maxLines = 1) }
+            track.albumTitle?.let { Text(it, style = MaterialTheme.typography.titleMedium, color = PairingPalette.Muted, maxLines = 1) }
+            Spacer(Modifier.height(8.dp))
+            Text(note, style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Pill(primary.first, filled = true, onClick = primary.second, modifier = Modifier.focusRequester(focus))
+                secondary?.let { Pill(it.first, onClick = it.second) }
+            }
+        }
+    }
 }

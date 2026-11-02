@@ -22,6 +22,19 @@ internal enum class CatalogField(val wire: String, val label: String) {
     Title("title", "Song"),
     Artist("artist", "Artist"),
     Album("album", "Album"),
+    Genre("genre", "Genre"),
+}
+
+/** The station's own one-track suggestions. */
+internal enum class SuggestionMode(val wire: String) {
+    Random("random"),
+    LeastPlayed("randomleast"),
+}
+
+/** Album artwork on the station's own site; the id is validated like any album id before it is used. */
+internal fun coverUrl(station: String, albumId: String): String? {
+    val origin = StationOrigins.of(station) ?: return null
+    return if (albumId.matches(Regex("[A-Za-z0-9_-]{1,64}"))) "${origin}images/cover/$albumId.jpg" else null
 }
 
 internal sealed interface CatalogTarget {
@@ -53,6 +66,7 @@ internal interface RequestCatalog {
     suspend fun search(station: String, query: String, field: CatalogField): List<CatalogEntry>
     suspend fun albumsBy(station: String, artist: String): List<CatalogEntry>
     suspend fun album(station: String, albumId: String): CatalogAlbum
+    suspend fun suggest(station: String, mode: SuggestionMode): CatalogAlbum
 }
 
 /** Pure HTML parsing, kept apart from the network so it is unit tested against fixtures. */
@@ -128,6 +142,31 @@ internal class CatalogParser {
         return CatalogAlbum(albumTitle, tracks)
     }
 
+    /** The suggestion pages show one request row: button link, album link, "Album - Artist" and "n. Title (m:ss)". */
+    fun parseSuggestion(html: String, origin: String): CatalogAlbum {
+        val host = URI(origin).host
+        val document = Jsoup.parse(html, origin)
+        document.select("tr").forEach { row ->
+            val image = row.selectFirst("img[src*=requestbutton_request]") ?: return@forEach
+            val req = image.closest("a[href]")?.absUrl("href")?.let(::uriOrNull)
+                ?.takeIf { it.scheme == "https" && it.host.equals(host, true) && query(it, "name") == "Req" } ?: return@forEach
+            val albumId = query(req, "asin")?.takeIf { it.isNotBlank() } ?: return@forEach
+            val songId = query(req, "songID")?.takeIf { it.matches(NUMERIC) } ?: return@forEach
+            val details = row.selectFirst("td:has(b)") ?: return@forEach
+            val descriptor = details.selectFirst("b")?.text()?.clean().orEmpty()
+            val text = details.ownText().clean()
+            val title = text.replace(Regex("^\\d+\\.\\s*"), "").replace(Regex("\\s*\\(\\d{1,2}:\\d{2}\\)\\s*$"), "").clean()
+            if (title.isBlank()) return@forEach
+            val albumTitle = descriptor.substringBeforeLast(" - ", descriptor).clean().ifBlank { null }
+            val artist = descriptor.substringAfterLast(" - ", "").clean().ifBlank { null }
+            return CatalogAlbum(
+                albumTitle,
+                listOf(CatalogTrack(albumId, songId, title, artist, albumTitle, DURATION.find(text)?.value, eligible = true)),
+            )
+        }
+        return CatalogAlbum(null, emptyList())
+    }
+
     private fun uriOrNull(value: String) = runCatching { URI(value) }.getOrNull()
 
     private fun query(uri: URI, name: String): String? = uri.rawQuery.orEmpty().split('&')
@@ -168,6 +207,11 @@ internal class StationRequestCatalog(
     override suspend fun album(station: String, albumId: String): CatalogAlbum = withContext(Dispatchers.IO) {
         val origin = origin(station)
         parser.parseAlbum(get(origin, "modules.php?name=Album&asin=${enc(albumId)}"), origin, albumId)
+    }
+
+    override suspend fun suggest(station: String, mode: SuggestionMode): CatalogAlbum = withContext(Dispatchers.IO) {
+        val origin = origin(station)
+        parser.parseSuggestion(get(origin, "modules.php?name=Requests&${mode.wire}=1&searchpgstart=1"), origin)
     }
 
     private fun origin(station: String) = ORIGINS[station] ?: throw IOException("Unsupported station")

@@ -58,6 +58,24 @@ class RequestCatalogTest {
         assertEquals("Henry Mancini", tracks.first().artist)
     }
 
+    @Test fun suggestionPageYieldsOneTrack() {
+        val html = """<table><tr><td><a href="/modules.php?name=Req&amp;asin=B0015RB3S0&amp;songID=249430"><img src="/modules/SAM/images/requestbutton_request.png" alt="Request this track."></a></td>
+            <td><a href="modules.php?name=Album&amp;asin=B0015RB3S0"><img src="../../images/cover/040/B0015RB3S0.jpg"></a></td>
+            <td><b>&nbsp;Sudden Impact - Lalo Schifrin</b><br>&nbsp;4. Frisco Night (2:50)</td></tr></table>"""
+        val track = parser.parseSuggestion(html, origin).tracks.single()
+        assertEquals("B0015RB3S0:249430", track.trackRef)
+        assertEquals("Frisco Night", track.title)
+        assertEquals("Lalo Schifrin", track.artist)
+        assertEquals("Sudden Impact", track.albumTitle)
+        assertEquals("2:50", track.duration)
+    }
+
+    @Test fun coverUrlIsBuiltOnlyForKnownStationsAndSafeIds() {
+        assertEquals("https://streamingsoundtracks.com/images/cover/B00000JC79.jpg", coverUrl("sst", "B00000JC79"))
+        assertNull(coverUrl("zzz", "B00000JC79"))
+        assertNull(coverUrl("sst", "../x"))
+    }
+
     @Test fun linksToAnotherHostAreIgnored() {
         val html = """<table><tr><td><a href="https://evil.example/modules.php?name=Album&asin=X1">Bad</a></td></tr></table>"""
         assertTrue(parser.parseSearch(html, origin).isEmpty())
@@ -74,6 +92,8 @@ class RequestCatalogTest {
             return if (query == "none") emptyList() else listOf(CatalogEntry(CatalogTarget.Album("A-$query"), "Album $query", null, null))
         }
         override suspend fun albumsBy(station: String, artist: String) = listOf(CatalogEntry(CatalogTarget.Album("A1"), "By $artist", null, null))
+        override suspend fun suggest(station: String, mode: SuggestionMode) =
+            CatalogAlbum("Alb", listOf(CatalogTrack("A9", "9", "Pick", "Who", "Alb", "1:00", true)))
         override suspend fun album(station: String, albumId: String) =
             CatalogAlbum("T $albumId", listOf(CatalogTrack(albumId, "7", "Song", "Who", "T $albumId", "3:00", true)))
     }
