@@ -11,6 +11,7 @@ recorded by Gradle and in the release bundle dependency metadata.
   Core SplashScreen 1.2.0, Media3 1.11.0, Window 1.5.0, and their AndroidX
   transitive modules
 - Accompanist Drawable Painter 0.37.3
+- ZXing core 3.5.3 (QR code encoding for companion pairing)
 - Coil 3.4.0
 - Guava 33.3.1-android and FailureAccess 1.0.2
 - JetBrains Compose runtime transitive modules 1.9.3 and JetBrains AndroidX

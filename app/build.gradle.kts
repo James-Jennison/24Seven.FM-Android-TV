@@ -106,6 +106,7 @@ dependencies {
     implementation("androidx.media3:media3-session:1.11.0")
     implementation("androidx.mediarouter:mediarouter:1.8.1")
     implementation("org.jsoup:jsoup:1.22.2")
+    implementation("com.google.zxing:core:3.5.3")
     implementation("io.coil-kt.coil3:coil-compose:3.4.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.4.0")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")

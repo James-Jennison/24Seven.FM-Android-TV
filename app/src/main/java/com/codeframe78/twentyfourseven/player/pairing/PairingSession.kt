@@ -187,7 +187,8 @@ internal class PairingSession(
     fun onDisconnect(): Reaction {
         linkLost = true
         when (state) {
-            is PairingUiState.Ended, is PairingUiState.ShowingCode -> Unit
+            // A finished result stays on screen; acknowledging it then ends the pairing because the link is gone.
+            is PairingUiState.Ended, is PairingUiState.ShowingCode, is PairingUiState.Finished -> Unit
             is PairingUiState.Waiting -> finish(
                 // `submitting` always precedes the station request, so anything earlier means nothing went out.
                 if (phase == WaitingPhase.Submitting) RequestOutcome.UnknownCheckQueue

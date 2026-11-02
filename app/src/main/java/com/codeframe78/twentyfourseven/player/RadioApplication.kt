@@ -15,6 +15,7 @@ import com.codeframe78.twentyfourseven.player.domain.NowPlayingArtworkRepository
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingDetailsRepository
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingPublisher
 import com.codeframe78.twentyfourseven.player.domain.NowPlayingRepository
+import com.codeframe78.twentyfourseven.player.pairing.PairingController
 import com.codeframe78.twentyfourseven.player.playback.Media3PlaybackController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +47,10 @@ class AppContainer(application: Application) {
             remote = PlayerQueueRemoteDataSource(),
             snapshots = SharedPreferencesQueueSnapshotStore(application),
         )
+    }
+    /** Created on first use; with the PAIRING_ENABLED flag off it never starts a listener. */
+    internal val pairingController by lazy {
+        PairingController(application, applicationScope, BuildConfig.PAIRING_ENABLED)
     }
     val playbackController by lazy {
         Media3PlaybackController(application)

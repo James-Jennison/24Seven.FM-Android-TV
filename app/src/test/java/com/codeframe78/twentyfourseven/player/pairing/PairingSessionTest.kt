@@ -187,6 +187,15 @@ class PairingSessionTest {
         }
     }
 
+    @Test fun disconnectAfterAResultKeepsTheResultUntilAcknowledged() {
+        val s = waiting(WaitingPhase.PhoneConfirming)
+        s.onFrame(PhoneFrame.Declined(op), 5)
+        s.onDisconnect()
+        assertEquals(RequestOutcome.Declined, outcome(s))
+        s.acknowledgeResult()
+        assertEquals(PairingUiState.Ended(EndReason.Disconnected), s.state)
+    }
+
     @Test fun disconnectAfterSubmittingIsUnknownAndNeverResent() {
         val s = waiting(WaitingPhase.Submitting)
         val r = s.onDisconnect()

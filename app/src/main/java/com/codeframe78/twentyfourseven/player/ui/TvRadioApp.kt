@@ -218,6 +218,7 @@ internal fun TvRadioApp(
         }
         interactionRevision += 1
     }
+    val context = androidx.compose.ui.platform.LocalContext.current
     MaterialTheme(colorScheme = tvColorScheme(style)) {
         Box(
             modifier = Modifier
@@ -382,6 +383,10 @@ internal fun TvRadioApp(
                         onOpenIonTunnelColours = { menuDestination = TvMenuDestination.IonTunnelColours },
                         onOpenAccessibilityAndMotion = { menuDestination = TvMenuDestination.AccessibilityAndMotion },
                         onOpenAboutAndSupport = { menuDestination = TvMenuDestination.AboutAndSupport },
+                        // Null (no menu entry at all) unless the build was made with companion pairing enabled.
+                        onOpenPairing = if (com.codeframe78.twentyfourseven.player.BuildConfig.PAIRING_ENABLED) {
+                            { context.startActivity(com.codeframe78.twentyfourseven.player.pairing.PairingActivity.intent(context)) }
+                        } else null,
                         onDismiss = { menuDestination = menuDestination.backDestination() },
                     )
                 }
@@ -644,6 +649,7 @@ private fun TvGeneralOptionsSheet(
     onOpenIonTunnelColours: () -> Unit,
     onOpenAccessibilityAndMotion: () -> Unit,
     onOpenAboutAndSupport: () -> Unit,
+    onOpenPairing: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
     TvOptionsSheet(title = "General Options", onDismiss = onDismiss) { firstAction ->
@@ -686,6 +692,9 @@ private fun TvGeneralOptionsSheet(
             },
             onClick = onOpenAccessibilityAndMotion,
         )
+        onOpenPairing?.let {
+            TvOptionAction(title = "Pair a Phone", summary = "Scan a code to request songs from your phone", onClick = it)
+        }
         TvOptionAction(
             title = "About & Support",
             summary = "Version, privacy, licenses, and device status",
