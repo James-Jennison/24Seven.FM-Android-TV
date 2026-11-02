@@ -103,3 +103,13 @@ Accepted or disputed, with reasons: the QR carries the one-time secret and key h
 Open: PRIVACY.md and Play data-safety wording, Owner acceptance, TalkBack and lint runs, and a closure review of the fixes.
 
 Notes from review round 3: the 30-day vouching limit compares the stored hand-over time with the clock, and a session dated more than one day in the future is refused (a clock set back cannot extend the vouching, a clock that is a few hours off cannot lock a fresh hand-over out). A session stored before hand-over times existed starts its 30 days at first read, once, rather than forcing an immediate re-pair; that is a deliberate one-time trade-off. The JSON pre-check counts every opening bracket in a frame and rejects more than 64; nesting depth can never exceed that count, so the parser's recursion is bounded, and a frame with an unusually bracket-heavy label is rejected rather than risk the parser.
+
+### Review record (mandatory CRITICAL panel: architecture-synthetic, platform-together, deepseek)
+
+| Round | Broker change | Cycle | Candidate | Result |
+| --- | --- | --- | --- | --- |
+| 1 initial | tv-pairing-session-requests-20261102 | review-cycle-e1bb599a2858 | 1d27289 | 36 findings, all three COMPLETE; all dispositioned (14 fixed, rest duplicate, mitigated, not applicable, disputed or open) |
+| 2 closure | tv-pairing-session-requests-20261102-v2 | review-cycle-8432adb708ca | 7eb3032 | all three COMPLETE; 18 findings, fixed or dispositioned |
+| 3 closure | tv-pairing-session-requests-20261102-v3 | review-cycle-8dd651f9a108 | 564d08b | all three COMPLETE; no new code defects; evidence-quality and Owner items remain |
+
+Broker readiness for the v3 change is NOT_READY (REVIEW_FAILED) only because three items are recorded as unresolved on purpose: (1) the Owner decision on an on-TV accept step for each hand-over (a stranger holding a live pairing code could otherwise log the TV in as their own account), (2) Owner-approved PRIVACY.md and Play data-safety wording for the stored station login, and (3) validation still to run (TalkBack, lint, camera QR scan, standby/wake, Wi-Fi, and a real-phone hand-over and request on the final build). No release, signing or publication is requested or implied.
