@@ -266,7 +266,7 @@ internal class PairingHost(
         }
         if (refusal == null) handedOver += frame.station
         log("session hand-over: station=${frame.station} cookies=${frame.cookies.size} names=${frame.cookies.map { it.name }} result=${refusal ?: "stored"}")
-        conn.send(if (refusal == null) TvFrame.SessionOk(frame.station) else TvFrame.SessionRefused(refusal))
+        conn.send(if (refusal == null) TvFrame.SessionOk(frame.station) else TvFrame.SessionRefused(frame.station, refusal))
     }
 
     private fun send(conn: Conn, reaction: Reaction) {

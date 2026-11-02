@@ -126,7 +126,7 @@ internal sealed interface TvFrame {
         val album: String,
     ) : TvFrame
     data class SessionOk(val station: String) : TvFrame
-    data class SessionRefused(val reason: String) : TvFrame
+    data class SessionRefused(val station: String, val reason: String) : TvFrame
     data object Revoke : TvFrame
     data object Ping : TvFrame
     data object Pong : TvFrame
@@ -235,7 +235,7 @@ internal object PairingJson {
                 .put("artist", frame.artist)
                 .put("album", frame.album)
             is TvFrame.SessionOk -> json.put("type", "session_ok").put("station", frame.station)
-            is TvFrame.SessionRefused -> json.put("type", "session_refused").put("reason", frame.reason)
+            is TvFrame.SessionRefused -> json.put("type", "session_refused").put("station", frame.station).put("reason", frame.reason)
             TvFrame.Revoke -> json.put("type", "revoke")
             TvFrame.Ping -> json.put("type", "ping")
             TvFrame.Pong -> json.put("type", "pong")

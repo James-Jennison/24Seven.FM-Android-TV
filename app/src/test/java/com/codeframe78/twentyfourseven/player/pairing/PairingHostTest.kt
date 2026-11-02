@@ -217,7 +217,8 @@ class PairingHostTest {
     @Test fun sessionForAStationTheTvDoesNotKnowIsRefusedAndNeverStored() {
         val h = host(); val phone = pairedPhone(h)
         send(phone, sessionFrame(station = "zzz"))
-        assertEquals("unsupported_station", recv(phone)!!.getString("reason"))
+        val refused = recv(phone)!!
+        assertEquals("unsupported_station", refused.getString("reason")); assertEquals("zzz", refused.getString("station"))
         assertTrue(handed.isEmpty())
         h.close()
     }
