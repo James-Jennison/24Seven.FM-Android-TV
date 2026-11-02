@@ -96,6 +96,13 @@ internal sealed interface PhoneFrame {
  */
 internal data class GateAttestation(val adult: Boolean = false, val termsVersion: String? = null, val communityVisible: Boolean = false) {
     val allowsContributing: Boolean get() = adult && communityVisible && termsVersion == CURRENT_COMMUNITY_TERMS_VERSION
+
+    /** Why a hand-over must be refused, or null when the gate passes. */
+    val refusalReason: String? get() = when {
+        !adult || !communityVisible -> "gate_not_passed"
+        termsVersion != CURRENT_COMMUNITY_TERMS_VERSION -> "terms_out_of_date"
+        else -> null
+    }
 }
 
 /** The community terms version this TV build was written against; keep equal to the Player's constant. */
@@ -199,10 +206,12 @@ internal object PairingJson {
                     SessionCookie(name, value, c.optLong("maxAge", -1L))
                 }
                 if (cookies.map { it.name }.toSet().size != cookies.size) return bad("cookies")
+                // Spec: a nested `gate` object. Top-level fields are accepted too; anything else is "not vouched".
+                val g = json.optJSONObject("gate") ?: json
                 val gate = GateAttestation(
-                    adult = json.opt("adultAgeGate") == true,
-                    termsVersion = (json.opt("termsVersion") as? String)?.takeIf { it.length <= 32 && it.none(Char::isISOControl) },
-                    communityVisible = json.opt("communityVisible") == true,
+                    adult = g.opt("adultAgeGate") == true,
+                    termsVersion = (g.opt("termsVersion") as? String)?.takeIf { it.length <= 32 && it.none(Char::isISOControl) },
+                    communityVisible = g.opt("communityVisible") == true,
                 )
                 ParsedFrame.Frame(PhoneFrame.Session(station, account, cookies, gate))
             }

@@ -129,4 +129,14 @@ class PairingProtocolTest {
         assertFalse(gate(""","adultAgeGate":true,"termsVersion":"2026-07-18","communityVisible":false""").allowsContributing)
         assertFalse(gate(""","adultAgeGate":"true","termsVersion":"2026-07-18","communityVisible":true""").allowsContributing)
     }
+
+    @Test fun nestedGateObjectAndRefusalReasons() {
+        fun gate(g: String) = ((session("""[{"name":"a","value":"b"}]""", ""","gate":$g""") as ParsedFrame.Frame).frame as PhoneFrame.Session).gate
+        val ok = gate("""{"adultAgeGate":true,"termsVersion":"2026-07-18","communityVisible":true}""")
+        assertTrue(ok.allowsContributing); assertNull(ok.refusalReason)
+        assertEquals("gate_not_passed", gate("""{"adultAgeGate":false,"termsVersion":"2026-07-18","communityVisible":true}""").refusalReason)
+        assertEquals("gate_not_passed", gate("""{"adultAgeGate":true,"termsVersion":"2026-07-18","communityVisible":false}""").refusalReason)
+        assertEquals("terms_out_of_date", gate("""{"adultAgeGate":true,"termsVersion":"2025-01-01","communityVisible":true}""").refusalReason)
+        assertEquals("gate_not_passed", gate("""{}""").refusalReason)
+    }
 }

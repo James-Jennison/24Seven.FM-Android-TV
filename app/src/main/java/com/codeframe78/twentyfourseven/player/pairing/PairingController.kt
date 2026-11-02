@@ -64,6 +64,7 @@ internal class PairingController(
 
     private fun acceptSession(frame: PhoneFrame.Session): String? {
         if (StationOrigins.of(frame.station) == null) return "unsupported_station"
+        frame.gate.refusalReason?.let { return it }
         val session = stationSessionFrom(frame, System.currentTimeMillis())
         return try {
             store.save(session)
