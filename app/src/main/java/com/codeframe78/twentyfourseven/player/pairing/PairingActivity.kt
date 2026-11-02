@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -63,6 +64,9 @@ class PairingActivity : AppCompatActivity() {
                     screen = screen,
                     onNewCode = controller::begin,
                     onTestRequest = { controller.propose(LINK_TEST_TRACK) },
+                    onPickTrack = { station, track ->
+                        controller.propose(ProposedTrack(station, track.trackRef, track.title, track.artist.orEmpty(), track.albumTitle.orEmpty()))
+                    },
                     onDone = controller::acknowledgeResult,
                     onDisconnect = controller::revoke,
                     onClose = ::finish,
@@ -98,6 +102,7 @@ internal fun PairingScreen(
     screen: PairingScreenState,
     onNewCode: () -> Unit,
     onTestRequest: () -> Unit,
+    onPickTrack: (station: String, CatalogTrack) -> Unit,
     onDone: () -> Unit,
     onDisconnect: () -> Unit,
     onClose: () -> Unit,
@@ -111,11 +116,21 @@ internal fun PairingScreen(
             PairingScreenState.Closed -> Message("Starting…", "Back", onClose)
             is PairingScreenState.Active -> when (val ui = screen.ui) {
                 is PairingUiState.ShowingCode -> CodeScreen(screen.offer, onNewCode, onClose)
-                is PairingUiState.PairedIdle -> Message(
-                    "Paired with ${ui.phone} (${ui.account}) on ${stationName(ui.station)}.\nThe phone must stay open on the Player.",
-                    primary = "Send link test" to onTestRequest,
-                    secondary = "Disconnect" to onDisconnect,
-                )
+                is PairingUiState.PairedIdle -> {
+                    val scope = androidx.compose.runtime.rememberCoroutineScope()
+                    var browsing by remember(ui.station) { mutableStateOf(false) }
+                    val browser = remember(ui.station) { CatalogBrowser(StationRequestCatalog(), ui.station, scope) }
+                    if (browsing) {
+                        CatalogScreen(browser, onPick = { onPickTrack(ui.station, it) }, onExit = { browsing = false })
+                    } else {
+                        Message(
+                            "Paired with ${ui.phone} (${ui.account}) on ${stationName(ui.station)}.\nThe phone must stay open on the Player.",
+                            primary = "Find a song" to { browsing = true },
+                            secondary = "Disconnect" to onDisconnect,
+                            tertiary = "Send link test" to onTestRequest,
+                        )
+                    }
+                }
                 is PairingUiState.Waiting -> Message(
                     "${ui.track.title} — ${ui.track.artist}\n${waitingText(ui.phase)}",
                     primary = "Disconnect" to onDisconnect,
@@ -131,7 +146,7 @@ internal fun PairingScreen(
 private fun Message(text: String, label: String, onClick: () -> Unit) = Message(text, primary = label to onClick)
 
 @Composable
-private fun Message(text: String, primary: Pair<String, () -> Unit>, secondary: Pair<String, () -> Unit>? = null) {
+private fun Message(text: String, primary: Pair<String, () -> Unit>, secondary: Pair<String, () -> Unit>? = null, tertiary: Pair<String, () -> Unit>? = null) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(text) { runCatching { focus.requestFocus() } }
     Text(text, style = MaterialTheme.typography.headlineMedium)
@@ -139,6 +154,7 @@ private fun Message(text: String, primary: Pair<String, () -> Unit>, secondary: 
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Button(onClick = primary.second, modifier = Modifier.focusRequester(focus)) { Text(primary.first) }
         secondary?.let { Button(onClick = it.second) { Text(it.first) } }
+        tertiary?.let { Button(onClick = it.second) { Text(it.first) } }
     }
 }
 

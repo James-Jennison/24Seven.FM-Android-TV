@@ -1,0 +1,211 @@
+package com.codeframe78.twentyfourseven.player.pairing
+
+import com.codeframe78.twentyfourseven.player.data.TrustedStationNavigation
+import com.codeframe78.twentyfourseven.player.data.readBounded
+import org.jsoup.Jsoup
+import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URI
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
+
+/**
+ * Read-only view of a station's public request catalog. The TV only searches and reads album pages
+ * (no sign-in, no cookies); it never submits a request. The identifiers it extracts are passed to the
+ * phone as an opaque `trackRef`, and the phone re-resolves them itself before anything is sent.
+ */
+internal enum class CatalogField(val wire: String, val label: String) {
+    Title("title", "Song"),
+    Artist("artist", "Artist"),
+    Album("album", "Album"),
+}
+
+internal sealed interface CatalogTarget {
+    data class Album(val albumId: String) : CatalogTarget
+    data class Artist(val name: String) : CatalogTarget
+}
+
+internal data class CatalogEntry(val target: CatalogTarget, val title: String, val subtitle: String?, val year: String?)
+
+internal data class CatalogTrack(
+    val albumId: String,
+    val songId: String,
+    val title: String,
+    val artist: String?,
+    val albumTitle: String?,
+    val duration: String?,
+    /** Advisory only: the phone and the station decide whether a request is accepted. */
+    val eligible: Boolean,
+) {
+    /** `<albumId>:<songId>`, split at the last colon by the phone. */
+    val trackRef: String get() = "$albumId:$songId"
+}
+
+internal data class CatalogAlbum(val title: String?, val tracks: List<CatalogTrack>)
+
+internal interface RequestCatalog {
+    suspend fun search(station: String, query: String, field: CatalogField): List<CatalogEntry>
+    suspend fun albumsBy(station: String, artist: String): List<CatalogEntry>
+    suspend fun album(station: String, albumId: String): CatalogAlbum
+}
+
+/** Pure HTML parsing, kept apart from the network so it is unit tested against fixtures. */
+internal class CatalogParser {
+    fun parseSearch(html: String, origin: String): List<CatalogEntry> {
+        val host = URI(origin).host
+        return Jsoup.parse(html, origin).select("tr").mapNotNull { row ->
+            val albumLinks = row.select("a[href]").filter { link ->
+                val uri = uriOrNull(link.absUrl("href")) ?: return@filter false
+                uri.scheme == "https" && uri.host.equals(host, true) &&
+                    query(uri, "name") == "Album" && !query(uri, "asin").isNullOrBlank()
+            }
+            val albumIds = albumLinks.mapNotNull { query(URI(it.absUrl("href")), "asin") }.distinct()
+            if (albumIds.size == 1) {
+                val title = albumLinks.first().text().clean()
+                val subtitle = albumLinks.getOrNull(1)?.text()?.clean()
+                if (title.isBlank() || albumLinks.size > 1 && subtitle.isNullOrBlank()) return@mapNotNull null
+                val year = row.select("td").map { it.text().clean() }.lastOrNull { it.matches(YEAR) }
+                return@mapNotNull CatalogEntry(CatalogTarget.Album(albumIds.single()), title, subtitle, year)
+            }
+            val artistLink = row.select("a[href]").firstOrNull { link ->
+                val uri = uriOrNull(link.absUrl("href")) ?: return@firstOrNull false
+                uri.scheme == "https" && uri.host.equals(host, true) && query(uri, "name") == "Requests" &&
+                    query(uri, "postartistsearch").equals("true", true) && !query(uri, "artist").isNullOrBlank()
+            } ?: return@mapNotNull null
+            val name = query(URI(artistLink.absUrl("href")), "artist")?.clean()
+                ?.takeIf { it.length <= MAX_ARTIST_CHARS } ?: return@mapNotNull null
+            val display = artistLink.text().clean().ifBlank { return@mapNotNull null }
+            val genre = row.select("td").map { it.text().clean() }.lastOrNull { it.isNotBlank() && it != display }
+            CatalogEntry(CatalogTarget.Artist(name), display, genre, null)
+        }.distinctBy { listOf(it.target, it.title, it.subtitle) }.take(MAX_ENTRIES)
+    }
+
+    fun parseAlbum(html: String, origin: String, albumId: String): CatalogAlbum {
+        val host = URI(origin).host
+        val document = Jsoup.parse(html, origin)
+        val albumTitle = (document.selectFirst("meta[property=\"og:title\"]")?.attr("content")
+            ?: document.title().substringAfter(" - ", "")).substringBefore(" | ").clean().ifBlank { null }
+        val tracks = document.select("tr").mapNotNull { row ->
+            val image = row.selectFirst("img[src*=requestbutton]") ?: return@mapNotNull null
+            val uri = image.closest("a[href]")?.absUrl("href")?.let(::uriOrNull)
+            val songId = uri?.takeIf {
+                it.scheme == "https" && it.host.equals(host, true) &&
+                    query(it, "name") == "Req" && query(it, "asin") == albumId
+            }?.let { query(it, "songID") }?.takeIf { it.matches(NUMERIC) } ?: return@mapNotNull null
+            val cells = row.select("td")
+            val titleCell = cells.firstOrNull { it.select("a[href*=postartistsearch]").isNotEmpty() }
+                ?: cells.firstOrNull {
+                    val t = it.text().clean()
+                    (it.ownText().clean().isNotBlank() || it.selectFirst("span[itemprop=name]") != null) &&
+                        t.length > 2 && !t.matches(DURATION) && !t.matches(NUMERIC)
+                } ?: return@mapNotNull null
+            // The live pages put the title in a schema.org span; older markup used the cell's own text.
+            val title = titleCell.select("span[itemprop=name]").firstOrNull { it.closest("a") == null }?.text()?.clean()
+                ?.takeIf { it.isNotBlank() }
+                ?: titleCell.ownText().clean().ifBlank { titleCell.textNodes().joinToString(" ") { it.text() }.clean() }
+            if (title.isBlank()) return@mapNotNull null
+            CatalogTrack(
+                albumId = albumId,
+                songId = songId,
+                title = title,
+                artist = titleCell.select("a[href*=postartistsearch]").joinToString(", ") { it.text().clean() }.ifBlank { null },
+                albumTitle = albumTitle,
+                duration = cells.map { it.text().clean() }.firstOrNull { it.matches(DURATION) },
+                eligible = image.attr("src").contains("requestbutton_request"),
+            )
+        }.distinctBy { it.songId }.take(MAX_TRACKS)
+        return CatalogAlbum(albumTitle, tracks)
+    }
+
+    private fun uriOrNull(value: String) = runCatching { URI(value) }.getOrNull()
+
+    private fun query(uri: URI, name: String): String? = uri.rawQuery.orEmpty().split('&')
+        .mapNotNull { pair -> pair.split('=', limit = 2).takeIf { it.size == 2 } }
+        .firstOrNull { it[0].equals(name, true) }
+        ?.get(1)
+        ?.let { runCatching { URLDecoder.decode(it, "UTF-8") }.getOrNull() }
+
+    private fun String.clean() = replace(Regex("\\s+"), " ").trim()
+
+    private companion object {
+        val YEAR = Regex("(?:19|20)\\d{2}")
+        val DURATION = Regex("\\d{1,2}:\\d{2}")
+        val NUMERIC = Regex("\\d+")
+        const val MAX_ENTRIES = 100
+        const val MAX_TRACKS = 250
+        const val MAX_ARTIST_CHARS = 200
+    }
+}
+
+/** Anonymous, same-origin HTTPS GETs of the public request pages; bounded in size, time and redirects. */
+internal class StationRequestCatalog(
+    private val parser: CatalogParser = CatalogParser(),
+    private val connect: (URI) -> HttpURLConnection = { it.toURL().openConnection() as HttpURLConnection },
+) : RequestCatalog {
+    override suspend fun search(station: String, query: String, field: CatalogField): List<CatalogEntry> {
+        val origin = origin(station)
+        val html = get(origin, "modules.php?name=Requests&searchfor=1&searchpgstart=1&searchby=${field.wire}&searchtext=${enc(query)}&search=Search")
+        return parser.parseSearch(html, origin)
+    }
+
+    override suspend fun albumsBy(station: String, artist: String): List<CatalogEntry> {
+        val origin = origin(station)
+        return parser.parseSearch(get(origin, "modules.php?name=Requests&postartistsearch=true&artist=${enc(artist)}"), origin)
+    }
+
+    override suspend fun album(station: String, albumId: String): CatalogAlbum {
+        val origin = origin(station)
+        return parser.parseAlbum(get(origin, "modules.php?name=Album&asin=${enc(albumId)}"), origin, albumId)
+    }
+
+    private fun origin(station: String) = ORIGINS[station] ?: throw IOException("Unsupported station")
+
+    private fun get(origin: String, path: String): String {
+        val expected = URI(origin)
+        var uri = expected.resolve(path)
+        repeat(MAX_REDIRECTS + 1) { n ->
+            TrustedStationNavigation.requireSameHttpsOrigin(uri, expected)
+            val connection = connect(uri)
+            try {
+                connection.connectTimeout = TIMEOUT_MILLIS
+                connection.readTimeout = TIMEOUT_MILLIS
+                connection.instanceFollowRedirects = false
+                connection.setRequestProperty("Accept", "text/html")
+                connection.setRequestProperty("User-Agent", USER_AGENT)
+                val status = connection.responseCode
+                if (status in REDIRECTS) {
+                    if (n == MAX_REDIRECTS) throw IOException("Too many redirects")
+                    uri = TrustedStationNavigation.resolveRedirect(uri, connection.getHeaderField("Location"), expected)
+                    return@repeat
+                }
+                if (status !in 200..299) throw IOException("Station returned HTTP $status")
+                val charset = connection.contentType?.substringAfter("charset=", "")?.substringBefore(';')?.trim()?.trim('"')
+                    ?.takeIf(String::isNotEmpty)?.let { runCatching { Charset.forName(it) }.getOrNull() }
+                    ?: StandardCharsets.ISO_8859_1
+                return connection.inputStream.bufferedReader(charset).use { it.readBounded(MAX_CHARS) }
+            } finally {
+                connection.disconnect()
+            }
+        }
+        throw IOException("Request did not complete")
+    }
+
+    private fun enc(value: String) = URLEncoder.encode(value, "UTF-8")
+
+    private companion object {
+        const val USER_AGENT = "24Seven.FM-TV/0.1 (Android; anonymous listener)"
+        const val TIMEOUT_MILLIS = 10_000
+        const val MAX_CHARS = 512_000
+        const val MAX_REDIRECTS = 5
+        val REDIRECTS = setOf(301, 302, 303, 307, 308)
+        val ORIGINS = mapOf(
+            "sst" to "https://streamingsoundtracks.com/",
+            "1980s" to "https://1980s.fm/",
+            "afm" to "https://adagio.fm/",
+            "dfm" to "https://death.fm/",
+            "efm" to "https://entranced.fm/",
+        )
+    }
+}
