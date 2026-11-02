@@ -46,8 +46,8 @@ internal fun CatalogScreen(browser: CatalogBrowser, onPick: (CatalogTrack) -> Un
             is CatalogUi.Entries -> ListStep(state.heading, state.items, key = { "${it.target}" }, onBack = { if (!browser.back()) onExit() },
                 title = { it.title }, detail = { listOfNotNull(it.subtitle, it.year).joinToString(" · ") }, onClick = browser::open)
             is CatalogUi.Tracks -> ListStep(state.heading, state.tracks, key = { it.songId }, onBack = { if (!browser.back()) onExit() },
-                title = { it.title }, detail = { listOfNotNull(it.artist, it.duration, if (it.eligible) null else "not requestable now").joinToString(" · ") },
-                onClick = onPick)
+                title = { it.title }, detail = { listOfNotNull(it.artist, it.duration, if (it.eligible) null else "Can't request now: ${it.note}").joinToString(" · ") },
+                onClick = { if (it.eligible) onPick(it) })
         }
     }
 }

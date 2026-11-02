@@ -59,6 +59,7 @@ class PairingActivity : AppCompatActivity() {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 val screen by controller.state.collectAsStateWithLifecycle()
                 val account by controller.account.collectAsStateWithLifecycle()
+                val tvRequest by controller.request.collectAsStateWithLifecycle()
                 // Outside a Surface the content colour is black; this screen draws on the theme background.
                 CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
                 PairingScreen(
@@ -68,8 +69,12 @@ class PairingActivity : AppCompatActivity() {
                     onNewCode = controller::begin,
                     onTestRequest = { controller.propose(LINK_TEST_TRACK) },
                     onPickTrack = { station, track ->
-                        controller.propose(ProposedTrack(station, track.trackRef, track.title, track.artist.orEmpty(), track.albumTitle.orEmpty()))
+                        if (BuildConfig.TV_REQUESTS_ENABLED) controller.beginTvRequest(track, station)
+                        else controller.propose(ProposedTrack(station, track.trackRef, track.title, track.artist.orEmpty(), track.albumTitle.orEmpty()))
                     },
+                    tvRequest = tvRequest,
+                    onConfirmTvRequest = controller::confirmTvRequest,
+                    onDismissTvRequest = controller::dismissTvRequest,
                     onDone = controller::acknowledgeResult,
                     onDisconnect = controller::revoke,
                     onClose = ::finish,
@@ -105,6 +110,9 @@ internal fun PairingScreen(
     screen: PairingScreenState,
     account: StationAccount?,
     onSignOut: () -> Unit,
+    tvRequest: TvRequestUi?,
+    onConfirmTvRequest: () -> Unit,
+    onDismissTvRequest: () -> Unit,
     onNewCode: () -> Unit,
     onTestRequest: () -> Unit,
     onPickTrack: (station: String, CatalogTrack) -> Unit,
@@ -116,6 +124,18 @@ internal fun PairingScreen(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 64.dp, vertical = 40.dp),
         verticalArrangement = Arrangement.Center,
     ) {
+        if (tvRequest != null) {
+            when (tvRequest) {
+                is TvRequestUi.Confirming -> Message(
+                    "Request \"${tvRequest.track.title}\"${tvRequest.track.artist?.let { " by $it" }.orEmpty()} on ${stationName(tvRequest.station)}?\nThis sends the request to the station now.",
+                    primary = "Request" to onConfirmTvRequest,
+                    secondary = "Cancel" to onDismissTvRequest,
+                )
+                is TvRequestUi.Sending -> Text("Sending the request…", style = MaterialTheme.typography.headlineMedium)
+                is TvRequestUi.Done -> Message("${tvRequest.track.title}\n${tvRequestText(tvRequest.result)}", "OK", onDismissTvRequest)
+            }
+            return@Column
+        }
         when (screen) {
             is PairingScreenState.Unavailable -> Message(unavailableText(screen.why), "Back", onClose)
             PairingScreenState.Closed -> Message("Starting…", "Back", onClose)
@@ -251,4 +271,12 @@ internal fun accountText(account: StationAccount) = when (account.state) {
     SignInState.SignedIn -> "Signed in as ${account.label} on ${stationName(account.station)}."
     SignInState.SignedOut -> "The session for ${account.label} on ${stationName(account.station)} has expired. Pair with your phone again."
     SignInState.Unknown -> "Signed in as ${account.label} on ${stationName(account.station)} (not checked yet)."
+}
+
+internal fun tvRequestText(result: TvRequestResult) = when (result) {
+    TvRequestResult.Queued -> "Requested. It is in the station's Queue."
+    is TvRequestResult.CheckQueue -> "${result.why} Check the Queue before requesting again. It was not resent."
+    is TvRequestResult.Rejected -> result.message
+    TvRequestResult.SignInExpired -> "The station says you are signed out. Pair with your phone again. Nothing was requested."
+    is TvRequestResult.NotAllowed -> "${result.why} Nothing was requested."
 }

@@ -40,6 +40,8 @@ internal data class CatalogTrack(
     val duration: String?,
     /** Advisory only: the phone and the station decide whether a request is accepted. */
     val eligible: Boolean,
+    /** The station's own reason when a track cannot be requested now, e.g. "Request cooldown ends: ...". */
+    val note: String? = null,
 ) {
     /** `<albumId>:<songId>`, split at the last colon by the phone. */
     val trackRef: String get() = "$albumId:$songId"
@@ -95,7 +97,9 @@ internal class CatalogParser {
             val songId = uri?.takeIf {
                 it.scheme == "https" && it.host.equals(host, true) &&
                     query(it, "name") == "Req" && query(it, "asin") == albumId
-            }?.let { query(it, "songID") }?.takeIf { it.matches(NUMERIC) } ?: return@mapNotNull null
+            }?.let { query(it, "songID") }?.takeIf { it.matches(NUMERIC) }
+            // A disabled button has no request link: keep the row so the listener sees why, never as requestable.
+            val reason = image.attr("alt").ifBlank { image.attr("title") }.clean().take(MAX_NOTE_CHARS).ifBlank { null }
             val cells = row.select("td")
             val titleCell = cells.firstOrNull { it.select("a[href*=postartistsearch]").isNotEmpty() }
                 ?: cells.firstOrNull {
@@ -110,14 +114,15 @@ internal class CatalogParser {
             if (title.isBlank()) return@mapNotNull null
             CatalogTrack(
                 albumId = albumId,
-                songId = songId,
+                songId = songId.orEmpty(),
                 title = title,
                 artist = titleCell.select("a[href*=postartistsearch]").joinToString(", ") { it.text().clean() }.ifBlank { null },
                 albumTitle = albumTitle,
                 duration = cells.map { it.text().clean() }.firstOrNull { it.matches(DURATION) },
-                eligible = image.attr("src").contains("requestbutton_request"),
+                eligible = songId != null && image.attr("src").contains("requestbutton_request"),
+                note = if (songId == null || !image.attr("src").contains("requestbutton_request")) reason ?: "Not available to request right now." else null,
             )
-        }.distinctBy { it.songId }.take(MAX_TRACKS)
+        }.distinctBy { it.songId.ifBlank { "${it.title}|${it.artist}" } }.take(MAX_TRACKS)
         return CatalogAlbum(albumTitle, tracks)
     }
 
@@ -138,6 +143,7 @@ internal class CatalogParser {
         const val MAX_ENTRIES = 100
         const val MAX_TRACKS = 250
         const val MAX_ARTIST_CHARS = 200
+        const val MAX_NOTE_CHARS = 120
     }
 }
 

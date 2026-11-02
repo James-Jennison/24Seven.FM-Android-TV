@@ -22,18 +22,22 @@ class RequestCatalogTest {
     @Test fun albumPageYieldsTracksWithTrackRefs() {
         val album = parser.parseAlbum(fixture("album.html"), origin, "B00000JC79")
         assertEquals("Peter Gunn - Henry Mancini", album.title)
-        // The station's disabled button carries no request link, so that track is not offered at all.
-        assertEquals(2, album.tracks.size)
+        // A disabled button has no request link: the track is listed, not requestable, with the station's reason.
+        assertEquals(3, album.tracks.size)
+        val blocked = album.tracks.last()
+        assertFalse(blocked.eligible)
+        assertEquals("", blocked.songId)
+        assertTrue(blocked.note!!.startsWith("Request cooldown ends"))
         val first = album.tracks.first()
         assertEquals("Peter Gunn", first.title)
         assertEquals("Henry Mancini", first.artist)
         assertEquals("B00000JC79:224947", first.trackRef)
         assertTrue(first.eligible)
-        assertTrue(album.tracks.all { it.songId.isNotBlank() })
+        assertTrue(album.tracks.filter { it.eligible }.all { it.songId.isNotBlank() })
     }
 
     @Test fun albumPageForAnotherAlbumIdYieldsNothing() {
-        assertTrue(parser.parseAlbum(fixture("album.html"), origin, "OTHER").tracks.isEmpty())
+        assertTrue(parser.parseAlbum(fixture("album.html"), origin, "OTHER").tracks.none { it.eligible })
     }
 
     @Test fun searchPageYieldsAlbumsAndArtists() {

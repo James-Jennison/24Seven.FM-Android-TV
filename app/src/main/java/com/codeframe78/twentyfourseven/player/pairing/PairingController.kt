@@ -26,6 +26,12 @@ internal sealed interface PairingScreenState {
  * Starts and ends the pairing for the pairing screen. A listener exists only between [begin] and [end]
  * (or the end of the pairing itself), so nothing runs while the screen is not showing.
  */
+internal sealed interface TvRequestUi {
+    data class Confirming(val track: CatalogTrack, val station: String) : TvRequestUi
+    data class Sending(val track: CatalogTrack) : TvRequestUi
+    data class Done(val track: CatalogTrack, val result: TvRequestResult) : TvRequestUi
+}
+
 internal data class StationAccount(val label: String, val station: String, val state: SignInState)
 
 internal class PairingController(
@@ -34,7 +40,41 @@ internal class PairingController(
     private val enabled: Boolean,
     private val store: StationSessionStore = AndroidKeystoreStationSessionStore(context),
     private val accountCheck: StationAccountCheck = HomePageAccountCheck(),
+    private val submitter: RequestSubmitter = RequestSubmitter(
+        enabled = com.codeframe78.twentyfourseven.player.BuildConfig.TV_REQUESTS_ENABLED,
+        queue = QueueCheck { station, _, songId ->
+            val payload = com.codeframe78.twentyfourseven.player.data.PlayerQueueRemoteDataSource()
+                .fetchForVerification(com.codeframe78.twentyfourseven.player.domain.StationId(station))
+            payload.upcoming.any { it.songId == songId }
+        },
+    ),
 ) {
+    /** The TV's own request flow (only with TV_REQUESTS_ENABLED): confirm on the TV, send once, show the result. */
+    private val _request = MutableStateFlow<TvRequestUi?>(null)
+    val request: StateFlow<TvRequestUi?> = _request
+
+    /** The listener picked a track: ask them to confirm on the TV. Nothing is sent yet. */
+    fun beginTvRequest(track: CatalogTrack, station: String) {
+        if (_request.value != null) return
+        _request.value = TvRequestUi.Confirming(track, station)
+    }
+
+    /** The listener confirmed. Sends exactly once; a second call while sending or after a result does nothing. */
+    fun confirmTvRequest() {
+        val current = _request.value as? TvRequestUi.Confirming ?: return
+        _request.value = TvRequestUi.Sending(current.track)
+        scope.launch {
+            val session = runCatching { store.load() }.getOrNull()
+            val result = submitter.submit(session, current.track, current.station)
+            android.util.Log.i("PairingHost", "tv request: ${result::class.simpleName}")
+            _request.value = TvRequestUi.Done(current.track, result)
+        }
+    }
+
+    fun dismissTvRequest() {
+        if (_request.value !is TvRequestUi.Sending) _request.value = null
+    }
+
     /** The session the phone handed over, shown as "Signed in as <label>"; it outlives any pairing. */
     private val _account = MutableStateFlow<StationAccount?>(null)
     val account: StateFlow<StationAccount?> = _account
