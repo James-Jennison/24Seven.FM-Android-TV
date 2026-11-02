@@ -31,7 +31,9 @@ class PairingHostTest {
     @Before fun setUp() { scope = CoroutineScope(SupervisorJob() + Dispatchers.Default) }
     @After fun tearDown() { sockets.forEach { runCatching { it.close() } }; scope.cancel() }
 
-    private fun host(keepAlive: PairingHost.KeepAlive = PairingHost.KeepAlive(tickMillis = 20)): PairingHost =
+    private val handed = mutableListOf<PhoneFrame.Session>()
+
+    private fun host(keepAlive: PairingHost.KeepAlive = PairingHost.KeepAlive(tickMillis = 20), refuse: String? = null): PairingHost =
         PairingHost(
             parentScope = scope,
             openServer = { ServerSocket(0, 8, InetAddress.getLoopbackAddress()) },
@@ -43,6 +45,7 @@ class PairingHostTest {
             epochMillis = System::currentTimeMillis,
             random = SecureRandom(),
             keepAlive = keepAlive,
+            acceptSession = { handed += it; refuse },
         ).also { it.start() }
 
     private fun connect(h: PairingHost) = Socket(InetAddress.getLoopbackAddress(), h.offer.port).also { sockets += it; it.soTimeout = 3000 }
@@ -179,6 +182,44 @@ class PairingHostTest {
         h.revoke()
         assertEquals("revoke", recv(phone)!!.getString("type"))
         awaitState(h, "revoked") { it == PairingUiState.Ended(EndReason.RevokedByTv) }
+        h.close()
+    }
+
+    private fun sessionFrame(station: String = "sst", cookie: String = "abc123") =
+        """{"v":1,"type":"session","station":"$station","account":"dj_x","cookies":[{"name":"PHPSESSID","value":"$cookie","maxAge":-1}]}"""
+
+    @Test fun sessionHandOverIsStoredAndAcknowledgedOnce() {
+        val h = host(); val phone = pairedPhone(h)
+        send(phone, sessionFrame())
+        val ok = recv(phone)!!
+        assertEquals("session_ok", ok.getString("type")); assertEquals("sst", ok.getString("station"))
+        assertEquals(1, handed.size); assertEquals("PHPSESSID", handed.single().cookies.single().name)
+        send(phone, sessionFrame())
+        assertEquals("already_handed_over", recv(phone)!!.getString("reason"))
+        assertEquals(1, handed.size)
+        h.close()
+    }
+
+    @Test fun sessionForAnotherStationIsRefusedAndNeverStored() {
+        val h = host(); val phone = pairedPhone(h)
+        send(phone, sessionFrame(station = "afm"))
+        assertEquals("wrong_station", recv(phone)!!.getString("reason"))
+        assertTrue(handed.isEmpty())
+        h.close()
+    }
+
+    @Test fun storageRefusalIsReportedToThePhone() {
+        val h = host(refuse = "storage_failed"); val phone = pairedPhone(h)
+        send(phone, sessionFrame())
+        assertEquals("storage_failed", recv(phone)!!.getString("reason"))
+        h.close()
+    }
+
+    @Test fun sessionBeforePairingClosesTheConnection() {
+        val h = host(); val s = connect(h)
+        send(s, sessionFrame())
+        assertNull(runCatching { recv(s) }.getOrNull())
+        assertTrue(handed.isEmpty())
         h.close()
     }
 }

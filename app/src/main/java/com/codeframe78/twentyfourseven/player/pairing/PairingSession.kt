@@ -77,6 +77,9 @@ internal class PairingSession(
     var state: PairingUiState = PairingUiState.ShowingCode(codeExpiresAtMillis)
         private set
 
+    /** The station of the phone's pairing; empty before pairing. */
+    val pairedStation: String get() = station
+
     val isPaired: Boolean get() = secrets == null && state !is PairingUiState.Ended
 
     fun onFrame(frame: PhoneFrame, nowMillis: Long): Reaction {
@@ -143,7 +146,8 @@ internal class PairingSession(
             end(EndReason.RevokedByPhone)
             Reaction(close = true)
         }
-        is PhoneFrame.Pair, PhoneFrame.Ping, PhoneFrame.Pong -> Reaction()
+        // The driver answers a session hand-over itself (it owns storage); the state machine ignores it.
+        is PhoneFrame.Session, is PhoneFrame.Pair, PhoneFrame.Ping, PhoneFrame.Pong -> Reaction()
     }
 
     /** The listener chose a track on the TV. Valid only when paired and idle (or after a result). */

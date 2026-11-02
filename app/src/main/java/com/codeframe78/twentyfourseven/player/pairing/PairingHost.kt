@@ -66,6 +66,8 @@ internal class PairingHost(
     private val keepAlive: KeepAlive = KeepAlive(),
     /** Diagnostics only: connection and frame-type events, never codes, proofs, secrets or key material. */
     private val log: (String) -> Unit = {},
+    /** Stores a handed-over session; returns null when accepted or a short refusal reason. Must not log values. */
+    private val acceptSession: (PhoneFrame.Session) -> String? = { "unsupported" },
 ) {
     internal data class KeepAlive(
         val pingEveryMillis: Long = 15_000,
@@ -178,8 +180,9 @@ internal class PairingHost(
             while (true) {
                 val text = FrameCodec.read(conn.socket.getInputStream()) ?: break
                 conn.lastRx = monotonicMillis()
-                log("frame received: ${frameName(PairingJson.parsePhoneFrame(text))}")
-                when (val parsed = PairingJson.parsePhoneFrame(text)) {
+                val parsed = PairingJson.parsePhoneFrame(text)
+                log("frame received: ${frameName(parsed)}")
+                when (parsed) {
                     is ParsedFrame.Frame -> events.send(Event.Received(conn, parsed.frame))
                     // Answered here, before the socket closes, so the error actually reaches the phone.
                     ParsedFrame.UnsupportedVersion -> { conn.send(TvFrame.Error("unsupported_version")); break }
@@ -239,6 +242,7 @@ internal class PairingHost(
         // Until a connection has paired, the only frame it may send is `pair`.
         if (!isBound && frame !is PhoneFrame.Pair) { conn.close(); return }
         // Once paired, a second `pair` on the bound connection is answered by the session as already_paired.
+        if (isBound && frame is PhoneFrame.Session) { onSessionFrame(conn, frame); return }
         val before = session.isPaired
         val reaction = session.onFrame(frame, now)
         if (frame is PhoneFrame.Pair) log("pair result: ${reaction.frames.firstOrNull()?.let { it::class.simpleName } ?: "none"}")
@@ -249,6 +253,19 @@ internal class PairingHost(
             synchronized(conns) { conns.filter { it !== conn }.forEach { it.close() } }
         }
         send(conn, reaction)
+    }
+
+    private var sessionHandedOver = false
+
+    private fun onSessionFrame(conn: Conn, frame: PhoneFrame.Session) {
+        val refusal = when {
+            sessionHandedOver -> "already_handed_over"
+            frame.station != session.pairedStation -> "wrong_station"
+            else -> acceptSession(frame)
+        }
+        if (refusal == null) sessionHandedOver = true
+        log("session hand-over: station=${frame.station} cookies=${frame.cookies.size} names=${frame.cookies.map { it.name }} result=${refusal ?: "stored"}")
+        conn.send(if (refusal == null) TvFrame.SessionOk(frame.station) else TvFrame.SessionRefused(refusal))
     }
 
     private fun send(conn: Conn, reaction: Reaction) {

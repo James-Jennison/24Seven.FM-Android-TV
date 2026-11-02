@@ -26,11 +26,55 @@ internal sealed interface PairingScreenState {
  * Starts and ends the pairing for the pairing screen. A listener exists only between [begin] and [end]
  * (or the end of the pairing itself), so nothing runs while the screen is not showing.
  */
+internal data class StationAccount(val label: String, val station: String, val state: SignInState)
+
 internal class PairingController(
     private val context: Context,
     private val scope: CoroutineScope,
     private val enabled: Boolean,
+    private val store: StationSessionStore = AndroidKeystoreStationSessionStore(context),
+    private val accountCheck: StationAccountCheck = HomePageAccountCheck(),
 ) {
+    /** The session the phone handed over, shown as "Signed in as <label>"; it outlives any pairing. */
+    private val _account = MutableStateFlow<StationAccount?>(null)
+    val account: StateFlow<StationAccount?> = _account
+
+    /** Loads a stored session (no network) so the screen can show it. Call when the pairing screen starts. */
+    fun refreshAccount() {
+        if (!enabled) return
+        val stored = runCatching { store.load() }.getOrNull()
+        _account.value = stored?.let { StationAccount(it.account, it.station, _account.value?.takeIf { a -> a.label == it.account }?.state ?: SignInState.Unknown) }
+        if (stored != null) verify(stored)
+    }
+
+    /** Deletes the session on this TV only. It does not ask the station to log out, which would end the phone's session too. */
+    fun signOutOnThisTv() {
+        store.clear()
+        _account.value = null
+        android.util.Log.i("PairingHost", "session cleared on this TV")
+    }
+
+    private fun verify(session: StationSession) {
+        scope.launch {
+            val state = accountCheck.check(session)
+            android.util.Log.i("PairingHost", "session check: station=${session.station} signedIn=${state == SignInState.SignedIn} (${state.name})")
+            if (_account.value?.label == session.account) _account.value = StationAccount(session.account, session.station, state)
+        }
+    }
+
+    private fun acceptSession(frame: PhoneFrame.Session): String? {
+        if (StationOrigins.of(frame.station) == null) return "unsupported_station"
+        val session = stationSessionFrom(frame, System.currentTimeMillis())
+        return try {
+            store.save(session)
+            _account.value = StationAccount(session.account, session.station, SignInState.Unknown)
+            verify(session)
+            null
+        } catch (_: Exception) {
+            "storage_failed"
+        }
+    }
+
     private val _state = MutableStateFlow<PairingScreenState>(if (enabled) PairingScreenState.Closed else PairingScreenState.Unavailable(PairingUnavailable.Disabled))
     val state: StateFlow<PairingScreenState> = _state
     private var host: PairingHost? = null
@@ -54,6 +98,7 @@ internal class PairingController(
                 monotonicMillis = SystemClock::elapsedRealtime,
                 epochMillis = System::currentTimeMillis,
                 log = { android.util.Log.i("PairingHost", it) },
+                acceptSession = ::acceptSession,
             )
             key = newKey
             host = newHost

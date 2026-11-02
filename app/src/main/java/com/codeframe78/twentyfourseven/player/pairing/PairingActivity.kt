@@ -58,10 +58,13 @@ class PairingActivity : AppCompatActivity() {
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 val screen by controller.state.collectAsStateWithLifecycle()
+                val account by controller.account.collectAsStateWithLifecycle()
                 // Outside a Surface the content colour is black; this screen draws on the theme background.
                 CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
                 PairingScreen(
                     screen = screen,
+                    account = account,
+                    onSignOut = controller::signOutOnThisTv,
                     onNewCode = controller::begin,
                     onTestRequest = { controller.propose(LINK_TEST_TRACK) },
                     onPickTrack = { station, track ->
@@ -78,7 +81,7 @@ class PairingActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        if (BuildConfig.PAIRING_ENABLED) controller.begin()
+        if (BuildConfig.PAIRING_ENABLED) { controller.refreshAccount(); controller.begin() }
     }
 
     override fun onStop() {
@@ -100,6 +103,8 @@ class PairingActivity : AppCompatActivity() {
 @Composable
 internal fun PairingScreen(
     screen: PairingScreenState,
+    account: StationAccount?,
+    onSignOut: () -> Unit,
     onNewCode: () -> Unit,
     onTestRequest: () -> Unit,
     onPickTrack: (station: String, CatalogTrack) -> Unit,
@@ -138,6 +143,12 @@ internal fun PairingScreen(
                 is PairingUiState.Finished -> Message("${ui.track.title}\n${outcomeText(ui.outcome)}", "OK", onDone)
                 is PairingUiState.Ended -> Message(endedText(ui.reason), "New code" to onNewCode, "Back" to onClose)
             }
+        }
+        if (account != null) {
+            Spacer(Modifier.height(24.dp))
+            Text(accountText(account), style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Button(onClick = onSignOut) { Text("Sign out on this TV") }
         }
     }
 }
@@ -234,4 +245,10 @@ private fun stationName(id: String) = when (id) {
     "dfm" -> "Death.FM"
     "efm" -> "Entranced.FM"
     else -> id
+}
+
+internal fun accountText(account: StationAccount) = when (account.state) {
+    SignInState.SignedIn -> "Signed in as ${account.label} on ${stationName(account.station)}."
+    SignInState.SignedOut -> "The session for ${account.label} on ${stationName(account.station)} has expired. Pair with your phone again."
+    SignInState.Unknown -> "Signed in as ${account.label} on ${stationName(account.station)} (not checked yet)."
 }

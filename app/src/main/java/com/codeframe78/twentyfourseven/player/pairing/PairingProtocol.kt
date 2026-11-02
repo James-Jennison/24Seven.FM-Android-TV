@@ -17,6 +17,8 @@ internal const val MAX_LABEL_CHARS = 64
 internal const val MAX_REASON_CHARS = 512
 internal const val MAX_TEXT_CHARS = 256
 internal const val MAX_TRACK_REF_CHARS = 128
+internal const val MAX_SESSION_COOKIES = 16
+internal const val MAX_COOKIE_VALUE_CHARS = 4096
 
 class FrameException(message: String) : Exception(message)
 
@@ -75,9 +77,16 @@ internal sealed interface PhoneFrame {
     data class Submitting(val op: String) : PhoneFrame
     data class Result(val op: String, val code: ResultCode, val reason: String?) : PhoneFrame
     data class StateChanged(val station: String, val account: String) : PhoneFrame
+    /** The phone hands its station session to the TV after the listener approved it on the phone. */
+    data class Session(val station: String, val account: String, val cookies: List<SessionCookie>) : PhoneFrame
     data object Revoke : PhoneFrame
     data object Ping : PhoneFrame
     data object Pong : PhoneFrame
+}
+
+/** One cookie of a handed-over session. Its value is a credential: never logged, shown or put in diagnostics. */
+internal class SessionCookie(val name: String, val value: String, val maxAgeSeconds: Long) {
+    override fun toString() = "SessionCookie(name=$name)"
 }
 
 /** Frames the TV sends to the phone. */
@@ -92,6 +101,8 @@ internal sealed interface TvFrame {
         val artist: String,
         val album: String,
     ) : TvFrame
+    data class SessionOk(val station: String) : TvFrame
+    data class SessionRefused(val reason: String) : TvFrame
     data object Revoke : TvFrame
     data object Ping : TvFrame
     data object Pong : TvFrame
@@ -116,6 +127,9 @@ internal sealed interface ParsedFrame {
 internal object PairingJson {
     private val OP = Regex("[0-9a-f]{32}")
     private val PROOF = Regex("[0-9a-f]{64}")
+    private val COOKIE_NAME = Regex("[A-Za-z0-9_.-]{1,64}")
+    /** Visible ASCII without the characters that would split a Cookie header (`;`, `,`, space, quotes, backslash). */
+    private val COOKIE_VALUE = Regex("[!#-+\\--:<-\\[\\]-~]*")
 
     fun parsePhoneFrame(text: String): ParsedFrame {
         val json = try {
@@ -155,6 +169,21 @@ internal object PairingJson {
                 val account = json.label("account") ?: return bad("account")
                 ParsedFrame.Frame(PhoneFrame.StateChanged(station, account))
             }
+            "session" -> {
+                val station = json.string("station", 16) ?: return bad("station")
+                val account = json.label("account") ?: return bad("account")
+                val array = json.optJSONArray("cookies") ?: return bad("cookies")
+                if (array.length() == 0 || array.length() > MAX_SESSION_COOKIES) return bad("cookies")
+                val cookies = (0 until array.length()).map { i ->
+                    val c = array.optJSONObject(i) ?: return bad("cookie")
+                    val name = c.opt("name") as? String ?: return bad("cookie")
+                    val value = c.opt("value") as? String ?: return bad("cookie")
+                    if (!COOKIE_NAME.matches(name) || value.length > MAX_COOKIE_VALUE_CHARS || !COOKIE_VALUE.matches(value)) return bad("cookie")
+                    SessionCookie(name, value, c.optLong("maxAge", -1L))
+                }
+                if (cookies.map { it.name }.toSet().size != cookies.size) return bad("cookies")
+                ParsedFrame.Frame(PhoneFrame.Session(station, account, cookies))
+            }
             "revoke" -> ParsedFrame.Frame(PhoneFrame.Revoke)
             "ping" -> ParsedFrame.Frame(PhoneFrame.Ping)
             "pong" -> ParsedFrame.Frame(PhoneFrame.Pong)
@@ -174,6 +203,8 @@ internal object PairingJson {
                 .put("title", frame.title)
                 .put("artist", frame.artist)
                 .put("album", frame.album)
+            is TvFrame.SessionOk -> json.put("type", "session_ok").put("station", frame.station)
+            is TvFrame.SessionRefused -> json.put("type", "session_refused").put("reason", frame.reason)
             TvFrame.Revoke -> json.put("type", "revoke")
             TvFrame.Ping -> json.put("type", "ping")
             TvFrame.Pong -> json.put("type", "pong")

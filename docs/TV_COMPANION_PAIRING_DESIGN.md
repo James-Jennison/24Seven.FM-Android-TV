@@ -75,3 +75,15 @@ Built behind `BuildConfig.PAIRING_ENABLED`, which is false in release builds and
 - Frames and proofs follow the mobile `docs/tv-companion-pairing-protocol.md`; the independent HMAC vectors pass. QR code lifetime is 120 s; typed code and QR secret both prove the same pairing.
 - Verified: 59 new JVM tests (codec, parser, state machine, vectors, loopback host); full TV unit suite 221 passed on GTHost; on the Streamer, a fake phone completed TLS 1.3, fingerprint match, pair, ping and propose/declined, and the listener was gone after Back.
 - Not verified: a camera scan, a real phone, dictation, standby, catalog search (not built), real requests, independent reviews (CRITICAL panel), `PRIVACY.md` and Play declaration updates.
+
+## Session hand-over (Owner decision, 2026-11-02; supersedes the phone-approves-each-request flow)
+
+Owner (chat, 2026-11-02): the paired phone hands its station session to the TV, which then searches and requests itself. The Owner confirmed in chat that they told the phone session to send this instruction to the TV session. This reverses two earlier statements in this document: the TV is no longer anonymous, and it no longer relies on the phone's per-request approval.
+
+- Protocol (v1, additive): after `pair_ok` the phone may send one `session` frame (`station`, `account` label, up to 16 cookies of name, value and maxAge). The TV answers `session_ok` or `session_refused` with a reason. A second hand-over is refused (`already_handed_over`), a different station is refused (`wrong_station`), and a session frame before pairing closes the connection.
+- The origin comes from the TV's own station table, never from the phone. Cookie names and values are validated (no spaces, `;`, `,`, quotes, control characters; at most 4096 characters) and cookie values are never logged, shown or kept in diagnostics (`toString` of both cookie types hides them).
+- Storage: AES-GCM with a non-exportable AndroidKeyStore key in app-private preferences, surviving the pairing. Expired cookies are dropped on load and an unreadable blob is deleted.
+- "Sign out on this TV" deletes the stored session locally only. The TV never requests `op=logout`.
+- Read-only check built: after a hand-over, and when the pairing screen opens, the TV fetches the station home page with the session and logs `signedIn=true/false` by the logout-link test. When the station treats the session as expired the screen says to pair with the phone again.
+- **Not built:** submitting requests from the TV, the TV confirm screen, and the community-safety gate. The Player's `canContributeCommunityContent` needs the age gate, accepted terms version and visible-content setting, all held in the phone app's own preferences. The TV has none of that state, so the gate must be re-established on the TV or attested by the phone before any write; that is an open decision. No request is sent to a station without the Owner's explicit say-so on the day.
+- Status: not reviewed. `PRIVACY.md` and the Play data-safety wording need the Owner's approval because the TV now stores a station session credential.

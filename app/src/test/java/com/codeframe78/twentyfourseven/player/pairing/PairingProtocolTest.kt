@@ -1,6 +1,7 @@
 package com.codeframe78.twentyfourseven.player.pairing
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -91,5 +92,31 @@ class PairingProtocolTest {
         assertTrue(propose.contains("\"type\":\"propose\"") && propose.contains("\"v\":1"))
         assertTrue(PairingJson.encode(TvFrame.PairRefused(PairRefusal.BadProof)).contains("\"reason\":\"bad_proof\""))
         assertTrue(PairingJson.encode(TvFrame.Error("unsupported_version")).contains("unsupported_version"))
+    }
+
+    private fun session(cookies: String, extra: String = "") =
+        PairingJson.parsePhoneFrame("""{"v":1,"type":"session","station":"sst","account":"dj_x","cookies":$cookies$extra}""")
+
+    @Test fun sessionFrameParsesAndHidesValues() {
+        val parsed = session("""[{"name":"user","value":"a%2Fb=c","maxAge":3600},{"name":"PHPSESSID","value":"zz","maxAge":-1}]""")
+        val frame = (parsed as ParsedFrame.Frame).frame as PhoneFrame.Session
+        assertEquals(2, frame.cookies.size)
+        assertEquals("a%2Fb=c", frame.cookies[0].value)
+        assertFalse(frame.toString().contains("a%2Fb"))
+        assertFalse(frame.toString().contains("zz"))
+    }
+
+    @Test fun sessionFrameRejectsHostileCookies() {
+        listOf(
+            """[]""",
+            """[{"name":"a b","value":"x"}]""",
+            """[{"name":"a","value":"x;y"}]""",
+            """[{"name":"a","value":"x y"}]""",
+            """[{"name":"a","value":"x\r\nSet-Cookie: z"}]""",
+            """[{"name":"a","value":"1"},{"name":"a","value":"2"}]""",
+            """[{"name":"a"}]""",
+        ).forEach { assertTrue(it, session(it) is ParsedFrame.Malformed) }
+        val many = (1..17).joinToString(",", "[", "]") { """{"name":"c$it","value":"v"}""" }
+        assertTrue(session(many) is ParsedFrame.Malformed)
     }
 }
