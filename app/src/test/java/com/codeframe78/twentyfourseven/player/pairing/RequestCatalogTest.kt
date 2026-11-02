@@ -50,6 +50,14 @@ class RequestCatalogTest {
         assertEquals(CatalogTarget.Artist("Henry Mancini"), artists.first().target)
     }
 
+    @Test fun anOuterRowWrappingTheWholeAlbumIsNotATrack() {
+        val inner = fixture("album.html").substringAfter("<table>").substringBefore("</table>")
+        val html = "<table><tr><td>$inner</td></tr></table>".let { "<html><head><meta property=\"og:title\" content=\"A - B | X\"></head><body><table><tr><td><table>$inner</table></td></tr></table></body></html>" }
+        val tracks = parser.parseAlbum(html, origin, "B00000JC79").tracks
+        assertEquals(3, tracks.size)
+        assertEquals("Henry Mancini", tracks.first().artist)
+    }
+
     @Test fun linksToAnotherHostAreIgnored() {
         val html = """<table><tr><td><a href="https://evil.example/modules.php?name=Album&asin=X1">Bad</a></td></tr></table>"""
         assertTrue(parser.parseSearch(html, origin).isEmpty())

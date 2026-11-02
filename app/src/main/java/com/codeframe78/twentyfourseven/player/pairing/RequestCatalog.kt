@@ -92,6 +92,8 @@ internal class CatalogParser {
         val albumTitle = (document.selectFirst("meta[property=\"og:title\"]")?.attr("content")
             ?: document.title().substringAfter(" - ", "")).substringBefore(" | ").clean().ifBlank { null }
         val tracks = document.select("tr").mapNotNull { row ->
+            // An outer layout row can wrap the whole album: only a row with exactly one request button is a track.
+            if (row.select("img[src*=requestbutton]").size != 1) return@mapNotNull null
             val image = row.selectFirst("img[src*=requestbutton]") ?: return@mapNotNull null
             val uri = image.closest("a[href]")?.absUrl("href")?.let(::uriOrNull)
             val songId = uri?.takeIf {
@@ -116,7 +118,7 @@ internal class CatalogParser {
                 albumId = albumId,
                 songId = songId.orEmpty(),
                 title = title,
-                artist = titleCell.select("a[href*=postartistsearch]").joinToString(", ") { it.text().clean() }.ifBlank { null },
+                artist = titleCell.select("a[href*=postartistsearch]").map { it.text().clean() }.distinct().joinToString(", ").ifBlank { null },
                 albumTitle = albumTitle,
                 duration = cells.map { it.text().clean() }.firstOrNull { it.matches(DURATION) },
                 eligible = songId != null && image.attr("src").contains("requestbutton_request"),

@@ -121,14 +121,18 @@ internal fun PairingScreen(
     onClose: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 64.dp, vertical = 40.dp),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 64.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.Center,
     ) {
         val scope = androidx.compose.runtime.rememberCoroutineScope()
-        var browsingStored by remember { mutableStateOf(false) }
-        val storedBrowser = remember(account?.station) { account?.let { CatalogBrowser(StationRequestCatalog(), it.station, scope) } }
-        if (tvRequest == null && browsingStored && storedBrowser != null && account != null) {
-            CatalogScreen(storedBrowser, onPick = { onPickTrack(account.station, it) }, onExit = { browsingStored = false })
+        var browsing by remember { mutableStateOf(false) }
+        val pairedStation = ((screen as? PairingScreenState.Active)?.ui as? PairingUiState.PairedIdle)?.station
+        val browseStation = pairedStation ?: account?.station
+        val browser = remember(browseStation) { browseStation?.let { CatalogBrowser(StationRequestCatalog(), it, scope) } }
+        // The catalog owns the whole screen: no other buttons (sign out, disconnect) share it, so a stray press cannot reach them.
+        if (tvRequest == null && browsing && browser != null && browseStation != null) {
+            CatalogScreen(browser, onPick = { onPickTrack(browseStation, it) }, onExit = { browsing = false })
             return@Column
         }
         if (tvRequest != null) {
@@ -148,21 +152,12 @@ internal fun PairingScreen(
             PairingScreenState.Closed -> Message("Starting…", "Back", onClose)
             is PairingScreenState.Active -> when (val ui = screen.ui) {
                 is PairingUiState.ShowingCode -> CodeScreen(screen.offer, onNewCode, onClose)
-                is PairingUiState.PairedIdle -> {
-                    val scope = androidx.compose.runtime.rememberCoroutineScope()
-                    var browsing by remember(ui.station) { mutableStateOf(false) }
-                    val browser = remember(ui.station) { CatalogBrowser(StationRequestCatalog(), ui.station, scope) }
-                    if (browsing) {
-                        CatalogScreen(browser, onPick = { onPickTrack(ui.station, it) }, onExit = { browsing = false })
-                    } else {
-                        Message(
-                            "Paired with ${ui.phone} (${ui.account}) on ${stationName(ui.station)}.\nThe phone must stay open on the Player.",
-                            primary = "Find a song" to { browsing = true },
-                            secondary = "Disconnect" to onDisconnect,
-                            tertiary = "Send link test" to onTestRequest,
-                        )
-                    }
-                }
+                is PairingUiState.PairedIdle -> Message(
+                    "Paired with ${ui.phone} (${ui.account}) on ${stationName(ui.station)}.\nThe phone must stay open on the Player.",
+                    primary = "Find a song" to { browsing = true },
+                    secondary = "Disconnect" to onDisconnect,
+                    tertiary = "Send link test" to onTestRequest,
+                )
                 is PairingUiState.Waiting -> Message(
                     "${ui.track.title} — ${ui.track.artist}\n${waitingText(ui.phase)}",
                     primary = "Disconnect" to onDisconnect,
@@ -176,8 +171,8 @@ internal fun PairingScreen(
             Text(accountText(account), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                if (BuildConfig.TV_REQUESTS_ENABLED && (screen as? PairingScreenState.Active)?.ui !is PairingUiState.PairedIdle) {
-                    Button(onClick = { browsingStored = true }) { Text("Find a song") }
+                if (BuildConfig.TV_REQUESTS_ENABLED && pairedStation == null) {
+                    Button(onClick = { browsing = true }) { Text("Find a song") }
                 }
                 Button(onClick = onSignOut) { Text("Sign out on this TV") }
             }
