@@ -124,6 +124,13 @@ internal fun PairingScreen(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 64.dp, vertical = 40.dp),
         verticalArrangement = Arrangement.Center,
     ) {
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        var browsingStored by remember { mutableStateOf(false) }
+        val storedBrowser = remember(account?.station) { account?.let { CatalogBrowser(StationRequestCatalog(), it.station, scope) } }
+        if (tvRequest == null && browsingStored && storedBrowser != null && account != null) {
+            CatalogScreen(storedBrowser, onPick = { onPickTrack(account.station, it) }, onExit = { browsingStored = false })
+            return@Column
+        }
         if (tvRequest != null) {
             when (tvRequest) {
                 is TvRequestUi.Confirming -> Message(
@@ -168,7 +175,12 @@ internal fun PairingScreen(
             Spacer(Modifier.height(24.dp))
             Text(accountText(account), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
-            Button(onClick = onSignOut) { Text("Sign out on this TV") }
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                if (BuildConfig.TV_REQUESTS_ENABLED && (screen as? PairingScreenState.Active)?.ui !is PairingUiState.PairedIdle) {
+                    Button(onClick = { browsingStored = true }) { Text("Find a song") }
+                }
+                Button(onClick = onSignOut) { Text("Sign out on this TV") }
+            }
         }
     }
 }

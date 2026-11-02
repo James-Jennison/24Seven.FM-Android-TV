@@ -43,6 +43,8 @@ internal class RequestSubmitter(
     private val enabled: Boolean,
     private val fetch: SessionPageFetch = HttpSessionPageFetch(),
     private val queue: QueueCheck = QueueCheck { _, _, _ -> false },
+    /** Receives the station's reply text (public page text, never cookies) so the exact answer can be reported. */
+    private val onReplyText: (String) -> Unit = {},
 ) {
     suspend fun submit(session: StationSession?, track: CatalogTrack, station: String): TvRequestResult {
         if (!enabled) return TvRequestResult.NotAllowed("Requests from the TV are not enabled in this build.")
@@ -66,6 +68,7 @@ internal class RequestSubmitter(
         } catch (_: Exception) {
             return TvRequestResult.CheckQueue("The station did not answer clearly.")
         }
+        runCatching { onReplyText(Jsoup.parse(html).text().replace(Regex("\\s+"), " ").trim().take(400)) }
         return when (val outcome = classifyRequestPage(html)) {
             RequestPageOutcome.SignInRequired -> TvRequestResult.SignInExpired
             is RequestPageOutcome.Rejected -> TvRequestResult.Rejected(outcome.message)

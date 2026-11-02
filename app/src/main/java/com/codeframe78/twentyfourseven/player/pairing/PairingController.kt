@@ -47,6 +47,7 @@ internal class PairingController(
                 .fetchForVerification(com.codeframe78.twentyfourseven.player.domain.StationId(station))
             payload.upcoming.any { it.songId == songId }
         },
+        onReplyText = { android.util.Log.i("PairingHost", "station reply: $it") },
     ),
 ) {
     /** The TV's own request flow (only with TV_REQUESTS_ENABLED): confirm on the TV, send once, show the result. */
