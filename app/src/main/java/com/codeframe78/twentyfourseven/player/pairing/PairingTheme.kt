@@ -26,16 +26,22 @@ internal data class PairingColors(val accent: Color, val strong: Color, val glow
 
 internal val DefaultPairingColors = PairingColors(accent = Color(0xFFC9A8FF), strong = Color(0xFF8B5CF6), glow = Color(0xFF8B5CF6))
 
-/** A station's palette from the player (the same colours as its Light Trails and badges); the fill is its accent darkened so white text stays readable. */
+/** Each station's own colour: the `theme-color` its website declares (SST #99CCFF, 1980s #FF99CC, Adagio #FFCC99, Death #FF0000, Entranced #FFFF66). */
+private val SITE_COLORS = mapOf(
+    "sst" to Color(0xFF99CCFF),
+    "1980s" to Color(0xFFFF99CC),
+    "afm" to Color(0xFFFFCC99),
+    "dfm" to Color(0xFFFF4D4D),
+    "efm" to Color(0xFFFFFF66),
+)
+
+/** The station's website colour as the accent; the fill is that colour darkened so white text stays readable, and the glow a deep tint of it. */
 internal fun pairingColorsFor(station: String?): PairingColors {
-    if (station == null) return DefaultPairingColors
-    val base = com.codeframe78.twentyfourseven.player.ui.theme.stationPalette(com.codeframe78.twentyfourseven.player.domain.StationId(station))
-    // SST's amber sits too close to Adagio's orange on these screens, so SST uses its logo blue here (the player keeps its palette).
-    val palette = if (station == "sst") base.copy(accent = Color(0xFF86A7F0)) else base
+    val accent = SITE_COLORS[station] ?: return DefaultPairingColors
     return PairingColors(
-        accent = palette.accent,
-        strong = androidx.compose.ui.graphics.lerp(palette.accent, Color.Black, 0.42f),
-        glow = palette.glow.let { androidx.compose.ui.graphics.lerp(it, palette.accent, 0.35f) },
+        accent = accent,
+        strong = androidx.compose.ui.graphics.lerp(accent, Color.Black, 0.5f),
+        glow = androidx.compose.ui.graphics.lerp(accent, Color.Black, 0.7f),
     )
 }
 
