@@ -102,7 +102,7 @@ internal class CatalogBrowser(
             if (shown != null) {
                 load("Loading more…", empty = "No more results.", continuesTop = true) {
                     // The same list, continued: the old "show more" row is replaced by the next page.
-                    CatalogUi.Entries(shown.heading, shown.items.filterNot { it.target is CatalogTarget.More } + catalog.page(station, target.source, target.start))
+                    CatalogUi.Entries(shown.heading, (shown.items.filterNot { it.target is CatalogTarget.More } + catalog.page(station, target.source, target.start)).distinctBy { it.target })
                 }
             }
             Unit

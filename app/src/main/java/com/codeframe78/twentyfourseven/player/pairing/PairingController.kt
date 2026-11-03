@@ -6,6 +6,8 @@ import android.os.Build
 import android.os.SystemClock
 import com.codeframe78.twentyfourseven.player.domain.SUPPORTED_STATION_IDS
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -67,7 +69,8 @@ internal class PairingController(
         val current = _request.value as? TvRequestUi.Confirming ?: return
         _request.value = TvRequestUi.Sending(current.track)
         scope.launch {
-            val session = runCatching { store.load(current.station) }.getOrNull()
+            // Keystore decryption and preference reads stay off the main thread.
+            val session = withContext(Dispatchers.IO) { runCatching { store.load(current.station) }.getOrNull() }
             val result = submitter.submit(session, current.track, current.station)
             android.util.Log.i("PairingHost", "tv request: ${result::class.simpleName}")
             _request.value = TvRequestUi.Done(current.track, current.station, result)
@@ -98,8 +101,8 @@ internal class PairingController(
 
     /** One read-only fetch of the station's request clock (on opening the screen, switching station, after a request). */
     fun refreshClock(station: String) {
-        val session = runCatching { store.loadAll() }.getOrDefault(emptyList()).firstOrNull { it.station == station } ?: return
         scope.launch {
+            val session = withContext(Dispatchers.IO) { runCatching { store.loadAll() }.getOrDefault(emptyList()) }.firstOrNull { it.station == station } ?: return@launch
             val clock = clockSource.read(session)
             android.util.Log.i("PairingHost", "request clock: station=$station known=${clock != null} next=${clock?.secondsUntilNextRequest} queue=${clock?.secondsUntilQueuedRequestPlays}")
             _clocks.value = _clocks.value + (station to RequestClockUi(clock, android.os.SystemClock.elapsedRealtime()))
@@ -109,10 +112,12 @@ internal class PairingController(
     /** Loads the stored sessions (no network) so the screens can show them, then checks each with its station. */
     fun refreshAccounts() {
         if (!enabled) return
-        val stored = runCatching { store.loadAll() }.getOrDefault(emptyList())
-        val previous = _accounts.value.associateBy { it.station }
-        _accounts.value = stored.map { StationAccount(it.account, it.station, previous[it.station]?.takeIf { a -> a.label == it.account }?.state ?: SignInState.Unknown) }
-        stored.forEach(::verify)
+        scope.launch {
+            val stored = withContext(Dispatchers.IO) { runCatching { store.loadAll() }.getOrDefault(emptyList()) }
+            val previous = _accounts.value.associateBy { it.station }
+            _accounts.value = stored.map { StationAccount(it.account, it.station, previous[it.station]?.takeIf { a -> a.label == it.account }?.state ?: SignInState.Unknown) }
+            stored.forEach(::verify)
+        }
     }
 
     /** Deletes one station's session on this TV only. It does not ask the station to log out, which would end the phone's session too. */

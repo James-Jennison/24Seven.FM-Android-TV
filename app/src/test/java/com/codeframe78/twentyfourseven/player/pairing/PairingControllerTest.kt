@@ -100,9 +100,15 @@ class PairingControllerTest {
         assertNull(c.request.value)
     }
 
+    private fun await(condition: () -> Boolean) {
+        val end = System.currentTimeMillis() + 5_000
+        while (!condition()) { check(System.currentTimeMillis() < end) { "timed out" }; Thread.sleep(5) }
+    }
+
     @Test fun accountsShowStoredSessionsAndTheirSignInState() {
         val c = controller(store = MemoryStore(session("sst"), session("dfm")), check = SignInState.SignedOut)
         c.refreshAccounts()
+        await { c.accounts.value.size == 2 && c.accounts.value.all { it.state == SignInState.SignedOut } }
         assertEquals(listOf("dfm", "sst"), c.accounts.value.map { it.station })
         assertTrue(c.accounts.value.all { it.state == SignInState.SignedOut })
     }
@@ -111,6 +117,7 @@ class PairingControllerTest {
         val store = MemoryStore(session("sst"), session("dfm"))
         val c = controller(store = store)
         c.refreshAccounts()
+        await { c.accounts.value.size == 2 }
         c.signOutOnThisTv("sst")
         assertEquals(listOf("dfm"), c.accounts.value.map { it.station })
         assertEquals(setOf("dfm"), store.sessions.keys)
@@ -121,8 +128,10 @@ class PairingControllerTest {
     @Test fun theClockIsReadForAStoredSessionOnly() {
         val c = controller()
         c.refreshClock("dfm")
+        Thread.sleep(200) // no stored session for dfm: nothing is ever read
         assertTrue(c.clocks.value.isEmpty())
         c.refreshClock("sst")
+        await { c.clocks.value.containsKey("sst") }
         assertEquals(0, c.clocks.value.getValue("sst").clock?.secondsUntilNextRequest)
     }
 

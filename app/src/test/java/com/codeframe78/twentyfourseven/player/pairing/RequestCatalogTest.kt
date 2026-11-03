@@ -215,4 +215,23 @@ class RequestCatalogTest {
         assertTrue(b.back()); assertTrue(b.ui.value is CatalogUi.Query) // one Back leaves the continued list
         assertFalse(b.back())
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test fun showMoreDoesNotRepeatAnEntryFromAnEarlierPage() = runTest(StandardTestDispatcher()) {
+        val c = object : RequestCatalog by FakeCatalog() {
+            override suspend fun page(station: String, source: PageSource, start: Int) =
+                listOf(CatalogEntry(CatalogTarget.Album("A-abc"), "Album abc", null, null), CatalogEntry(CatalogTarget.Album("P$start"), "Page $start", null, null))
+        }
+        val b = browser(c)
+        b.search("abc"); advanceUntilIdle()
+        b.open(CatalogEntry(CatalogTarget.More(PageSource.Search(CatalogField.Title, "abc"), 97), "Show more", null, null)); advanceUntilIdle()
+        val ids = (b.ui.value as CatalogUi.Entries).items.map { it.target }
+        assertEquals(ids.size, ids.distinct().size)
+    }
+
+    @Test fun waitFormatIsLocaleIndependent() {
+        val saved = java.util.Locale.getDefault()
+        try { java.util.Locale.setDefault(java.util.Locale("ar", "EG")); assertEquals("1:05:09", formatWait(3909)); assertEquals("2:03", formatWait(123)) }
+        finally { java.util.Locale.setDefault(saved) }
+    }
 }

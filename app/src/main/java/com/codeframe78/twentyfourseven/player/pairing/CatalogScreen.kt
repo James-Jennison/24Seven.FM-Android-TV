@@ -416,7 +416,7 @@ private fun RequestClockBadge(clock: RequestClockUi?, waits: List<WaitCard>) {
     if (value == null) { WaitsOnly(waits); return }
     var now by remember(clock) { mutableStateOf(android.os.SystemClock.elapsedRealtime()) }
     LaunchedEffect(clock) { while (true) { kotlinx.coroutines.delay(1000); now = android.os.SystemClock.elapsedRealtime() } }
-    val passed = ((now - clock.readAtMillis) / 1000).toInt()
+    val passed = ((now - clock.readAtMillis) / 1000).toInt().coerceAtLeast(0)
     val next = value.secondsUntilNextRequest?.let { (it - passed).coerceAtLeast(0) }
     val queued = value.secondsUntilQueuedRequestPlays?.takeIf { it > 0 }?.let { (it - passed).coerceAtLeast(0) }
     if (next == null && queued == null) return
@@ -487,5 +487,5 @@ internal fun formatWait(seconds: Int): String {
     val h = seconds / 3600
     val m = (seconds % 3600) / 60
     val s = seconds % 60
-    return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
+    return if (h > 0) String.format(java.util.Locale.ROOT, "%d:%02d:%02d", h, m, s) else String.format(java.util.Locale.ROOT, "%d:%02d", m, s)
 }

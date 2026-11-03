@@ -93,7 +93,12 @@ internal class AndroidKeystoreStationSessionStore(
     /** The first version stored a single session under one key; it is read once as that station's session and moved. */
     private fun legacySession(station: String): String? {
         val old = preferences.getString(LEGACY_KEY, null) ?: return null
-        val owner = runCatching { JSONObject(decrypt(old)).getString("station") }.getOrNull() ?: return null
+        val owner = try {
+            JSONObject(decrypt(old)).getString("station")
+        } catch (e: Exception) {
+            if (isPermanentReadFailure(e)) preferences.edit().remove(LEGACY_KEY).apply() // never retry a blob that can not be read
+            return null
+        }
         if (owner != station) return null
         preferences.edit().putString(keyFor(station), old).remove(LEGACY_KEY).apply()
         return old

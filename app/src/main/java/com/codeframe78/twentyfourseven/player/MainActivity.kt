@@ -39,7 +39,8 @@ class MainActivity : AppCompatActivity() {
     private var voiceSerial = 0
 
     private fun readVoiceIntent(intent: Intent?) {
-        if (intent?.action != "android.media.action.MEDIA_PLAY_FROM_SEARCH") return
+        // Debug-only: the intent filter is in the debug manifest, and an explicit intent from another app must not work in release either.
+        if (!BuildConfig.DEBUG || intent?.action != "android.media.action.MEDIA_PLAY_FROM_SEARCH") return
         val station = stationFromVoiceQuery(intent.getStringExtra(android.app.SearchManager.QUERY))
         android.util.Log.i("TvVoice", "play from search: station=${station?.value}")
         voicePlay = VoicePlay(station, ++voiceSerial)
