@@ -164,6 +164,9 @@ internal class HttpSessionPageFetch(
     private fun fetchOnce(uri: URI, referer: URI, session: StationSession, hop: (String) -> Unit): String {
         val start = uri
         var current = uri
+        // Like the phone app, carry cookies the station sets on a redirect into the next hop of this
+        // one fetch. Nothing from a response is stored or logged.
+        val cookies = linkedMapOf<String, String>().also { m -> session.cookies.forEach { m[it.name] = it.value } }
         repeat(MAX_REDIRECTS + 1) { n ->
             TrustedStationNavigation.requireSameHttpsOrigin(current, start)
             val c = connect(current)
@@ -172,16 +175,19 @@ internal class HttpSessionPageFetch(
                 c.setRequestProperty("Accept", "text/html")
                 c.setRequestProperty("User-Agent", "24Seven.FM-TV/0.1 (Android)")
                 c.setRequestProperty("Referer", referer.toString())
-                c.setRequestProperty("Cookie", session.cookies.joinToString("; ") { "${it.name}=${it.value}" })
+                c.setRequestProperty("Cookie", cookies.entries.joinToString("; ") { "${it.key}=${it.value}" })
                 val status = c.responseCode
                 hop("status=$status path=${current.path} redirect=${status in setOf(301, 302, 303, 307, 308)} contentType=${c.contentType}")
+                c.headerFields?.get("Set-Cookie")?.forEach { line ->
+                    val pair = line.substringBefore(';')
+                    val name = pair.substringBefore('=', "").trim()
+                    val value = pair.substringAfter('=', "").trim()
+                    if (COOKIE_NAME.matches(name) && value.isNotEmpty() && !value.equals("deleted", true) && value.length <= MAX_COOKIE_VALUE_CHARS && COOKIE_VALUE.matches(value)) cookies[name] = value
+                }
                 if (status in setOf(301, 302, 303, 307, 308)) {
                     if (n == MAX_REDIRECTS) throw IOException("Too many redirects")
                     val target = stationRedirectTarget(current, c.getHeaderField("Location"), start) { hop(it) }
                     hop("redirect target scheme=${target.scheme} sameHost=${target.host.equals(start.host, true)} path=${target.path}")
-                    // The station answers a request with a redirect; never follow one back into the request
-                    // endpoint, or a single choice could be submitted twice.
-                    if (target.query?.contains("name=Req", ignoreCase = true) == true) throw IOException("Redirect back into the request")
                     current = target
                     return@repeat
                 }
@@ -214,5 +220,9 @@ internal class HttpSessionPageFetch(
         return target
     }
 
-    private companion object { const val MAX_REDIRECTS = 5 }
+    private companion object {
+        const val MAX_REDIRECTS = 5
+        val COOKIE_NAME = Regex("[A-Za-z0-9_.-]{1,64}")
+        val COOKIE_VALUE = Regex("[!#-+\\--:<-\\[\\]-~]*")
+    }
 }

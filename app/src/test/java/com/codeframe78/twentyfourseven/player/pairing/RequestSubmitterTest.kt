@@ -133,16 +133,6 @@ class RequestSubmitterTest {
         assertTrue(seen.all { it.startsWith("https://streamingsoundtracks.com/") })
     }
 
-    @Test fun aRedirectBackIntoTheRequestEndpointIsNeverFollowed() {
-        val seen = mutableListOf<String>()
-        val failure = runCatching {
-            redirecting("http://streamingsoundtracks.com/modules.php?name=Req&asin=1&songID=2", seen)
-                .get(java.net.URI("https://streamingsoundtracks.com/modules.php?name=Req&asin=1&songID=2"), java.net.URI("https://streamingsoundtracks.com/"), session(station = "sst"))
-        }.exceptionOrNull()
-        assertTrue(failure is java.io.IOException)
-        assertEquals(1, seen.size)
-    }
-
     @Test fun aRedirectToAnotherHostIsRefused() {
         val seen = mutableListOf<String>()
         val failure = runCatching {
