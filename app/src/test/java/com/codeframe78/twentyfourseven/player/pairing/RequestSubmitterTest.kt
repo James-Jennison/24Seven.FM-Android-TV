@@ -106,4 +106,50 @@ class RequestSubmitterTest {
         assertTrue(runCatching { fetch.get(java.net.URI("http://streamingsoundtracks.com/"), java.net.URI("https://streamingsoundtracks.com/"), s) }.exceptionOrNull() != null)
         assertTrue(runCatching { fetch.get(java.net.URI("https://streamingsoundtracks.com:8443/"), java.net.URI("https://streamingsoundtracks.com/"), s) }.exceptionOrNull() != null)
     }
+
+    private class FakeConn(url: java.net.URL, val status: Int, val location: String?, val body: String, val seen: MutableList<String>) : java.net.HttpURLConnection(url) {
+        override fun disconnect() {}
+        override fun usingProxy() = false
+        override fun connect() {}
+        override fun getResponseCode(): Int { seen += url.toString(); return status }
+        override fun getHeaderField(name: String?): String? = if (name == "Location") location else null
+        override fun getContentType(): String = "text/html"
+        override fun getInputStream(): java.io.InputStream = body.byteInputStream(Charsets.ISO_8859_1)
+    }
+
+    private fun redirecting(location: String, seen: MutableList<String>): HttpSessionPageFetch {
+        var hops = 0
+        return HttpSessionPageFetch(connect = {
+            if (hops++ == 0) FakeConn(it.toURL(), 302, location, "", seen) else FakeConn(it.toURL(), 200, null, "<html>ok</html>", seen)
+        })
+    }
+
+    @Test fun aPlainHttpRedirectOnTheSameHostIsUpgradedToHttpsAndFollowedOnce() {
+        val seen = mutableListOf<String>()
+        val body = redirecting("http://streamingsoundtracks.com/modules.php?name=Queue", seen)
+            .get(java.net.URI("https://streamingsoundtracks.com/modules.php?name=Req&asin=1&songID=2"), java.net.URI("https://streamingsoundtracks.com/"), session(station = "sst"))
+        assertEquals("<html>ok</html>", body)
+        assertEquals(2, seen.size)
+        assertTrue(seen.all { it.startsWith("https://streamingsoundtracks.com/") })
+    }
+
+    @Test fun aRedirectBackIntoTheRequestEndpointIsNeverFollowed() {
+        val seen = mutableListOf<String>()
+        val failure = runCatching {
+            redirecting("http://streamingsoundtracks.com/modules.php?name=Req&asin=1&songID=2", seen)
+                .get(java.net.URI("https://streamingsoundtracks.com/modules.php?name=Req&asin=1&songID=2"), java.net.URI("https://streamingsoundtracks.com/"), session(station = "sst"))
+        }.exceptionOrNull()
+        assertTrue(failure is java.io.IOException)
+        assertEquals(1, seen.size)
+    }
+
+    @Test fun aRedirectToAnotherHostIsRefused() {
+        val seen = mutableListOf<String>()
+        val failure = runCatching {
+            redirecting("https://evil.example/x", seen)
+                .get(java.net.URI("https://streamingsoundtracks.com/modules.php?name=Req&asin=1&songID=2"), java.net.URI("https://streamingsoundtracks.com/"), session(station = "sst"))
+        }.exceptionOrNull()
+        assertTrue(failure is java.io.IOException)
+        assertEquals(1, seen.size)
+    }
 }
