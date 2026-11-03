@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.text.withStyle
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -118,63 +120,77 @@ private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogB
     val focusManager = LocalFocusManager.current
     // Start on the Song chip, not in the text field, so the on-screen keyboard stays down until the listener goes to the field.
     LaunchedEffect(Unit) { runCatching { firstChip.requestFocus() } }
-    // Scrolls so five station buttons plus the suggestion cards still fit; nothing here is a lazy list.
-    Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.Center) {
-        Text("Find a song", style = MaterialTheme.typography.displaySmall)
-        Text("Request a track on ${stationName(station)}", style = MaterialTheme.typography.titleLarge, color = PairingPalette.Muted)
-        RequestClockLine(clock)
+    // One screen, no scrolling: header with the request clock, station row, a search panel, the station's own picks.
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f)) {
+                Text("Request a song", style = MaterialTheme.typography.displaySmall)
+                Text(stationName(station), style = MaterialTheme.typography.titleLarge, color = PairingPalette.Lavender)
+            }
+            RequestClockBadge(clock)
+        }
         if (stationChoices.isNotEmpty()) {
-            Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Station", style = MaterialTheme.typography.labelLarge, color = PairingPalette.Muted, modifier = Modifier.width(96.dp))
                 stationChoices.forEach { id -> Pill(stationShortName(id), selected = id == station, onClick = { onStation(id) }) }
             }
         }
-        Spacer(Modifier.height(if (stationChoices.isEmpty()) 28.dp else 16.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            CatalogField.entries.forEach { field ->
-                Pill(
-                    field.label,
-                    selected = field == state.field,
-                    onClick = { browser.setField(field) },
-                    modifier = if (field == CatalogField.entries.first()) Modifier.focusRequester(firstChip) else Modifier,
-                )
+        Spacer(Modifier.height(14.dp))
+        Column(
+            Modifier.fillMaxWidth()
+                .background(PairingPalette.Charcoal.copy(alpha = 0.7f), RoundedCornerShape(28.dp))
+                .border(1.dp, PairingPalette.Violet.copy(alpha = 0.35f), RoundedCornerShape(28.dp))
+                .padding(horizontal = 28.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Search by", style = MaterialTheme.typography.labelLarge, color = PairingPalette.Muted, modifier = Modifier.width(96.dp))
+                CatalogField.entries.forEach { field ->
+                    Pill(
+                        field.label,
+                        selected = field == state.field,
+                        onClick = { browser.setField(field) },
+                        modifier = if (field == CatalogField.entries.first()) Modifier.focusRequester(firstChip) else Modifier,
+                    )
+                }
             }
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                BasicTextField(
+                    value = text,
+                    onValueChange = { text = it.take(80) },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.headlineSmall.copy(color = PairingPalette.WarmWhite),
+                    cursorBrush = SolidColor(PairingPalette.Lavender),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { browser.search(text) }),
+                    decorationBox = { inner ->
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (text.isEmpty()) Text("Type a ${state.field.label.lowercase()}, or use the mic on the keyboard", color = PairingPalette.Muted.copy(alpha = 0.7f), style = MaterialTheme.typography.titleLarge)
+                            inner()
+                        }
+                    },
+                    modifier = Modifier.weight(1f).focusRequester(input)
+                        // A text field can swallow D-pad Down; hand it on explicitly so the buttons and cards below stay reachable.
+                        .onPreviewKeyEvent { event ->
+                            if (event.key == Key.DirectionDown && event.type == KeyEventType.KeyDown) {
+                                focusManager.moveFocus(FocusDirection.Down); true
+                            } else false
+                        }
+                        .background(PairingPalette.Night.copy(alpha = 0.8f), RoundedCornerShape(50))
+                        .border(2.dp, PairingPalette.Violet.copy(alpha = 0.6f), RoundedCornerShape(50))
+                        .padding(horizontal = 28.dp, vertical = 16.dp),
+                )
+                Pill("Search", filled = true, onClick = { browser.search(text) })
+            }
+            state.notice?.let { Text(it, color = PairingPalette.Amber) }
         }
-        Spacer(Modifier.height(20.dp))
-        BasicTextField(
-            value = text,
-            onValueChange = { text = it.take(80) },
-            singleLine = true,
-            textStyle = MaterialTheme.typography.headlineSmall.copy(color = PairingPalette.WarmWhite),
-            cursorBrush = SolidColor(PairingPalette.Lavender),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { browser.search(text) }),
-            decorationBox = { inner ->
-                Box(contentAlignment = Alignment.CenterStart) {
-                    if (text.isEmpty()) Text("Type ${state.field.label.lowercase()} name, or use the mic on the keyboard", color = PairingPalette.Muted.copy(alpha = 0.7f), style = MaterialTheme.typography.titleLarge)
-                    inner()
-                }
-            },
-            modifier = Modifier.fillMaxWidth().focusRequester(input)
-                // A text field can swallow D-pad Down; hand it on explicitly so the buttons and cards below stay reachable.
-                .onPreviewKeyEvent { event ->
-                    if (event.key == Key.DirectionDown && event.type == KeyEventType.KeyDown) {
-                        focusManager.moveFocus(FocusDirection.Down); true
-                    } else false
-                }
-                .background(PairingPalette.Charcoal, RoundedCornerShape(50))
-                .border(2.dp, PairingPalette.Violet.copy(alpha = 0.6f), RoundedCornerShape(50))
-                .padding(horizontal = 28.dp, vertical = 18.dp),
-        )
-        state.notice?.let { Spacer(Modifier.height(10.dp)); Text(it, color = PairingPalette.Amber) }
-        Spacer(Modifier.height(20.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Pill("Search", filled = true, onClick = { browser.search(text) })
+        Spacer(Modifier.height(16.dp))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("Or let the station pick", style = MaterialTheme.typography.titleMedium, color = PairingPalette.Muted, modifier = Modifier.weight(1f))
             Pill("Back", onClick = onExit)
         }
-        Spacer(Modifier.height(if (stationChoices.isEmpty()) 36.dp else 20.dp))
-        Text("Or let the station pick", style = MaterialTheme.typography.titleMedium, color = PairingPalette.Muted)
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             IdeaCard("Surprise me", "A random track from the library", Modifier.weight(1f)) { browser.suggest(SuggestionMode.Random) }
             IdeaCard("Hidden gem", "Something that rarely gets played", Modifier.weight(1f)) { browser.suggest(SuggestionMode.LeastPlayed) }
@@ -300,8 +316,8 @@ internal fun IdeaCard(title: String, caption: String, modifier: Modifier = Modif
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.04f),
     ) {
-        Column(Modifier.padding(horizontal = 24.dp, vertical = 28.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(title, style = MaterialTheme.typography.headlineSmall)
+        Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, style = MaterialTheme.typography.titleLarge)
             Text(caption, style = MaterialTheme.typography.bodyLarge, color = PairingPalette.Muted)
         }
     }
@@ -329,32 +345,46 @@ internal fun Pill(
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.06f),
     ) {
         Text(
-            (if (selected) "● " else "") + text,
+            androidx.compose.ui.text.buildAnnotatedString {
+                // The marker always takes its space so a selected pill never changes size.
+                withStyle(androidx.compose.ui.text.SpanStyle(color = if (selected) PairingPalette.Lavender else Color.Transparent)) { append("● ") }
+                append(text)
+            },
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 26.dp, vertical = 12.dp),
         )
     }
 }
 
-/** "Next request: Ready" or a live countdown, from what the station last said; the station decides eligibility. */
+/** The station's request clock as a compact status card: ready, or a live countdown; the station decides eligibility. */
 @Composable
-private fun RequestClockLine(clock: RequestClockUi?) {
+private fun RequestClockBadge(clock: RequestClockUi?) {
     val value = clock?.clock ?: return
     var now by remember(clock) { mutableStateOf(android.os.SystemClock.elapsedRealtime()) }
     LaunchedEffect(clock) { while (true) { kotlinx.coroutines.delay(1000); now = android.os.SystemClock.elapsedRealtime() } }
     val passed = ((now - clock.readAtMillis) / 1000).toInt()
     val next = value.secondsUntilNextRequest?.let { (it - passed).coerceAtLeast(0) }
     val queued = value.secondsUntilQueuedRequestPlays?.takeIf { it > 0 }?.let { (it - passed).coerceAtLeast(0) }
-    Column(Modifier.padding(top = 6.dp)) {
+    if (next == null && queued == null) return
+    Column(
+        Modifier.background(PairingPalette.Charcoal.copy(alpha = 0.8f), RoundedCornerShape(20.dp))
+            .border(1.dp, PairingPalette.Violet.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+            .padding(horizontal = 24.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
         if (next != null) {
-            Text(
-                if (next == 0) "Next request: ready" else "Next request in ${formatWait(next)}",
-                style = MaterialTheme.typography.titleMedium,
-                color = if (next == 0) PairingPalette.Lavender else PairingPalette.Muted,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(Modifier.size(12.dp).background(if (next == 0) PairingPalette.Green else PairingPalette.Amber, androidx.compose.foundation.shape.CircleShape))
+                Text("Next request", style = MaterialTheme.typography.labelLarge, color = PairingPalette.Muted)
+                Text(
+                    if (next == 0) "Ready" else formatWait(next),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = if (next == 0) PairingPalette.Green else PairingPalette.Amber,
+                )
+            }
         }
         if (queued != null && queued > 0) {
-            Text("Your queued request should play in about ${formatWait(queued)}", style = MaterialTheme.typography.titleMedium, color = PairingPalette.Muted)
+            Text("Your request plays in about ${formatWait(queued)}", style = MaterialTheme.typography.bodyMedium, color = PairingPalette.Muted)
         }
     }
 }
