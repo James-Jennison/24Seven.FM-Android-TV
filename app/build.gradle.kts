@@ -44,6 +44,10 @@ android {
         manifestPlaceholders["appLabel"] = "24Seven.FM TV"
         manifestPlaceholders["buildRevision"] = sourceRevision
     }
+    testOptions {
+        // Controller code logs through android.util.Log; plain JVM tests get its no-op defaults.
+        unitTests.isReturnDefaultValues = true
+    }
     buildFeatures {
         compose = true
         buildConfig = true
