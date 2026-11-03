@@ -29,7 +29,9 @@ internal val DefaultPairingColors = PairingColors(accent = Color(0xFFC9A8FF), st
 /** A station's palette from the player (the same colours as its Light Trails and badges); the fill is its accent darkened so white text stays readable. */
 internal fun pairingColorsFor(station: String?): PairingColors {
     if (station == null) return DefaultPairingColors
-    val palette = com.codeframe78.twentyfourseven.player.ui.theme.stationPalette(com.codeframe78.twentyfourseven.player.domain.StationId(station))
+    val base = com.codeframe78.twentyfourseven.player.ui.theme.stationPalette(com.codeframe78.twentyfourseven.player.domain.StationId(station))
+    // SST's amber sits too close to Adagio's orange on these screens, so SST uses its logo blue here (the player keeps its palette).
+    val palette = if (station == "sst") base.copy(accent = Color(0xFF86A7F0)) else base
     return PairingColors(
         accent = palette.accent,
         strong = androidx.compose.ui.graphics.lerp(palette.accent, Color.Black, 0.42f),
