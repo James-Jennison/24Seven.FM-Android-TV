@@ -1,11 +1,13 @@
 package com.codeframe78.twentyfourseven.player
 
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -18,7 +20,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.codeframe78.twentyfourseven.player.domain.StationId
 import com.codeframe78.twentyfourseven.player.ui.DiagnosticEnvironment
+import com.codeframe78.twentyfourseven.player.ui.stationFromVoiceQuery
 import com.codeframe78.twentyfourseven.player.ui.TvLaunchSplash
 import com.codeframe78.twentyfourseven.player.ui.TvRadioApp
 import com.codeframe78.twentyfourseven.player.ui.TvRadioViewModel
@@ -28,11 +32,31 @@ import com.codeframe78.twentyfourseven.player.ui.TvRadioViewModel
  * absent from this surface; the TV alpha is an anonymous listener experience.
  */
 class MainActivity : AppCompatActivity() {
+    /** A "play ... on 24Seven.FM" request waiting for the player screen; the counter makes a repeat of the same words count. */
+    private var voicePlay by mutableStateOf<VoicePlay?>(null)
+
+    private data class VoicePlay(val station: StationId?, val serial: Int)
+    private var voiceSerial = 0
+
+    private fun readVoiceIntent(intent: Intent?) {
+        if (intent?.action != "android.media.action.MEDIA_PLAY_FROM_SEARCH") return
+        val station = stationFromVoiceQuery(intent.getStringExtra(android.app.SearchManager.QUERY))
+        android.util.Log.i("TvVoice", "play from search: station=${station?.value}")
+        voicePlay = VoicePlay(station, ++voiceSerial)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        readVoiceIntent(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // The system launch screen (animated antenna mark) shows until the first frame where the platform renders it; Google TV
         // does not, so TvLaunchSplash plays the same mark in-app. No exit hand-off is attempted on TV.
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) readVoiceIntent(intent)
         val container = (application as RadioApplication).appContainer
         setContent {
             val viewModel: TvRadioViewModel = viewModel(
@@ -47,6 +71,9 @@ class MainActivity : AppCompatActivity() {
                 ),
             )
             val state = viewModel.uiState.collectAsStateWithLifecycle().value
+            voicePlay?.let { request ->
+                LaunchedEffect(request) { viewModel.playByVoice(request.station); voicePlay = null }
+            }
             var launchSplashVisible by rememberSaveable { mutableStateOf(true) }
             Box(
                 modifier = Modifier

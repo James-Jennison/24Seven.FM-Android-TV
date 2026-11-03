@@ -155,6 +155,17 @@ class TvRadioViewModel(
         playback.play()
     }
 
+    /**
+     * "Play ... on 24Seven.FM" by voice. A station named in the request is selected and played; none named resumes
+     * the current station. Nothing starts before the listener has completed first use (the consent to play).
+     */
+    fun playByVoice(station: StationId?) = viewModelScope.launch {
+        android.util.Log.i("TvVoice", "playByVoice: station=${station?.value} firstUseDone=${firstUseRepository.hasCompletedFirstUse}")
+        if (!firstUseRepository.hasCompletedFirstUse) return@launch
+        if (station != null) stations.selectStation(station)
+        playback.play()
+    }
+
     /** Commits a pending first-use choice only when the listener explicitly starts playback. */
     fun completeFirstUse(startPlayback: Boolean, pendingStationId: StationId? = null) = viewModelScope.launch {
         if (startPlayback) {
