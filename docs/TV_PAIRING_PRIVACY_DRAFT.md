@@ -43,6 +43,22 @@ Revise the "contains no ... access" sentence: the app still has no analytics, ad
 microphone, camera, location or contacts access; it now accepts local-network connections
 while the pairing screen is open.
 
+## Voice (Speak and "play ... on 24Seven.FM")
+
+Add under "Data handled":
+
+> - **Voice search (optional).** The Speak button on the Request a Song screen opens the TV's own speech
+>   recognizer. The app does not record audio, has no microphone permission and receives only the words the
+>   recognizer returns, which it uses as a search on the station's public catalog (the same as typed text).
+>   Speech handling is done by the TV's voice service under its own privacy terms.
+> - **Voice playback commands.** When you ask the TV's assistant to play a station on 24Seven.FM, the assistant
+>   passes the station name to the app, which starts that station. Nothing is stored.
+
+Keep the "no microphone access" sentence accurate: the app itself still requests no microphone permission.
+
+Play data-safety: no new data type is collected by the app for voice (audio is handled by the system
+recognizer, not the app); recognised search text is sent only to the station the listener is searching.
+
 ## Play Console data-safety answers (proposed)
 
 | Question | Answer | Basis |
