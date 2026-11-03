@@ -257,3 +257,7 @@ Owner-approved bass/sky presentation now follows active station branding automat
 ### 2026-09-09 — Laser Light Show background trial discarded
 
 Owner discarded the moving/still performer background trial. Restored the accepted original laser stage for every station, retaining music-reactive lasers and all prior unrelated visualization work. Generated trial media remains archived outside the app. See [trial record](abstract-video-integration/laser-1980s-band.md). No release.
+
+## Review state — 2026-11-03
+
+Catalog, request-result, voice, theming and bug-fix work after 564d08b (candidate 7a8729c): implemented, tested (306 unit tests pass on GTHost), technically verified; **review PENDING** — change `tv-catalog-request-voice-20261103`, cycle `review-cycle-a1ef6d4052d1` (architecture-synthetic, platform-together, deepseek). Not approved until all three complete and findings are dispositioned. Unrun: TalkBack, lint, camera QR scan, standby/wake, Wi-Fi Streamer, Play-installed assistant voice.
