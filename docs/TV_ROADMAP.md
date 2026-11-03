@@ -1,3 +1,12 @@
+## Request, search and voice — 2026-11-02
+
+Debug-flag work (`TWENTYFOURSEVEN_PAIRING_ENABLED` and `TWENTYFOURSEVEN_TV_REQUESTS_ENABLED`; both off in release): phone-paired station sessions, search and browse (Song, Artist, Album, Genre, Albums/Artists A–Z, Years, Surprise me, Rare find) with paging, the station request clock and Member/VIP wait cards, request confirmation and the station's "Request Received" result, and phone-app status wording per track. Verified on the Streamer with real requests the Owner approved. Design record: `TV_COMPANION_PAIRING_DESIGN.md`. Review of the earlier pairing/request work is recorded there; the later search, browse, paging, request-result and voice changes have **not** been independently reviewed (review PENDING).
+
+Voice:
+- **Speak a search / a request:** implemented. The button opens the TV's own recognizer and the app only receives text; the request is still chosen and confirmed on screen. Phrase parsing is unit tested. The recognizer prompt and a spoken result have **not** been exercised on the Streamer (needs the Owner speaking).
+- **Voice playback ("play Adagio FM on 24Seven.FM"):** the app handles Android's `MEDIA_PLAY_FROM_SEARCH` (station by name, none named resumes, nothing before first use is complete); verified with `adb`. Through the assistant it is **PENDING a Play-installed build**: the Streamer's assistant does not index the sideloaded debug app ("couldn't find an exact match"; it heard "24/7 FM TV debug"), so it cannot be checked until an internal-testing build is installed from Google Play. That is a release-side step needing explicit Owner approval. This entry is not in the release scope until then.
+- Draft privacy/data-safety wording for pairing and voice: `TV_PAIRING_PRIVACY_DRAFT.md` (not applied, not approved).
+
 ## Configurable visualizer start delay — 2026-11-01
 
 Owner-requested addition: General Options → Idle Screen → Start delay cycles through
