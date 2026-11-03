@@ -48,12 +48,14 @@ class RequestActivity : AppCompatActivity() {
                 val accounts by controller.accounts.collectAsStateWithLifecycle()
                 val request by controller.request.collectAsStateWithLifecycle()
                 val clocks by controller.clocks.collectAsStateWithLifecycle()
+                val requested by controller.requestedSongs.collectAsStateWithLifecycle()
                 CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
                     RequestScreen(
                         accounts = accounts,
                         preferredStation = intent.getStringExtra(EXTRA_STATION),
                         request = request,
                         clocks = clocks,
+                        requested = requested,
                         onRefreshClock = controller::refreshClock,
                         onPick = controller::beginTvRequest,
                         onConfirm = controller::confirmTvRequest,
@@ -86,6 +88,7 @@ internal fun RequestScreen(
     preferredStation: String?,
     request: TvRequestUi?,
     clocks: Map<String, RequestClockUi> = emptyMap(),
+    requested: Set<String> = emptySet(),
     onRefreshClock: (String) -> Unit = {},
     onPick: (CatalogTrack, String) -> Unit,
     onConfirm: () -> Unit,
@@ -143,6 +146,7 @@ internal fun RequestScreen(
             onPick = { onPick(it, station) },
             onExit = onClose,
             clock = clocks[station],
+            requested = requested,
             stationChoices = if (accounts.size > 1) accounts.map { it.station } else emptyList(),
             onStation = { chosen = it },
         )

@@ -71,6 +71,9 @@ internal class PairingController(
             val result = submitter.submit(session, current.track, current.station)
             android.util.Log.i("PairingHost", "tv request: ${result::class.simpleName}")
             _request.value = TvRequestUi.Done(current.track, current.station, result)
+            if (result is TvRequestResult.Queued || result is TvRequestResult.Received || result is TvRequestResult.CheckQueue) {
+                _requestedSongs.value = _requestedSongs.value + "${current.station}:${current.track.songId}"
+            }
             // The station's request clock changed with this request: read it again so the next screen shows the new wait.
             if (result is TvRequestResult.Queued || result is TvRequestResult.Received) refreshClock(current.station)
         }
@@ -84,6 +87,10 @@ internal class PairingController(
     private val _accounts = MutableStateFlow<List<StationAccount>>(emptyList())
     val accounts: StateFlow<List<StationAccount>> = _accounts
     private var closeJob: kotlinx.coroutines.Job? = null
+
+    /** "station:songId" of tracks requested from this TV since the app started: shown as already requested, like the phone's in-memory blocks. */
+    private val _requestedSongs = MutableStateFlow<Set<String>>(emptySet())
+    val requestedSongs: StateFlow<Set<String>> = _requestedSongs
 
     /** What each station last said about the next request; the screen counts down from [RequestClockUi.readAtMillis]. */
     private val _clocks = MutableStateFlow<Map<String, RequestClockUi>>(emptyMap())

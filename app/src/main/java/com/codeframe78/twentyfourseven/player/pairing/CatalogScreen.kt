@@ -62,6 +62,7 @@ internal fun CatalogScreen(
     stationChoices: List<String> = emptyList(),
     onStation: (String) -> Unit = {},
     clock: RequestClockUi? = null,
+    requested: Set<String> = emptySet(),
 ) {
     val ui by browser.ui.collectAsStateWithLifecycle()
     val back = { if (!browser.back()) onExit() }
@@ -94,13 +95,13 @@ internal fun CatalogScreen(
                 )
                 is CatalogUi.Tracks -> BrowseStep(
                     heading = state.heading,
-                    items = state.tracks,
+                    items = state.tracks.map { if ("$station:${it.songId}" in requested) it.copy(eligible = false) else it },
                     onBack = back,
                     key = { it.songId.ifBlank { "${it.title}|${it.artist}" } },
                     title = { it.title },
                     subtitle = { listOfNotNull(it.artist, it.duration).joinToString(" · ") },
                     cover = { coverUrl(station, it.albumId) },
-                    detail = { track, _ -> TrackDetail(station, track) },
+                    detail = { track, _ -> TrackDetail(station, track, "$station:${track.songId}" in requested) },
                     onClick = { if (it.eligible) onPick(it) },
                     accent = { if (it.eligible) null else PairingPalette.Red },
                 )
@@ -237,15 +238,17 @@ private fun EntryDetail(station: String, entry: CatalogEntry) {
 }
 
 @Composable
-private fun TrackDetail(station: String, track: CatalogTrack) {
+private fun TrackDetail(station: String, track: CatalogTrack, requestedFromThisTv: Boolean) {
     CoverArt(coverUrl(station, track.albumId), 300.dp, track.title)
     Spacer(Modifier.height(20.dp))
     Text(track.title, style = MaterialTheme.typography.headlineSmall, maxLines = 2)
     track.artist?.let { Text(it, style = MaterialTheme.typography.titleMedium, color = PairingPalette.Muted, maxLines = 1) }
     track.albumTitle?.let { Text(it, color = PairingPalette.Muted, maxLines = 1) }
     Spacer(Modifier.height(10.dp))
-    if (track.eligible) Chip("Available to request", PairingPalette.Green)
-    else Chip(track.note ?: "Not available right now", PairingPalette.Red)
+    val status = classifyTrackStatus(track, requestedFromThisTv)
+    Chip(status.label, if (status.canRequest) PairingPalette.Green else PairingPalette.Red)
+    // The station's own words (when it gave a reason) stay visible under the label.
+    if (!status.canRequest && status != TrackStatus.RequestedHere) track.note?.let { Text(it, color = PairingPalette.Muted, maxLines = 3) }
 }
 
 @Composable
