@@ -150,4 +150,15 @@ class RequestSubmitterTest {
         assertEquals("<html>ok</html>", body)
         assertTrue(seen.all { it.startsWith("https://streamingsoundtracks.com/") })
     }
+
+    @Test fun theStationsCurrentSuccessPageIsAcknowledgedDespiteTheRequestWaitHeader() {
+        val page = """<html><body><div>Request Wait 20m VIP 1m</div><div>Next Request: 00:52</div>
+            <h1>Request Received</h1><p>Your request has been sent to the DJ application. You can add a message while it waits in the queue.</p>
+            <label>Your message (optional)</label></body></html>"""
+        assertEquals(RequestPageOutcome.Acknowledged, classifyRequestPage(page))
+    }
+
+    @Test fun theRequestWaitHeaderAloneIsNotARefusal() {
+        assertEquals(RequestPageOutcome.Unrecognized, classifyRequestPage("<html><body>Request Wait 20m VIP 1m</body></html>"))
+    }
 }

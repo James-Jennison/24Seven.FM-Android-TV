@@ -136,12 +136,15 @@ private val ACCEPTANCE = listOf(
     Regex("request successful", RegexOption.IGNORE_CASE),
     Regex("request has successfully been delivered", RegexOption.IGNORE_CASE),
     Regex("request was successfully delivered", RegexOption.IGNORE_CASE),
+    // The stations' current wording: "Request Received - Your request has been sent to the DJ application."
+    Regex("request received", RegexOption.IGNORE_CASE),
+    Regex("sent to the DJ application", RegexOption.IGNORE_CASE),
 )
 
 private val REJECTION = listOf(
     Regex("played recently", RegexOption.IGNORE_CASE) to "The station reports this track was played recently.",
     Regex("already (?:in|on) the queue", RegexOption.IGNORE_CASE) to "The station reports this track is already in the queue.",
-    Regex("(?:request\\s+wait|cooldown|too soon to request|request limit)", RegexOption.IGNORE_CASE) to "The station reports that this account must wait before requesting again.",
+    Regex("(?:cooldown|too soon to request|request limit|must wait)", RegexOption.IGNORE_CASE) to "The station reports that this account must wait before requesting again.",
     Regex("request failed", RegexOption.IGNORE_CASE) to "The station rejected this request. Check Queue before trying again.",
     Regex("cannot request", RegexOption.IGNORE_CASE) to "The station rejected this request. Check Queue before trying again.",
     Regex("can only request", RegexOption.IGNORE_CASE) to "The station rejected this request. Check Queue before trying again.",
