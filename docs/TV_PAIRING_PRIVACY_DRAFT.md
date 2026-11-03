@@ -1,6 +1,6 @@
 # DRAFT: privacy and Play data-safety wording for phone pairing
 
-Status: **draft for Owner approval. Not applied to PRIVACY.md, not published.**
+Status: **approved by the Owner on 2026-11-03 and applied to PRIVACY.md (the Play data-safety table below is still a proposal; not published).**
 Pairing and TV requests are off in release builds (`PAIRING_ENABLED` / `TV_REQUESTS_ENABLED`),
 so the current PRIVACY.md stays accurate until this feature is released. Apply this text
 in the same change that enables pairing.
