@@ -96,6 +96,7 @@ class RequestCatalogTest {
             CatalogAlbum("Alb", listOf(CatalogTrack("A9", "9", "Pick", "Who", "Alb", "1:00", true)))
         override suspend fun browse(station: String, kind: BrowseKind, key: String) =
             listOf(CatalogEntry(CatalogTarget.Album("B-$key"), "${kind.wire} $key", null, null))
+        override suspend fun page(station: String, source: PageSource, start: Int) = emptyList<CatalogEntry>()
         override suspend fun waits(station: String) = listOf(WaitCard("Member Wait", "20 minutes"))
         override suspend fun album(station: String, albumId: String) =
             CatalogAlbum("T $albumId", listOf(CatalogTrack(albumId, "7", "Song", "Who", "T $albumId", "3:00", true)))
@@ -164,5 +165,11 @@ class RequestCatalogTest {
         assertEquals("numbers", browseKeys(BrowseKind.Album).first().second)
         assertEquals("20262026", browseKeys(BrowseKind.Year, 2026).first().second)
         assertEquals("1990", browseKeys(BrowseKind.Year, 2026).last().first)
+    }
+
+    @Test fun theNextPageIsFoundFromThePageLinks() {
+        assertEquals(97, CatalogParser().nextStart(fixture("browse-artist.html"), 1))
+        assertEquals(193, CatalogParser().nextStart(fixture("browse-artist.html"), 97))
+        assertEquals(null, CatalogParser().nextStart(fixture("browse-artist.html"), 193))
     }
 }

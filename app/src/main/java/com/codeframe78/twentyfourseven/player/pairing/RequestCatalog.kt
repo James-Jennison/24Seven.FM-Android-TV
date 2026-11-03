@@ -54,9 +54,17 @@ internal fun coverUrl(station: String, albumId: String): String? {
     return if (albumId.matches(Regex("[A-Za-z0-9_-]{1,64}"))) "${origin}images/cover/$albumId.jpg" else null
 }
 
+/** Where a paged list comes from, so "show more" can ask the station for its next page. */
+internal sealed interface PageSource {
+    data class Search(val field: CatalogField, val text: String) : PageSource
+    data class Browse(val kind: BrowseKind, val key: String) : PageSource
+}
+
 internal sealed interface CatalogTarget {
     data class Album(val albumId: String) : CatalogTarget
     data class Artist(val name: String) : CatalogTarget
+    /** The last row of a long list: the station's next page of the same search or browse. */
+    data class More(val source: PageSource, val start: Int) : CatalogTarget
 }
 
 internal data class CatalogEntry(val target: CatalogTarget, val title: String, val subtitle: String?, val year: String?)
@@ -85,6 +93,8 @@ internal interface RequestCatalog {
     suspend fun album(station: String, albumId: String): CatalogAlbum
     suspend fun suggest(station: String, mode: SuggestionMode): CatalogAlbum
     suspend fun browse(station: String, kind: BrowseKind, key: String): List<CatalogEntry>
+    /** The page of a search or browse that starts at [start] (1, 97, 193, …); ends with a "show more" row when there is another. */
+    suspend fun page(station: String, source: PageSource, start: Int): List<CatalogEntry>
     /** The public Member/VIP wait cards from the Request Music page; empty when the page has none. */
     suspend fun waits(station: String): List<WaitCard>
 }
@@ -98,6 +108,10 @@ internal class CatalogParser {
         if (label.isBlank() || value.isBlank() || label.contains("Your Next", ignoreCase = true)) null
         else WaitCard(label.take(32), value.take(48))
     }.take(4)
+
+    /** The station's next page number after [current], from its page links; null on the last page. */
+    fun nextStart(html: String, current: Int): Int? =
+        Regex("searchpgstart=(\\d{1,6})").findAll(html).mapNotNull { it.groupValues[1].toIntOrNull() }.filter { it > current }.minOrNull()
 
     fun parseSearch(html: String, origin: String): List<CatalogEntry> {
         val host = URI(origin).host
@@ -228,11 +242,8 @@ internal class StationRequestCatalog(
     private val parser: CatalogParser = CatalogParser(),
     private val connect: (URI) -> HttpURLConnection = { it.toURL().openConnection() as HttpURLConnection },
 ) : RequestCatalog {
-    override suspend fun search(station: String, query: String, field: CatalogField): List<CatalogEntry> = withContext(Dispatchers.IO) {
-        val origin = origin(station)
-        val html = get(origin, "modules.php?name=Requests&searchfor=1&searchpgstart=1&searchby=${field.wire}&searchtext=${enc(query)}&search=Search")
-        parser.parseSearch(html, origin)
-    }
+    override suspend fun search(station: String, query: String, field: CatalogField): List<CatalogEntry> =
+        page(station, PageSource.Search(field, query), 1)
 
     override suspend fun albumsBy(station: String, artist: String): List<CatalogEntry> = withContext(Dispatchers.IO) {
         val origin = origin(station)
@@ -249,16 +260,30 @@ internal class StationRequestCatalog(
         parser.parseSuggestion(get(origin, "modules.php?name=Requests&${mode.wire}=1&searchpgstart=1"), origin)
     }
 
-    override suspend fun browse(station: String, kind: BrowseKind, key: String): List<CatalogEntry> = withContext(Dispatchers.IO) {
+    override suspend fun browse(station: String, kind: BrowseKind, key: String): List<CatalogEntry> {
         require(key.matches(Regex("[A-Za-z0-9]{1,8}"))) { "Invalid browse key" }
+        return page(station, PageSource.Browse(kind, key), 1)
+    }
+
+    override suspend fun page(station: String, source: PageSource, start: Int): List<CatalogEntry> = withContext(Dispatchers.IO) {
+        require(start in 1..100_000) { "Invalid page" }
         val origin = origin(station)
-        val which = if (kind == BrowseKind.Year) "rangeyear=$key" else "letter=$key"
-        val began = System.nanoTime()
-        val html = get(origin, "modules.php?name=Requests&browse=${kind.wire}&$which&searchpgstart=1")
-        val fetched = System.nanoTime()
-        parser.parseSearch(html, origin).also {
-            runCatching { android.util.Log.i("PairingCatalog", "browse ${kind.wire}: fetch ${(fetched - began) / 1_000_000} ms, parse ${(System.nanoTime() - fetched) / 1_000_000} ms, ${html.length} chars, ${it.size} entries") }
+        val path = when (source) {
+            is PageSource.Search -> "modules.php?name=Requests&searchfor=1&searchpgstart=$start&searchby=${source.field.wire}&searchtext=${enc(source.text)}&search=Search"
+            is PageSource.Browse -> {
+                require(source.key.matches(Regex("[A-Za-z0-9]{1,8}"))) { "Invalid browse key" }
+                val which = if (source.kind == BrowseKind.Year) "rangeyear=${source.key}" else "letter=${source.key}"
+                "modules.php?name=Requests&browse=${source.kind.wire}&$which&searchpgstart=$start"
+            }
         }
+        val began = System.nanoTime()
+        val html = get(origin, path)
+        val fetched = System.nanoTime()
+        val entries = parser.parseSearch(html, origin)
+        runCatching { android.util.Log.i("PairingCatalog", "page start=$start: fetch ${(fetched - began) / 1_000_000} ms, parse ${(System.nanoTime() - fetched) / 1_000_000} ms, ${entries.size} entries") }
+        val next = parser.nextStart(html, start)
+        if (next == null || entries.isEmpty()) entries
+        else entries + CatalogEntry(CatalogTarget.More(source, next), "Show more", "Next page of results", null)
     }
 
     override suspend fun waits(station: String): List<WaitCard> = withContext(Dispatchers.IO) {

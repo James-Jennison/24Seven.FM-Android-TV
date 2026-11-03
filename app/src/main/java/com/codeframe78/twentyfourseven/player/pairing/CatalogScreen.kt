@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.text.withStyle
 import androidx.compose.foundation.layout.width
@@ -30,6 +32,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -95,6 +98,7 @@ internal fun CatalogScreen(
                     cover = { (it.target as? CatalogTarget.Album)?.let { t -> coverUrl(station, t.albumId) } },
                     detail = { entry, _ -> EntryDetail(station, entry) },
                     onClick = browser::open,
+                    showDetail = false,
                 )
                 is CatalogUi.Tracks -> BrowseStep(
                     heading = state.heading,
@@ -193,7 +197,13 @@ private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogB
             }
             state.notice?.let { Text(it, color = PairingPalette.Amber) }
         }
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(14.dp))
+        Text(
+            "Choose an artist and album that are not already in the queue. Recently played tracks may need more time.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = PairingPalette.Muted,
+        )
+        Spacer(Modifier.height(12.dp))
         Pill("Back", onClick = onExit)
     }
 }
@@ -211,15 +221,37 @@ private fun <T> BrowseStep(
     detail: @Composable (T, Int) -> Unit,
     onClick: (T) -> Unit,
     accent: (T) -> Color? = { null },
+    /** The artwork-and-details pane: wanted for an album's tracks, not for lists of artists and albums. */
+    showDetail: Boolean = true,
 ) {
     var focused by remember { mutableIntStateOf(0) }
     val first = remember { FocusRequester() }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     LaunchedEffect(heading) { runCatching { first.requestFocus() } }
-    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(40.dp)) {
-        Column(Modifier.weight(1.25f).fillMaxHeight()) {
+    // The remote has no Page keys, so long lists get Page up / Page down buttons: they move by what is on screen,
+    // keep their own focus (so Select repeats), and the detail pane follows the row they land on.
+    fun page(direction: Int) {
+        val visible = listState.layoutInfo.visibleItemsInfo.size.coerceAtLeast(1)
+        val target = (focused + direction * visible).coerceIn(0, items.lastIndex.coerceAtLeast(0))
+        focused = target
+        scope.launch { listState.animateScrollToItem(target) }
+    }
+    Row(
+        Modifier.fillMaxSize().onPreviewKeyEvent { event ->
+            if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+            when (event.key) {
+                Key.PageDown, Key.ChannelDown, Key.MediaFastForward -> { page(+1); true }
+                Key.PageUp, Key.ChannelUp, Key.MediaRewind -> { page(-1); true }
+                else -> false
+            }
+        },
+        horizontalArrangement = Arrangement.spacedBy(40.dp),
+    ) {
+        Column(Modifier.weight(if (showDetail) 1.25f else 1f).fillMaxHeight()) {
             Text(heading, style = MaterialTheme.typography.headlineLarge, maxLines = 2)
             Spacer(Modifier.height(16.dp))
-            LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            LazyColumn(Modifier.weight(1f), state = listState, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 // Two rows can share a target (the same artist listed twice); the index keeps every key unique.
                 itemsIndexed(items, key = { index, item -> "$index|${key(item)}" }) { index, item ->
                     ResultCard(
@@ -236,8 +268,18 @@ private fun <T> BrowseStep(
             Spacer(Modifier.height(12.dp))
             Pill("Back", onClick = onBack)
         }
+        // Page arrows sit just right of the list: Right from any row reaches them, and Select repeats a page.
+        if (items.size > 4) {
+            Column(Modifier.fillMaxHeight().padding(top = 60.dp), verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
+                ArrowButton("▲", "Page up") { page(-1) }
+                Text("${focused + 1}/${items.size}", style = MaterialTheme.typography.labelLarge, color = PairingPalette.Muted)
+                ArrowButton("▼", "Page down") { page(+1) }
+            }
+        }
+        if (showDetail) {
         Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             items.getOrNull(focused)?.let { detail(it, focused) }
+        }
         }
     }
 }
@@ -251,7 +293,14 @@ private fun EntryDetail(station: String, entry: CatalogEntry) {
     entry.subtitle?.let { Text(it, style = MaterialTheme.typography.titleMedium, color = PairingPalette.Muted, maxLines = 2) }
     entry.year?.let { Text(it, color = PairingPalette.Muted) }
     Spacer(Modifier.height(10.dp))
-    Chip(if (entry.target is CatalogTarget.Artist) "Artist · see albums" else "Album · see tracks", PairingPalette.Lavender)
+    Chip(
+        when (entry.target) {
+            is CatalogTarget.Artist -> "Artist · see albums"
+            is CatalogTarget.More -> "Load the next page"
+            else -> "Album · see tracks"
+        },
+        PairingPalette.Lavender,
+    )
 }
 
 @Composable
@@ -303,6 +352,25 @@ private fun ResultCard(
 @Composable
 private fun LocalSubtitle(): Color = PairingPalette.Muted
 
+
+/** A round arrow button; the glyph is decoration, the spoken label is [description]. */
+@Composable
+private fun ArrowButton(glyph: String, description: String, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.size(72.dp).semantics { contentDescription = description },
+        shape = ClickableSurfaceDefaults.shape(androidx.compose.foundation.shape.CircleShape),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = PairingPalette.Charcoal,
+            contentColor = PairingPalette.WarmWhite,
+            focusedContainerColor = PairingPalette.Lavender,
+            focusedContentColor = Color(0xFF1C1424),
+        ),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.1f),
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(glyph, style = MaterialTheme.typography.headlineSmall) }
+    }
+}
 
 /** A rounded pill button: outlined by default, filled for the primary action, tinted when selected. */
 @Composable

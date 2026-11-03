@@ -76,6 +76,16 @@ internal class CatalogBrowser(
             val album = catalog.album(station, target.albumId)
             CatalogUi.Tracks(album.title ?: entry.title, album.tracks)
         }
+        is CatalogTarget.More -> {
+            val shown = stack.last() as? CatalogUi.Entries
+            if (shown != null) {
+                load("Loading more…", empty = "No more results.") {
+                    // The same list, continued: the old "show more" row is replaced by the next page.
+                    CatalogUi.Entries(shown.heading, shown.items.filterNot { it.target is CatalogTarget.More } + catalog.page(station, target.source, target.start))
+                }
+            }
+            Unit
+        }
         is CatalogTarget.Artist -> load("Loading albums…", empty = "No albums found for ${entry.title}.") {
             CatalogUi.Entries(entry.title, catalog.albumsBy(station, target.name))
         }
