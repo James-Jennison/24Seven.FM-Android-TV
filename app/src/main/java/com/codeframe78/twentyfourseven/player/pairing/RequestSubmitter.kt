@@ -177,7 +177,7 @@ internal class HttpSessionPageFetch(
                 hop("status=$status path=${current.path} redirect=${status in setOf(301, 302, 303, 307, 308)} contentType=${c.contentType}")
                 if (status in setOf(301, 302, 303, 307, 308)) {
                     if (n == MAX_REDIRECTS) throw IOException("Too many redirects")
-                    val target = stationRedirectTarget(current, c.getHeaderField("Location"), start)
+                    val target = stationRedirectTarget(current, c.getHeaderField("Location"), start) { hop(it) }
                     hop("redirect target scheme=${target.scheme} sameHost=${target.host.equals(start.host, true)} path=${target.path}")
                     // The station answers a request with a redirect; never follow one back into the request
                     // endpoint, or a single choice could be submitted twice.
@@ -195,17 +195,21 @@ internal class HttpSessionPageFetch(
     }
 
     /**
-     * The station redirects to a plain-http address on its own host; upgrade that to the station's
-     * https origin before connecting (nothing, least of all the cookie, is ever sent over http).
-     * Any other host, scheme or port is refused by the origin check.
+     * The station redirects to its own host, often as plain http and sometimes as its `www.` name. Both
+     * are rewritten to the station's own https origin before connecting, so nothing, least of all the
+     * cookie, is ever sent over http or to another name. Any other host, scheme or port is refused.
      */
-    private fun stationRedirectTarget(current: URI, location: String?, start: URI): URI {
+    private fun stationRedirectTarget(current: URI, location: String?, start: URI, shape: (String) -> Unit): URI {
         val resolved = runCatching { current.resolve(location?.takeIf(String::isNotBlank) ?: throw IOException()) }
-            .getOrElse { throw IOException("Station redirect was invalid") }
-        val plainSameHost = resolved.scheme.equals("http", ignoreCase = true) &&
-            resolved.host.equals(start.host, ignoreCase = true) &&
-            (resolved.port == -1 || resolved.port == 80) && resolved.userInfo == null
-        val target = if (plainSameHost) URI("https", null, start.host, start.port, resolved.path, resolved.query, resolved.fragment) else resolved
+            .getOrElse { shape("redirect location missing or unparsable"); throw IOException("Station redirect was invalid") }
+        val own = start.host.removePrefix("www.")
+        val ownName = resolved.host?.removePrefix("www.").equals(own, ignoreCase = true)
+        val plainHttp = resolved.scheme.equals("http", ignoreCase = true) && (resolved.port == -1 || resolved.port == 80)
+        val secure = resolved.scheme.equals("https", ignoreCase = true) && (resolved.port == -1 || resolved.port == start.port || (start.port == -1 && resolved.port == 443))
+        shape("redirect location scheme=${resolved.scheme} ownName=$ownName port=${resolved.port} path=${resolved.path}")
+        val target = if (ownName && resolved.userInfo == null && (plainHttp || secure)) {
+            URI("https", null, start.host, start.port, resolved.path, resolved.query, resolved.fragment)
+        } else resolved
         TrustedStationNavigation.requireSameHttpsOrigin(target, start)
         return target
     }

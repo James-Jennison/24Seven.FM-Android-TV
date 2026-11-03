@@ -152,4 +152,12 @@ class RequestSubmitterTest {
         assertTrue(failure is java.io.IOException)
         assertEquals(1, seen.size)
     }
+
+    @Test fun aWwwRedirectIsRewrittenToTheStationsOwnHost() {
+        val seen = mutableListOf<String>()
+        val body = redirecting("https://www.streamingsoundtracks.com/modules.php?name=Queue", seen)
+            .get(java.net.URI("https://streamingsoundtracks.com/modules.php?name=Req&asin=1&songID=2"), java.net.URI("https://streamingsoundtracks.com/"), session(station = "sst"))
+        assertEquals("<html>ok</html>", body)
+        assertTrue(seen.all { it.startsWith("https://streamingsoundtracks.com/") })
+    }
 }
