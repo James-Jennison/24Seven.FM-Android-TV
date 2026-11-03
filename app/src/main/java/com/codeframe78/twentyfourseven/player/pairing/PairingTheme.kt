@@ -21,15 +21,33 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 
-/** The pairing and catalog screens share the app's night-violet palette. */
+/** The accent colours of one screen: the app's night-violet by default, a station's own colours on its request screens. */
+internal data class PairingColors(val accent: Color, val strong: Color, val glow: Color)
+
+internal val DefaultPairingColors = PairingColors(accent = Color(0xFFC9A8FF), strong = Color(0xFF8B5CF6), glow = Color(0xFF8B5CF6))
+
+/** A station's palette from the player (the same colours as its Light Trails and badges); the fill is its accent darkened so white text stays readable. */
+internal fun pairingColorsFor(station: String?): PairingColors {
+    if (station == null) return DefaultPairingColors
+    val palette = com.codeframe78.twentyfourseven.player.ui.theme.stationPalette(com.codeframe78.twentyfourseven.player.domain.StationId(station))
+    return PairingColors(
+        accent = palette.accent,
+        strong = androidx.compose.ui.graphics.lerp(palette.accent, Color.Black, 0.42f),
+        glow = palette.glow.let { androidx.compose.ui.graphics.lerp(it, palette.accent, 0.35f) },
+    )
+}
+
+internal val LocalPairingColors = androidx.compose.runtime.staticCompositionLocalOf { DefaultPairingColors }
+
+/** The pairing and catalog screens share the app's night palette; Lavender and Violet follow the screen's [PairingColors]. */
 internal object PairingPalette {
     val Night = Color(0xFF0E0B14)
     val DeepNavy = Color(0xFF131522)
     val Charcoal = Color(0xFF1C1C27)
     val Raised = Color(0xFF282734)
     val WarmWhite = Color(0xFFF8F2F4)
-    val Lavender = Color(0xFFC9A8FF)
-    val Violet = Color(0xFF8B5CF6)
+    val Lavender: Color @Composable get() = LocalPairingColors.current.accent
+    val Violet: Color @Composable get() = LocalPairingColors.current.strong
     val Muted = Color(0xFFCEC3D4)
     val Amber = Color(0xFFFFC56C)
     val Green = Color(0xFF47C96B)
@@ -42,7 +60,7 @@ internal fun PairingBackdrop(content: @Composable BoxScope.() -> Unit) {
     Box(
         Modifier.fillMaxSize()
             .background(Brush.verticalGradient(listOf(PairingPalette.Night, PairingPalette.DeepNavy)))
-            .background(Brush.radialGradient(listOf(PairingPalette.Violet.copy(alpha = 0.22f), Color.Transparent), radius = 1100f)),
+            .background(Brush.radialGradient(listOf(LocalPairingColors.current.glow.copy(alpha = 0.26f), Color.Transparent), radius = 1100f)),
         content = content,
     )
 }

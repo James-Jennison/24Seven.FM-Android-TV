@@ -112,6 +112,7 @@ internal fun RequestScreen(
         val heard = result.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
         if (result.resultCode == android.app.Activity.RESULT_OK && heard != null) browser?.voice(heard)
     }
+    androidx.compose.runtime.CompositionLocalProvider(LocalPairingColors provides pairingColorsFor(station)) {
     when {
         request != null -> PairingBackdrop {
             Column(Modifier.fillMaxSize().padding(horizontal = 64.dp, vertical = 16.dp), verticalArrangement = Arrangement.Center) {
@@ -158,6 +159,7 @@ internal fun RequestScreen(
             stationChoices = if (accounts.size > 1) accounts.map { it.station } else emptyList(),
             onStation = { chosen = it },
         )
+    }
     }
 }
 
