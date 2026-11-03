@@ -292,6 +292,7 @@ internal fun stationName(id: String) = when (id) {
 
 internal fun tvRequestText(result: TvRequestResult) = when (result) {
     TvRequestResult.Queued -> "Requested. It is in the station's Queue."
+    TvRequestResult.Received -> "The station accepted it and sent it to the DJ. It plays after the songs ahead of it, and may not show in the Queue list for a while. It was not resent."
     is TvRequestResult.CheckQueue -> "${result.why} Check the Queue before requesting again. It was not resent."
     is TvRequestResult.Rejected -> result.message
     TvRequestResult.SignInExpired -> "The station asked for a sign-in, so the request was probably not made. Pair with your phone again, and check the Queue before requesting again."
@@ -300,6 +301,7 @@ internal fun tvRequestText(result: TvRequestResult) = when (result) {
 
 internal fun tvRequestHeadline(result: TvRequestResult) = when (result) {
     TvRequestResult.Queued -> "Requested"
+    TvRequestResult.Received -> "Request received"
     is TvRequestResult.CheckQueue -> "Check the Queue"
     is TvRequestResult.Rejected -> "The station said no"
     TvRequestResult.SignInExpired -> "Pair with your phone again"

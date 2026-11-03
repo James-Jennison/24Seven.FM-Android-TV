@@ -71,6 +71,8 @@ internal class PairingController(
             val result = submitter.submit(session, current.track, current.station)
             android.util.Log.i("PairingHost", "tv request: ${result::class.simpleName}")
             _request.value = TvRequestUi.Done(current.track, current.station, result)
+            // The station's request clock changed with this request: read it again so the next screen shows the new wait.
+            if (result is TvRequestResult.Queued || result is TvRequestResult.Received) refreshClock(current.station)
         }
     }
 

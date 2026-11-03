@@ -14,7 +14,9 @@ import java.nio.charset.StandardCharsets
 internal sealed interface TvRequestResult {
     /** The station acknowledged and the track is visible in Queue. */
     data object Queued : TvRequestResult
-    /** The station acknowledged but Queue did not show it. Check the Queue; never resend. */
+    /** The station said "Request Received" (sent to the DJ application); the visible Queue did not list it (yet). Never resend. */
+    data object Received : TvRequestResult
+    /** The station's answer was missing or unclear. Check the Queue; never resend. */
     data class CheckQueue(val why: String) : TvRequestResult
     data class Rejected(val message: String) : TvRequestResult
     /** The station wants a sign-in: pair with the phone again. Nothing was requested. */
@@ -83,7 +85,7 @@ internal class RequestSubmitter(
             is RequestPageOutcome.Rejected -> TvRequestResult.Rejected(outcome.message)
             RequestPageOutcome.Acknowledged ->
                 if (runCatching { queue.isQueued(station, track.albumId, track.songId) }.getOrDefault(false)) TvRequestResult.Queued
-                else TvRequestResult.CheckQueue("The station acknowledged the request, but it is not visible in Queue yet.")
+                else TvRequestResult.Received
             RequestPageOutcome.Unrecognized -> TvRequestResult.CheckQueue("The station's reply was not recognised.")
         }
     }

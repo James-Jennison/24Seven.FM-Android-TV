@@ -45,8 +45,8 @@ class RequestSubmitterTest {
         assertEquals("https://streamingsoundtracks.com/modules.php?name=Req&asin=B00000JC79&songID=224947", requested)
     }
 
-    @Test fun acknowledgedButNotVisibleMeansCheckQueue() {
-        assertTrue(run(submitter(queued = false)) is TvRequestResult.CheckQueue)
+    @Test fun acknowledgedButNotVisibleIsStillReceived() {
+        assertEquals(TvRequestResult.Received, run(submitter(queued = false)))
         assertEquals(1, calls)
     }
 
