@@ -131,7 +131,11 @@ internal fun RequestScreen(
                         station = request.station,
                         headline = tvRequestHeadline(request.result),
                         note = tvRequestText(request.result),
-                        primary = (if (request.result is TvRequestResult.Queued || request.result is TvRequestResult.Received) "Request another" else "OK") to onDismiss,
+                        // After a request the listener starts over from the search page, not from the list they picked from.
+                        primary = (if (request.result is TvRequestResult.Queued || request.result is TvRequestResult.Received) "Request another" else "OK") to {
+                            if (request.result is TvRequestResult.Queued || request.result is TvRequestResult.Received) browser?.reset()
+                            onDismiss()
+                        },
                         secondary = "Back to player" to { onDismiss(); onClose() },
                     )
                 }

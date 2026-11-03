@@ -172,4 +172,16 @@ class RequestCatalogTest {
         assertEquals(193, CatalogParser().nextStart(fixture("browse-artist.html"), 97))
         assertEquals(null, CatalogParser().nextStart(fixture("browse-artist.html"), 193))
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test fun resetReturnsToTheSearchPage() = runTest {
+        val b = browser()
+        b.setField(CatalogField.Artist)
+        b.search("abc")
+        advanceUntilIdle()
+        assertTrue(b.ui.value is CatalogUi.Entries)
+        b.reset()
+        assertTrue(b.ui.value is CatalogUi.Query)
+        assertEquals(false, b.back())
+    }
 }

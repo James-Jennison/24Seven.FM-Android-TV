@@ -117,6 +117,13 @@ internal class CatalogBrowser(
         CatalogUi.Tracks(if (mode == SuggestionMode.Random) "Surprise pick" else "Rarely played pick", album.tracks)
     }
 
+    /** Back to the search screen (the first level), dropping every list above it. */
+    fun reset() {
+        job?.cancel()
+        while (stack.size > 1) stack.removeLast()
+        _ui.value = stack.last()
+    }
+
     /** True when it moved up one level; false when already at the first screen. */
     fun back(): Boolean {
         job?.cancel()
