@@ -35,6 +35,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.tv.material3.Button
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.tv.material3.LocalContentColor
@@ -79,13 +81,19 @@ class PairingActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         if (BuildConfig.PAIRING_ENABLED) {
-            controller.refreshAccounts()
             // A TV that is already signed in shows its status and opens no listener; a code appears only when there is no session.
-            if (controller.accounts.value.isEmpty()) controller.begin()
+            // The stored sessions load off the main thread, so the decision waits for them; leaving the screen cancels it.
+            startJob = lifecycleScope.launch {
+                controller.loadAccounts()
+                if (controller.accounts.value.isEmpty()) controller.begin()
+            }
         }
     }
 
+    private var startJob: kotlinx.coroutines.Job? = null
+
     override fun onStop() {
+        startJob?.cancel()
         controller.end()
         super.onStop()
     }

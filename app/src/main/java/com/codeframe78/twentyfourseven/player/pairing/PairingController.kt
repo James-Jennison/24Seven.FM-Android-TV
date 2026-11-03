@@ -112,12 +112,16 @@ internal class PairingController(
     /** Loads the stored sessions (no network) so the screens can show them, then checks each with its station. */
     fun refreshAccounts() {
         if (!enabled) return
-        scope.launch {
-            val stored = withContext(Dispatchers.IO) { runCatching { store.loadAll() }.getOrDefault(emptyList()) }
-            val previous = _accounts.value.associateBy { it.station }
-            _accounts.value = stored.map { StationAccount(it.account, it.station, previous[it.station]?.takeIf { a -> a.label == it.account }?.state ?: SignInState.Unknown) }
-            stored.forEach(::verify)
-        }
+        scope.launch { loadAccounts() }
+    }
+
+    /** The stored sessions are read off the main thread; returns once [accounts] shows them, so a caller can decide on the result. */
+    suspend fun loadAccounts() {
+        if (!enabled) return
+        val stored = withContext(Dispatchers.IO) { runCatching { store.loadAll() }.getOrDefault(emptyList()) }
+        val previous = _accounts.value.associateBy { it.station }
+        _accounts.value = stored.map { StationAccount(it.account, it.station, previous[it.station]?.takeIf { a -> a.label == it.account }?.state ?: SignInState.Unknown) }
+        stored.forEach(::verify)
     }
 
     /** Deletes one station's session on this TV only. It does not ask the station to log out, which would end the phone's session too. */

@@ -23,7 +23,8 @@ class PairingControllerTest {
 
     private class MemoryStore(vararg initial: StationSession) : StationSessionStore {
         val sessions = initial.associateBy { it.station }.toMutableMap()
-        override fun loadAll() = sessions.values.toList()
+        val loads = AtomicInteger()
+        override fun loadAll(): List<StationSession> { loads.incrementAndGet(); return sessions.values.toList() }
         override fun save(session: StationSession) { sessions[session.station] = session }
         override fun clear(station: String) { sessions.remove(station) }
         override fun clearAll() { sessions.clear() }
@@ -113,6 +114,15 @@ class PairingControllerTest {
         assertTrue(c.accounts.value.all { it.state == SignInState.SignedOut })
     }
 
+    @Test fun loadAccountsReturnsOnlyOnceTheStoredSessionsAreShown() {
+        val c = controller(store = MemoryStore(session("sst")))
+        runBlocking { c.loadAccounts() }
+        assertEquals(listOf("sst"), c.accounts.value.map { it.station }) // no waiting needed: the caller decides on this
+        val empty = controller(store = MemoryStore())
+        runBlocking { empty.loadAccounts() }
+        assertTrue(empty.accounts.value.isEmpty())
+    }
+
     @Test fun signOutRemovesOnlyThatStationOnThisTv() {
         val store = MemoryStore(session("sst"), session("dfm"))
         val c = controller(store = store)
@@ -126,9 +136,10 @@ class PairingControllerTest {
     }
 
     @Test fun theClockIsReadForAStoredSessionOnly() {
-        val c = controller()
+        val store = MemoryStore(session())
+        val c = controller(store = store)
         c.refreshClock("dfm")
-        Thread.sleep(200) // no stored session for dfm: nothing is ever read
+        await { store.loads.get() >= 1 } // the stored sessions were looked at; none belongs to dfm, so no clock is read
         assertTrue(c.clocks.value.isEmpty())
         c.refreshClock("sst")
         await { c.clocks.value.containsKey("sst") }
