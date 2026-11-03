@@ -123,7 +123,8 @@ internal fun RequestScreen(
                         station = request.station,
                         headline = tvRequestHeadline(request.result),
                         note = tvRequestText(request.result),
-                        primary = "OK" to onDismiss,
+                        primary = (if (request.result is TvRequestResult.Queued || request.result is TvRequestResult.Received) "Request another" else "OK") to onDismiss,
+                        secondary = "Back to player" to { onDismiss(); onClose() },
                     )
                 }
             }
