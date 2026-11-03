@@ -108,6 +108,10 @@ internal fun RequestScreen(
     // One browser per station, kept across a request's confirm and result screens so the listener returns to the same results.
     val browsers = remember { mutableMapOf<String, CatalogBrowser>() }
     val browser = station?.let { st -> browsers.getOrPut(st) { CatalogBrowser(StationRequestCatalog(), st, scope) } }
+    val speech = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
+        val heard = result.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+        if (result.resultCode == android.app.Activity.RESULT_OK && heard != null) browser?.voice(heard)
+    }
     when {
         request != null -> PairingBackdrop {
             Column(Modifier.fillMaxSize().padding(horizontal = 64.dp, vertical = 16.dp), verticalArrangement = Arrangement.Center) {
@@ -143,6 +147,10 @@ internal fun RequestScreen(
         else -> CatalogScreen(
             station = station,
             browser = browser,
+            onSpeak = {
+                // The system recognizer does the listening and shows its own prompt; this app only receives the text.
+                runCatching { speech.launch(speechIntent()) }.onFailure { browser.voice("") }
+            },
             onPick = { onPick(it, station) },
             onExit = onClose,
             clock = clocks[station],
@@ -173,4 +181,10 @@ private fun NeedsSession(text: String, action: String, onAction: () -> Unit, onC
             }
         }
     }
+}
+
+private fun speechIntent() = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+    putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+    putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Say a song, \"song by artist\", or an artist, album or genre")
+    putExtra(android.speech.RecognizerIntent.EXTRA_MAX_RESULTS, 1)
 }

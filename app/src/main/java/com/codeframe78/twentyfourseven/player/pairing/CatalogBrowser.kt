@@ -71,6 +71,27 @@ internal class CatalogBrowser(
         }
     }
 
+    /**
+     * A spoken search. With an artist ("... by ...") the matching albums come first, and a single
+     * match opens straight to its tracks; the listener still chooses and confirms the track.
+     */
+    fun voice(heard: String) {
+        val top = stack.last() as? CatalogUi.Query ?: return
+        val query = parseVoiceQuery(heard)
+        if (query == null) { replaceTop(top.copy(notice = "I didn't catch that. Try again, or type it.")); return }
+        replaceTop(top.copy(field = query.field, notice = null))
+        load("Searching for “${query.text}”…", empty = "Nothing found for “${query.text}”.") {
+            val found = rankByArtist(catalog.search(station, query.text, query.field), query.artist)
+            val artist = query.artist?.lowercase()
+            val matching = if (artist == null) emptyList() else found.filter { it.title.lowercase().contains(artist) || it.subtitle?.lowercase()?.contains(artist) == true }
+            val only = matching.singleOrNull()?.takeIf { it.target is CatalogTarget.Album }
+            if (only != null) {
+                val album = catalog.album(station, (only.target as CatalogTarget.Album).albumId)
+                CatalogUi.Tracks(album.title ?: only.title, album.tracks)
+            } else CatalogUi.Entries("${query.field.label}: ${query.text}", found)
+        }
+    }
+
     fun open(entry: CatalogEntry) = when (val target = entry.target) {
         is CatalogTarget.Album -> load("Loading album…", empty = "That album has no tracks to show.") {
             val album = catalog.album(station, target.albumId)

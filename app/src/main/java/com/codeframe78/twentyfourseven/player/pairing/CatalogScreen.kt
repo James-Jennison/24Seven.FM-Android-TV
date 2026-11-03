@@ -68,6 +68,7 @@ internal fun CatalogScreen(
     onStation: (String) -> Unit = {},
     clock: RequestClockUi? = null,
     requested: Set<String> = emptySet(),
+    onSpeak: (() -> Unit)? = null,
 ) {
     val ui by browser.ui.collectAsStateWithLifecycle()
     val back = { if (!browser.back()) onExit() }
@@ -75,7 +76,7 @@ internal fun CatalogScreen(
     PairingBackdrop {
         Box(Modifier.fillMaxSize().padding(horizontal = 56.dp, vertical = 32.dp)) {
             when (val state = ui) {
-                is CatalogUi.Query -> QueryStep(station, state, browser, onExit, stationChoices, onStation, clock)
+                is CatalogUi.Query -> QueryStep(station, state, browser, onExit, stationChoices, onStation, clock, onSpeak)
                 is CatalogUi.Keys -> KeysStep(state, browser, back)
                 is CatalogUi.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(state.what, style = MaterialTheme.typography.headlineMedium, color = PairingPalette.Lavender)
@@ -118,7 +119,7 @@ internal fun CatalogScreen(
 }
 
 @Composable
-private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogBrowser, onExit: () -> Unit, stationChoices: List<String>, onStation: (String) -> Unit, clock: RequestClockUi?) {
+private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogBrowser, onExit: () -> Unit, stationChoices: List<String>, onStation: (String) -> Unit, clock: RequestClockUi?, onSpeak: (() -> Unit)?) {
     val waits by browser.waits.collectAsStateWithLifecycle()
     var text by remember { mutableStateOf("") }
     val input = remember { FocusRequester() }
@@ -193,6 +194,7 @@ private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogB
                         .border(2.dp, PairingPalette.Violet.copy(alpha = 0.6f), RoundedCornerShape(50))
                         .padding(horizontal = 28.dp, vertical = 16.dp),
                 )
+                onSpeak?.let { speak -> Pill("Speak", onClick = speak) }
                 Pill("Search", filled = true, onClick = { browser.search(text) })
             }
             state.notice?.let { Text(it, color = PairingPalette.Amber) }
