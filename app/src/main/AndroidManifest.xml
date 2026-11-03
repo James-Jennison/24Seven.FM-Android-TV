@@ -14,11 +14,6 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
-            <!-- "Hey Google, play 1980s.FM on 24Seven.FM": the assistant sends the spoken words as the query. -->
-            <intent-filter>
-                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
         </activity>
         <activity android:name=".pairing.PairingActivity" android:exported="false" android:screenOrientation="landscape" android:theme="@style/Theme.TwentyFourSevenPlayer" />
         <activity android:name=".pairing.RequestActivity" android:exported="false" android:screenOrientation="landscape" android:theme="@style/Theme.TwentyFourSevenPlayer" />

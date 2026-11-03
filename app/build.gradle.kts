@@ -61,7 +61,8 @@ android {
     buildTypes {
         getByName("debug") {
             applicationIdSuffix = ".debug"
-            versionNameSuffix = "-debug"
+            // The suffix names the companion flags, so a stale build is recognisable from its version.
+            versionNameSuffix = "-debug" + (if (pairingEnabledForDebug) "-pair" else "") + (if (pairingEnabledForDebug && tvRequestsEnabledForDebug) "-req" else "")
             // Companion pairing is off unless a debug build is made with TWENTYFOURSEVEN_PAIRING_ENABLED=true.
             buildConfigField("boolean", "PAIRING_ENABLED", pairingEnabledForDebug.toString())
             buildConfigField("boolean", "TV_REQUESTS_ENABLED", (pairingEnabledForDebug && tvRequestsEnabledForDebug).toString())

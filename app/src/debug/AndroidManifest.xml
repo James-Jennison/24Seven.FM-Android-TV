@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
+        <!-- Debug-only until the Owner approves shipping voice play: "play 1980s.FM on 24Seven.FM" sends the spoken words as the query. -->
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <!-- Debug-only; invoked by the local device profiler and absent from release builds. -->
         <activity
             android:name=".diagnostics.VisualizerBenchmarkActivity"
