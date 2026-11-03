@@ -2,11 +2,17 @@ package com.codeframe78.twentyfourseven.player.pairing
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import java.security.KeyStore
+import java.security.UnrecoverableKeyException
+import javax.crypto.AEADBadTagException
+import javax.crypto.BadPaddingException
+import javax.crypto.IllegalBlockSizeException
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -72,11 +78,17 @@ internal class AndroidKeystoreStationSessionStore(
                 if (!hadTime) save(session)
                 session
             }
-        } catch (_: Exception) {
-            clear(station) // unreadable (key lost, corrupted): never keep a blob we cannot use
+        } catch (e: Exception) {
+            // Only a blob that can never be read again is dropped (key gone or changed, text corrupted). A
+            // transient keystore or IO fault keeps the stored login, so a hiccup does not force a re-pair.
+            if (isPermanentReadFailure(e)) clear(station)
             null
         }
     }
+
+    private fun isPermanentReadFailure(e: Exception): Boolean = e is KeyPermanentlyInvalidatedException ||
+        e is AEADBadTagException || e is BadPaddingException || e is IllegalBlockSizeException ||
+        e is JSONException || e is IllegalArgumentException || e is UnrecoverableKeyException
 
     /** The first version stored a single session under one key; it is read once as that station's session and moved. */
     private fun legacySession(station: String): String? {

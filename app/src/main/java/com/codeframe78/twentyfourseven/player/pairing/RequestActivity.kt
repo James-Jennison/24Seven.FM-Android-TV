@@ -115,6 +115,9 @@ internal fun RequestScreen(
     androidx.compose.runtime.CompositionLocalProvider(LocalPairingColors provides pairingColorsFor(station)) {
     when {
         request != null -> PairingBackdrop {
+            // System Back closes a confirmation or result like its own Cancel/OK, so a stale one never greets the next visit.
+            // While the request is on its way Back is ignored: the station has already been asked.
+            androidx.activity.compose.BackHandler { if (request !is TvRequestUi.Sending) onDismiss() }
             Column(Modifier.fillMaxSize().padding(horizontal = 64.dp, vertical = 16.dp), verticalArrangement = Arrangement.Center) {
                 when (request) {
                     is TvRequestUi.Confirming -> TrackCard(

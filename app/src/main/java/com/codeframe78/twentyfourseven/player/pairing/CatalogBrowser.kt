@@ -100,7 +100,7 @@ internal class CatalogBrowser(
         is CatalogTarget.More -> {
             val shown = stack.last() as? CatalogUi.Entries
             if (shown != null) {
-                load("Loading more…", empty = "No more results.") {
+                load("Loading more…", empty = "No more results.", continuesTop = true) {
                     // The same list, continued: the old "show more" row is replaced by the next page.
                     CatalogUi.Entries(shown.heading, shown.items.filterNot { it.target is CatalogTarget.More } + catalog.page(station, target.source, target.start))
                 }
@@ -127,6 +127,8 @@ internal class CatalogBrowser(
     /** True when it moved up one level; false when already at the first screen. */
     fun back(): Boolean {
         job?.cancel()
+        // Back during a load only cancels it and shows the screen it started from; it never leaves that level.
+        if (_ui.value is CatalogUi.Loading) { _ui.value = stack.last(); return true }
         if (stack.size <= 1) return false
         stack.removeLast()
         _ui.value = stack.last()
@@ -137,7 +139,7 @@ internal class CatalogBrowser(
         stack.removeLast(); stack.addLast(next); _ui.value = next
     }
 
-    private fun load(what: String, empty: String, block: suspend () -> CatalogUi) {
+    private fun load(what: String, empty: String, continuesTop: Boolean = false, block: suspend () -> CatalogUi) {
         job?.cancel()
         _ui.value = CatalogUi.Loading(what)
         job = scope.launch {
@@ -150,7 +152,9 @@ internal class CatalogBrowser(
                 CatalogUi.Message("The station's request page could not be read. Check the connection and try again.")
             }
             coroutineContext.ensureActive() // a result whose load was cancelled by Back must not become a stale level
-            // Every outcome, including a message, is a level of its own, so Back returns to the screen before it.
+            // A continued list replaces the one it extends, and a message replaces an earlier message, so
+            // Back never walks through copies of the same screen.
+            if ((continuesTop && result is CatalogUi.Entries) || stack.last() is CatalogUi.Message) stack.removeLast()
             stack.addLast(result)
             _ui.value = result
         }

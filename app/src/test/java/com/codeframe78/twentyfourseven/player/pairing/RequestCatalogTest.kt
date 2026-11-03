@@ -96,7 +96,8 @@ class RequestCatalogTest {
             CatalogAlbum("Alb", listOf(CatalogTrack("A9", "9", "Pick", "Who", "Alb", "1:00", true)))
         override suspend fun browse(station: String, kind: BrowseKind, key: String) =
             listOf(CatalogEntry(CatalogTarget.Album("B-$key"), "${kind.wire} $key", null, null))
-        override suspend fun page(station: String, source: PageSource, start: Int) = emptyList<CatalogEntry>()
+        override suspend fun page(station: String, source: PageSource, start: Int) =
+            listOf(CatalogEntry(CatalogTarget.Album("P$start"), "Page $start", null, null))
         override suspend fun waits(station: String) = listOf(WaitCard("Member Wait", "20 minutes"))
         override suspend fun album(station: String, albumId: String) =
             CatalogAlbum("T $albumId", listOf(CatalogTrack(albumId, "7", "Song", "Who", "T $albumId", "3:00", true)))
@@ -134,7 +135,9 @@ class RequestCatalogTest {
         val b = browser(c)
         b.search("slow"); advanceUntilIdle()
         assertTrue(b.ui.value is CatalogUi.Loading)
-        assertTrue(b.back().not())          // cancels the pending load, still at the query level
+        assertTrue(b.back())                // cancels the pending load and stays on the query screen
+        assertTrue(b.ui.value is CatalogUi.Query)
+        assertFalse(b.back())               // a second Back is at the root
         b.search("fast"); advanceUntilIdle()
         c.gate["slow"]!!.complete(Unit); advanceUntilIdle()
         assertEquals("Album fast", (b.ui.value as CatalogUi.Entries).items.single().title)
@@ -183,5 +186,33 @@ class RequestCatalogTest {
         b.reset()
         assertTrue(b.ui.value is CatalogUi.Query)
         assertEquals(false, b.back())
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test fun backDuringALoadKeepsTheLevelItStartedFrom() = runTest(StandardTestDispatcher()) {
+        val c = FakeCatalog(); c.gate["A-first"] = CompletableDeferred()
+        val b = browser(c)
+        b.search("first"); advanceUntilIdle()
+        val list = b.ui.value as CatalogUi.Entries
+        b.open(CatalogEntry(CatalogTarget.Artist("Who"), "Who", null, null))
+        assertTrue(b.ui.value is CatalogUi.Loading)
+        assertTrue(b.back())
+        assertEquals(list, b.ui.value)
+        assertTrue(b.back()); assertTrue(b.ui.value is CatalogUi.Query)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test fun repeatedMessagesAndShowMoreAddNoExtraLevels() = runTest(StandardTestDispatcher()) {
+        val c = FakeCatalog(); val b = browser(c)
+        b.search("none"); advanceUntilIdle()
+        assertTrue(b.back()); b.search("none"); advanceUntilIdle()
+        b.back(); b.search("abc"); advanceUntilIdle()
+        val more = CatalogEntry(CatalogTarget.More(PageSource.Search(CatalogField.Title, "abc"), 97), "Show more", null, null)
+        val base = b.ui.value as CatalogUi.Entries
+        b.open(more); advanceUntilIdle()
+        val extended = b.ui.value as CatalogUi.Entries
+        assertEquals(base.items.size + 1, extended.items.size)
+        assertTrue(b.back()); assertTrue(b.ui.value is CatalogUi.Query) // one Back leaves the continued list
+        assertFalse(b.back())
     }
 }
