@@ -77,7 +77,7 @@ internal class RequestSubmitter(
             return TvRequestResult.CheckQueue("The station did not answer clearly.")
         }
         // Diagnostics carry the size only: a station page can hold account-identifying text and is never logged.
-        runCatching { onReplyText("reply read: ${html.length} chars") }
+        runCatching { onReplyText("reply read: ${html.length} chars; verdict patterns matched: ${matchedVerdictPatterns(html)}") }
         return when (val outcome = classifyRequestPage(html)) {
             RequestPageOutcome.SignInRequired -> TvRequestResult.SignInExpired
             is RequestPageOutcome.Rejected -> TvRequestResult.Rejected(outcome.message)
@@ -113,6 +113,16 @@ internal fun classifyRequestPage(html: String): RequestPageOutcome {
     REJECTION.firstOrNull { it.first.containsMatchIn(text) }?.let { return RequestPageOutcome.Rejected(it.second) }
     if (SIGN_IN_REQUIRED.any { it.containsMatchIn(text) }) return RequestPageOutcome.SignInRequired
     return RequestPageOutcome.Unrecognized
+}
+
+/** Diagnostics only: which fixed verdict patterns the reply matched (names, never page text). */
+internal fun matchedVerdictPatterns(html: String): String {
+    val text = Jsoup.parse(html).text().replace(Regex("\\s+"), " ").trim()
+    val names = mutableListOf<String>()
+    ACCEPTANCE.forEachIndexed { i, r -> if (r.containsMatchIn(text)) names += "accept$i" }
+    REJECTION.forEachIndexed { i, r -> if (r.first.containsMatchIn(text)) names += "reject$i" }
+    SIGN_IN_REQUIRED.forEachIndexed { i, r -> if (r.containsMatchIn(text)) names += "signin$i" }
+    return names.joinToString(",").ifEmpty { "none" }
 }
 
 private val SIGN_IN_REQUIRED = listOf(
