@@ -47,11 +47,14 @@ class RequestActivity : AppCompatActivity() {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 val accounts by controller.accounts.collectAsStateWithLifecycle()
                 val request by controller.request.collectAsStateWithLifecycle()
+                val clocks by controller.clocks.collectAsStateWithLifecycle()
                 CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
                     RequestScreen(
                         accounts = accounts,
                         preferredStation = intent.getStringExtra(EXTRA_STATION),
                         request = request,
+                        clocks = clocks,
+                        onRefreshClock = controller::refreshClock,
                         onPick = controller::beginTvRequest,
                         onConfirm = controller::confirmTvRequest,
                         onDismiss = controller::dismissTvRequest,
@@ -82,6 +85,8 @@ internal fun RequestScreen(
     accounts: List<StationAccount>,
     preferredStation: String?,
     request: TvRequestUi?,
+    clocks: Map<String, RequestClockUi> = emptyMap(),
+    onRefreshClock: (String) -> Unit = {},
     onPick: (CatalogTrack, String) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
@@ -95,6 +100,8 @@ internal fun RequestScreen(
         ?: accounts.firstOrNull { it.station == preferredStation }
         ?: accounts.firstOrNull()
     val station = account?.station
+    // Read the station's request clock when the screen opens, when the station changes and when a request's result is dismissed.
+    LaunchedEffect(station, request == null) { if (station != null && request == null) onRefreshClock(station) }
     // One browser per station, kept across a request's confirm and result screens so the listener returns to the same results.
     val browsers = remember { mutableMapOf<String, CatalogBrowser>() }
     val browser = station?.let { st -> browsers.getOrPut(st) { CatalogBrowser(StationRequestCatalog(), st, scope) } }
@@ -134,6 +141,7 @@ internal fun RequestScreen(
             browser = browser,
             onPick = { onPick(it, station) },
             onExit = onClose,
+            clock = clocks[station],
             stationChoices = if (accounts.size > 1) accounts.map { it.station } else emptyList(),
             onStation = { chosen = it },
         )

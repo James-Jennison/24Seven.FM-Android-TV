@@ -61,6 +61,7 @@ internal fun CatalogScreen(
     onExit: () -> Unit,
     stationChoices: List<String> = emptyList(),
     onStation: (String) -> Unit = {},
+    clock: RequestClockUi? = null,
 ) {
     val ui by browser.ui.collectAsStateWithLifecycle()
     val back = { if (!browser.back()) onExit() }
@@ -68,7 +69,7 @@ internal fun CatalogScreen(
     PairingBackdrop {
         Box(Modifier.fillMaxSize().padding(horizontal = 56.dp, vertical = 32.dp)) {
             when (val state = ui) {
-                is CatalogUi.Query -> QueryStep(station, state, browser, onExit, stationChoices, onStation)
+                is CatalogUi.Query -> QueryStep(station, state, browser, onExit, stationChoices, onStation, clock)
                 is CatalogUi.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(state.what, style = MaterialTheme.typography.headlineMedium, color = PairingPalette.Lavender)
                 }
@@ -109,7 +110,7 @@ internal fun CatalogScreen(
 }
 
 @Composable
-private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogBrowser, onExit: () -> Unit, stationChoices: List<String>, onStation: (String) -> Unit) {
+private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogBrowser, onExit: () -> Unit, stationChoices: List<String>, onStation: (String) -> Unit, clock: RequestClockUi?) {
     var text by remember { mutableStateOf("") }
     val input = remember { FocusRequester() }
     val firstChip = remember { FocusRequester() }
@@ -120,6 +121,7 @@ private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogB
     Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.Center) {
         Text("Find a song", style = MaterialTheme.typography.displaySmall)
         Text("Request a track on ${stationName(station)}", style = MaterialTheme.typography.titleLarge, color = PairingPalette.Muted)
+        RequestClockLine(clock)
         if (stationChoices.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -329,4 +331,34 @@ internal fun Pill(
             modifier = Modifier.padding(horizontal = 26.dp, vertical = 12.dp),
         )
     }
+}
+
+/** "Next request: Ready" or a live countdown, from what the station last said; the station decides eligibility. */
+@Composable
+private fun RequestClockLine(clock: RequestClockUi?) {
+    val value = clock?.clock ?: return
+    var now by remember(clock) { mutableStateOf(android.os.SystemClock.elapsedRealtime()) }
+    LaunchedEffect(clock) { while (true) { kotlinx.coroutines.delay(1000); now = android.os.SystemClock.elapsedRealtime() } }
+    val passed = ((now - clock.readAtMillis) / 1000).toInt()
+    val next = value.secondsUntilNextRequest?.let { (it - passed).coerceAtLeast(0) }
+    val queued = value.secondsUntilQueuedRequestPlays?.takeIf { it > 0 }?.let { (it - passed).coerceAtLeast(0) }
+    Column(Modifier.padding(top = 6.dp)) {
+        if (next != null) {
+            Text(
+                if (next == 0) "Next request: ready" else "Next request in ${formatWait(next)}",
+                style = MaterialTheme.typography.titleMedium,
+                color = if (next == 0) PairingPalette.Lavender else PairingPalette.Muted,
+            )
+        }
+        if (queued != null && queued > 0) {
+            Text("Your queued request should play in about ${formatWait(queued)}", style = MaterialTheme.typography.titleMedium, color = PairingPalette.Muted)
+        }
+    }
+}
+
+internal fun formatWait(seconds: Int): String {
+    val h = seconds / 3600
+    val m = (seconds % 3600) / 60
+    val s = seconds % 60
+    return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
 }

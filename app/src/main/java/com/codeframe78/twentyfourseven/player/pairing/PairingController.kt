@@ -40,6 +40,7 @@ internal class PairingController(
     private val enabled: Boolean,
     private val store: StationSessionStore = AndroidKeystoreStationSessionStore(context),
     private val accountCheck: StationAccountCheck = HomePageAccountCheck(),
+    private val clockSource: RequestClockSource = YourRequestsClockSource(),
     private val submitter: RequestSubmitter = RequestSubmitter(
         enabled = com.codeframe78.twentyfourseven.player.BuildConfig.TV_REQUESTS_ENABLED,
         fetch = HttpSessionPageFetch(diag = { android.util.Log.i("PairingHost", "tv request: $it") }),
@@ -81,6 +82,20 @@ internal class PairingController(
     private val _accounts = MutableStateFlow<List<StationAccount>>(emptyList())
     val accounts: StateFlow<List<StationAccount>> = _accounts
     private var closeJob: kotlinx.coroutines.Job? = null
+
+    /** What each station last said about the next request; the screen counts down from [RequestClockUi.readAtMillis]. */
+    private val _clocks = MutableStateFlow<Map<String, RequestClockUi>>(emptyMap())
+    val clocks: StateFlow<Map<String, RequestClockUi>> = _clocks
+
+    /** One read-only fetch of the station's request clock (on opening the screen, switching station, after a request). */
+    fun refreshClock(station: String) {
+        val session = runCatching { store.loadAll() }.getOrDefault(emptyList()).firstOrNull { it.station == station } ?: return
+        scope.launch {
+            val clock = clockSource.read(session)
+            android.util.Log.i("PairingHost", "request clock: station=$station known=${clock != null} next=${clock?.secondsUntilNextRequest} queue=${clock?.secondsUntilQueuedRequestPlays}")
+            _clocks.value = _clocks.value + (station to RequestClockUi(clock, android.os.SystemClock.elapsedRealtime()))
+        }
+    }
 
     /** Loads the stored sessions (no network) so the screens can show them, then checks each with its station. */
     fun refreshAccounts() {
@@ -204,3 +219,6 @@ internal class PairingController(
         }
     }
 }
+
+/** [clock] is null when the station could not be read; the countdown runs from [readAtMillis] (elapsed realtime). */
+internal data class RequestClockUi(val clock: RequestClock?, val readAtMillis: Long)
