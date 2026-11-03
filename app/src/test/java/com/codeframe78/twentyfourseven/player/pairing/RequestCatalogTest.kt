@@ -94,6 +94,9 @@ class RequestCatalogTest {
         override suspend fun albumsBy(station: String, artist: String) = listOf(CatalogEntry(CatalogTarget.Album("A1"), "By $artist", null, null))
         override suspend fun suggest(station: String, mode: SuggestionMode) =
             CatalogAlbum("Alb", listOf(CatalogTrack("A9", "9", "Pick", "Who", "Alb", "1:00", true)))
+        override suspend fun browse(station: String, kind: BrowseKind, key: String) =
+            listOf(CatalogEntry(CatalogTarget.Album("B-$key"), "${kind.wire} $key", null, null))
+        override suspend fun waits(station: String) = listOf(WaitCard("Member Wait", "20 minutes"))
         override suspend fun album(station: String, albumId: String) =
             CatalogAlbum("T $albumId", listOf(CatalogTrack(albumId, "7", "Song", "Who", "T $albumId", "3:00", true)))
     }
@@ -135,5 +138,31 @@ class RequestCatalogTest {
         c.gate["slow"]!!.complete(Unit); advanceUntilIdle()
         assertEquals("Album fast", (b.ui.value as CatalogUi.Entries).items.single().title)
         assertNull(null)
+    }
+
+    @Test fun theWaitCardsAreReadFromTheRequestPage() {
+        val waits = CatalogParser().parseWaits(fixture("requests-home.html"))
+        assertEquals(listOf(WaitCard("Member Wait", "20 minutes"), WaitCard("VIP Wait", "1 minute")), waits)
+    }
+
+    @Test fun browsingArtistsByLetterListsArtists() {
+        val entries = CatalogParser().parseSearch(fixture("browse-artist.html"), "https://streamingsoundtracks.com/")
+        assertTrue(entries.size > 10)
+        assertTrue(entries.any { it.target is CatalogTarget.Artist })
+        // The A-Z navigation bar must never become an artist's subtitle, nor an artist appear twice.
+        assertTrue(entries.none { it.subtitle?.contains("Album: #") == true })
+        assertEquals(entries.size, entries.map { it.target }.distinct().size)
+    }
+
+    @Test fun browsingByYearListsAlbums() {
+        val entries = CatalogParser().parseSearch(fixture("browse-year.html"), "https://streamingsoundtracks.com/")
+        assertTrue(entries.isNotEmpty())
+    }
+
+    @Test fun browseKeysAreLettersOrYears() {
+        assertEquals(27, browseKeys(BrowseKind.Artist).size)
+        assertEquals("numbers", browseKeys(BrowseKind.Album).first().second)
+        assertEquals("20262026", browseKeys(BrowseKind.Year, 2026).first().second)
+        assertEquals("1990", browseKeys(BrowseKind.Year, 2026).last().first)
     }
 }

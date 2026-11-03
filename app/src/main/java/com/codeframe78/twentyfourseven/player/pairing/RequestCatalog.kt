@@ -25,6 +25,23 @@ internal enum class CatalogField(val wire: String, val label: String) {
     Genre("genre", "Genre"),
 }
 
+/** The site's Browse menus: albums or artists by first letter, or by year. */
+internal enum class BrowseKind(val wire: String, val label: String) {
+    Album("album", "Albums"),
+    Artist("artist", "Artists"),
+    Year("year", "Years"),
+}
+
+/** The keys the Browse menus offer: `#` and A–Z, or years newest first (the site sends a year as the digits twice). */
+internal fun browseKeys(kind: BrowseKind, currentYear: Int = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)): List<Pair<String, String>> =
+    when (kind) {
+        BrowseKind.Year -> (currentYear downTo 1990).map { "$it" to "$it$it" }
+        else -> listOf("#" to "numbers") + ('a'..'z').map { it.uppercase() to "$it" }
+    }
+
+/** One of the site's public wait cards, e.g. "Member Wait" / "20 minutes". */
+internal data class WaitCard(val label: String, val value: String)
+
 /** The station's own one-track suggestions. */
 internal enum class SuggestionMode(val wire: String) {
     Random("random"),
@@ -67,13 +84,28 @@ internal interface RequestCatalog {
     suspend fun albumsBy(station: String, artist: String): List<CatalogEntry>
     suspend fun album(station: String, albumId: String): CatalogAlbum
     suspend fun suggest(station: String, mode: SuggestionMode): CatalogAlbum
+    suspend fun browse(station: String, kind: BrowseKind, key: String): List<CatalogEntry>
+    /** The public Member/VIP wait cards from the Request Music page; empty when the page has none. */
+    suspend fun waits(station: String): List<WaitCard>
 }
 
 /** Pure HTML parsing, kept apart from the network so it is unit tested against fixtures. */
 internal class CatalogParser {
+    /** The wait cards the site prints under "Request Music"; the signed-in "Your Next Request" card is the phone's and the clock's business. */
+    fun parseWaits(html: String): List<WaitCard> = (Jsoup.parse(html).selectFirst(".requests-intro .request-summary")?.select(".request-stat") ?: emptyList()).mapNotNull { card ->
+        val label = card.selectFirst("span")?.text()?.clean().orEmpty()
+        val value = card.selectFirst("strong")?.text()?.clean().orEmpty()
+        if (label.isBlank() || value.isBlank() || label.contains("Your Next", ignoreCase = true)) null
+        else WaitCard(label.take(32), value.take(48))
+    }.take(4)
+
     fun parseSearch(html: String, origin: String): List<CatalogEntry> {
         val host = URI(origin).host
-        return Jsoup.parse(html, origin).select("tr").mapNotNull { row ->
+        // Start from the links and take each one's own row: walking every nested layout row re-reads the whole
+        // listing for each of them (about 8 s on the TV for one page of artists).
+        val rows = LinkedHashSet<org.jsoup.nodes.Element>()
+        Jsoup.parse(html, origin).select("a[href*=postartistsearch], a[href*=asin=]").forEach { link -> link.closest("tr")?.let(rows::add) }
+        return rows.mapNotNull { row ->
             val albumLinks = row.select("a[href]").filter { link ->
                 val uri = uriOrNull(link.absUrl("href")) ?: return@filter false
                 uri.scheme == "https" && uri.host.equals(host, true) &&
@@ -87,11 +119,14 @@ internal class CatalogParser {
                 val year = row.select("td").map { it.text().clean() }.lastOrNull { it.matches(YEAR) }
                 return@mapNotNull CatalogEntry(CatalogTarget.Album(albumIds.single()), title, subtitle, year)
             }
-            val artistLink = row.select("a[href]").firstOrNull { link ->
-                val uri = uriOrNull(link.absUrl("href")) ?: return@firstOrNull false
+            val artistLinks = row.select("a[href]").filter { link ->
+                val uri = uriOrNull(link.absUrl("href")) ?: return@filter false
                 uri.scheme == "https" && uri.host.equals(host, true) && query(uri, "name") == "Requests" &&
                     query(uri, "postartistsearch").equals("true", true) && !query(uri, "artist").isNullOrBlank()
-            } ?: return@mapNotNull null
+            }
+            // An outer layout row wraps the whole listing: only a row about exactly one artist is an entry.
+            if (artistLinks.map { query(URI(it.absUrl("href")), "artist") }.distinct().size != 1) return@mapNotNull null
+            val artistLink = artistLinks.first()
             val name = query(URI(artistLink.absUrl("href")), "artist")?.clean()
                 ?.takeIf { it.length <= MAX_ARTIST_CHARS } ?: return@mapNotNull null
             val display = artistLink.text().clean().ifBlank { return@mapNotNull null }
@@ -212,6 +247,22 @@ internal class StationRequestCatalog(
     override suspend fun suggest(station: String, mode: SuggestionMode): CatalogAlbum = withContext(Dispatchers.IO) {
         val origin = origin(station)
         parser.parseSuggestion(get(origin, "modules.php?name=Requests&${mode.wire}=1&searchpgstart=1"), origin)
+    }
+
+    override suspend fun browse(station: String, kind: BrowseKind, key: String): List<CatalogEntry> = withContext(Dispatchers.IO) {
+        require(key.matches(Regex("[A-Za-z0-9]{1,8}"))) { "Invalid browse key" }
+        val origin = origin(station)
+        val which = if (kind == BrowseKind.Year) "rangeyear=$key" else "letter=$key"
+        val began = System.nanoTime()
+        val html = get(origin, "modules.php?name=Requests&browse=${kind.wire}&$which&searchpgstart=1")
+        val fetched = System.nanoTime()
+        parser.parseSearch(html, origin).also {
+            runCatching { android.util.Log.i("PairingCatalog", "browse ${kind.wire}: fetch ${(fetched - began) / 1_000_000} ms, parse ${(System.nanoTime() - fetched) / 1_000_000} ms, ${html.length} chars, ${it.size} entries") }
+        }
+    }
+
+    override suspend fun waits(station: String): List<WaitCard> = withContext(Dispatchers.IO) {
+        parser.parseWaits(get(origin(station), "modules.php?name=Requests"))
     }
 
     private fun origin(station: String) = StationOrigins.of(station) ?: throw IOException("Unsupported station")

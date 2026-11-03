@@ -73,6 +73,7 @@ internal fun CatalogScreen(
         Box(Modifier.fillMaxSize().padding(horizontal = 56.dp, vertical = 32.dp)) {
             when (val state = ui) {
                 is CatalogUi.Query -> QueryStep(station, state, browser, onExit, stationChoices, onStation, clock)
+                is CatalogUi.Keys -> KeysStep(state, browser, back)
                 is CatalogUi.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(state.what, style = MaterialTheme.typography.headlineMedium, color = PairingPalette.Lavender)
                 }
@@ -114,6 +115,7 @@ internal fun CatalogScreen(
 
 @Composable
 private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogBrowser, onExit: () -> Unit, stationChoices: List<String>, onStation: (String) -> Unit, clock: RequestClockUi?) {
+    val waits by browser.waits.collectAsStateWithLifecycle()
     var text by remember { mutableStateOf("") }
     val input = remember { FocusRequester() }
     val firstChip = remember { FocusRequester() }
@@ -124,10 +126,10 @@ private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogB
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
-                Text("Request a song", style = MaterialTheme.typography.displaySmall)
+                Text("Request a song", style = MaterialTheme.typography.headlineLarge)
                 Text(stationName(station), style = MaterialTheme.typography.titleLarge, color = PairingPalette.Lavender)
             }
-            RequestClockBadge(clock)
+            RequestClockBadge(clock, waits)
         }
         if (stationChoices.isNotEmpty()) {
             Spacer(Modifier.height(14.dp))
@@ -154,6 +156,12 @@ private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogB
                         modifier = if (field == CatalogField.entries.first()) Modifier.focusRequester(firstChip) else Modifier,
                     )
                 }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Browse", style = MaterialTheme.typography.labelLarge, color = PairingPalette.Muted, modifier = Modifier.width(96.dp))
+                BrowseKind.entries.forEach { kind -> Pill(kind.label, onClick = { browser.openBrowse(kind) }) }
+                Pill("Surprise me", onClick = { browser.suggest(SuggestionMode.Random) })
+                Pill("Rare find", onClick = { browser.suggest(SuggestionMode.LeastPlayed) })
             }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 BasicTextField(
@@ -185,16 +193,8 @@ private fun QueryStep(station: String, state: CatalogUi.Query, browser: CatalogB
             }
             state.notice?.let { Text(it, color = PairingPalette.Amber) }
         }
-        Spacer(Modifier.height(16.dp))
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("Or let the station pick", style = MaterialTheme.typography.titleMedium, color = PairingPalette.Muted, modifier = Modifier.weight(1f))
-            Pill("Back", onClick = onExit)
-        }
-        Spacer(Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            IdeaCard("Surprise me", "A random track from the library", Modifier.weight(1f)) { browser.suggest(SuggestionMode.Random) }
-            IdeaCard("Hidden gem", "Something that rarely gets played", Modifier.weight(1f)) { browser.suggest(SuggestionMode.LeastPlayed) }
-        }
+        Spacer(Modifier.height(20.dp))
+        Pill("Back", onClick = onExit)
     }
 }
 
@@ -220,7 +220,8 @@ private fun <T> BrowseStep(
             Text(heading, style = MaterialTheme.typography.headlineLarge, maxLines = 2)
             Spacer(Modifier.height(16.dp))
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                itemsIndexed(items, key = { _, item -> key(item) }) { index, item ->
+                // Two rows can share a target (the same artist listed twice); the index keeps every key unique.
+                itemsIndexed(items, key = { index, item -> "$index|${key(item)}" }) { index, item ->
                     ResultCard(
                         title = title(item),
                         subtitle = subtitle(item),
@@ -302,26 +303,6 @@ private fun ResultCard(
 @Composable
 private fun LocalSubtitle(): Color = PairingPalette.Muted
 
-@Composable
-internal fun IdeaCard(title: String, caption: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier,
-        shape = ClickableSurfaceDefaults.shape(CardShape),
-        colors = ClickableSurfaceDefaults.colors(
-            containerColor = PairingPalette.Charcoal,
-            contentColor = PairingPalette.WarmWhite,
-            focusedContainerColor = PairingPalette.Violet,
-            focusedContentColor = Color.White,
-        ),
-        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.04f),
-    ) {
-        Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(title, style = MaterialTheme.typography.titleLarge)
-            Text(caption, style = MaterialTheme.typography.bodyLarge, color = PairingPalette.Muted)
-        }
-    }
-}
 
 /** A rounded pill button: outlined by default, filled for the primary action, tinted when selected. */
 @Composable
@@ -351,6 +332,8 @@ internal fun Pill(
                 append(text)
             },
             style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            softWrap = false,
             modifier = Modifier.padding(horizontal = 26.dp, vertical = 12.dp),
         )
     }
@@ -358,8 +341,9 @@ internal fun Pill(
 
 /** The station's request clock as a compact status card: ready, or a live countdown; the station decides eligibility. */
 @Composable
-private fun RequestClockBadge(clock: RequestClockUi?) {
-    val value = clock?.clock ?: return
+private fun RequestClockBadge(clock: RequestClockUi?, waits: List<WaitCard>) {
+    val value = clock?.clock
+    if (value == null) { WaitsOnly(waits); return }
     var now by remember(clock) { mutableStateOf(android.os.SystemClock.elapsedRealtime()) }
     LaunchedEffect(clock) { while (true) { kotlinx.coroutines.delay(1000); now = android.os.SystemClock.elapsedRealtime() } }
     val passed = ((now - clock.readAtMillis) / 1000).toInt()
@@ -386,6 +370,46 @@ private fun RequestClockBadge(clock: RequestClockUi?) {
         if (queued != null && queued > 0) {
             Text("Your request plays in about ${formatWait(queued)}", style = MaterialTheme.typography.bodyMedium, color = PairingPalette.Muted)
         }
+        WaitsLine(waits)
+    }
+}
+
+@Composable
+private fun WaitsLine(waits: List<WaitCard>) {
+    if (waits.isEmpty()) return
+    Text(waits.joinToString("  ·  ") { "${it.label.removeSuffix(" Wait")} wait ${it.value}" }, style = MaterialTheme.typography.bodyMedium, color = PairingPalette.Muted)
+}
+
+@Composable
+private fun WaitsOnly(waits: List<WaitCard>) {
+    if (waits.isEmpty()) return
+    Column(
+        Modifier.background(PairingPalette.Charcoal.copy(alpha = 0.8f), RoundedCornerShape(20.dp))
+            .border(1.dp, PairingPalette.Violet.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+            .padding(horizontal = 24.dp, vertical = 14.dp),
+    ) { WaitsLine(waits) }
+}
+
+/** Letters (# and A–Z) or years of one Browse menu; picking one lists that part of the library. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun KeysStep(state: CatalogUi.Keys, browser: CatalogBrowser, onBack: () -> Unit) {
+    val first = remember { FocusRequester() }
+    LaunchedEffect(state.kind) { runCatching { first.requestFocus() } }
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+        Text(if (state.kind == BrowseKind.Year) "Browse by year" else "${state.kind.label} A–Z", style = MaterialTheme.typography.displaySmall)
+        Text(if (state.kind == BrowseKind.Year) "Pick a year" else "Pick the first letter", style = MaterialTheme.typography.titleLarge, color = PairingPalette.Lavender)
+        Spacer(Modifier.height(28.dp))
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            state.keys.forEachIndexed { index, key ->
+                Pill(key.first, onClick = { browser.browse(state.kind, key) }, modifier = if (index == 0) Modifier.focusRequester(first) else Modifier)
+            }
+        }
+        Spacer(Modifier.height(28.dp))
+        Pill("Back", onClick = onBack)
     }
 }
 

@@ -11,6 +11,8 @@ import kotlinx.coroutines.launch
 
 internal sealed interface CatalogUi {
     data class Query(val field: CatalogField, val notice: String? = null) : CatalogUi
+    /** The Browse menu's letters or years. */
+    data class Keys(val kind: BrowseKind, val keys: List<Pair<String, String>>) : CatalogUi
     data class Loading(val what: String) : CatalogUi
     data class Entries(val heading: String, val items: List<CatalogEntry>) : CatalogUi
     data class Tracks(val heading: String, val tracks: List<CatalogTrack>) : CatalogUi
@@ -32,6 +34,28 @@ internal class CatalogBrowser(
     private val _ui = MutableStateFlow<CatalogUi>(stack.last())
     val ui: StateFlow<CatalogUi> = _ui
     private var job: Job? = null
+
+    private val _waits = MutableStateFlow<List<WaitCard>>(emptyList())
+    /** The site's public Member/VIP wait cards; loaded once, empty if the page cannot be read. */
+    val waits: StateFlow<List<WaitCard>> = _waits
+
+    init {
+        scope.launch { _waits.value = runCatching { catalog.waits(station) }.getOrDefault(emptyList()) }
+    }
+
+    /** Opens the letters or years of one Browse menu. Nothing is fetched yet. */
+    fun openBrowse(kind: BrowseKind) {
+        if (stack.last() !is CatalogUi.Query) return
+        job?.cancel()
+        stack.addLast(CatalogUi.Keys(kind, browseKeys(kind)))
+        _ui.value = stack.last()
+    }
+
+    fun browse(kind: BrowseKind, key: Pair<String, String>) =
+        load("Loading…", empty = "Nothing found there.") {
+            val title = if (kind == BrowseKind.Year) key.first else "${kind.label}: ${key.first}"
+            CatalogUi.Entries(title, catalog.browse(station, kind, key.second))
+        }
 
     fun setField(field: CatalogField) {
         val top = stack.last()

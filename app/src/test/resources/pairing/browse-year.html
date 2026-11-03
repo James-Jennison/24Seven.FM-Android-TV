@@ -1,0 +1,804 @@
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="en">
+<head>
+<script src="/includes/install-app.js?v=3"></script>
+<title>StreamingSoundtracks - Requests</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Stream soundtrack radio live 24/7 with movie soundtracks, television music, and video game scores. Listen free, request favorites, and join the community.">
+<meta name="keywords" content="soundtracks, cinematic, movie scores, internet radio">
+<meta name="author" content="24seven.FM Network">
+<meta name="theme-color" content="#99CCFF">
+
+<meta property="og:title" content="StreamingSoundtracks - Requests">
+<meta property="og:description" content="Stream soundtrack radio live 24/7 with movie soundtracks, television music, and video game scores. Listen free, request favorites, and join the community.">
+<meta property="og:url" content="https://streamingsoundtracks.com/modules.php?name=Requests&amp;browse=year&amp;rangeyear=20252025&amp;year=20252025&amp;searchfor=&amp;letter=&amp;genrefilter=&amp;searchpgstart=1">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="StreamingSoundtracks">
+<meta property="og:image" content="https://streamingsoundtracks.com/images/logos/logo_sst-300x300.png">
+
+<link rel="canonical" href="https://streamingsoundtracks.com/modules.php?name=Requests&amp;browse=year&amp;rangeyear=20252025&amp;year=20252025&amp;searchfor=&amp;letter=&amp;genrefilter=&amp;searchpgstart=1">
+<link rel="apple-touch-icon" href="https://streamingsoundtracks.com/images/logos/logo_sst-300x300.png">
+
+<script type="application/ld+json">
+{"@context":"https:\/\/schema.org","@type":"RadioStation","name":"StreamingSoundtracks","url":"https:\/\/streamingsoundtracks.com\/","image":"https:\/\/streamingsoundtracks.com\/images\/logos\/logo_sst-300x300.png","description":"Stream soundtrack radio live 24\/7 with movie soundtracks, television music, and video game scores. Listen free, request favorites, and join the community.","email":"admin@24seven.fm","sameAs":["https:\/\/facebook.com\/StreamingSoundtracks","https:\/\/x.com\/streamingsoundtracks","https:\/\/discord.gg\/zwKBC3eB7z"]}</script>
+
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LP9CCS8WPE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-LP9CCS8WPE');
+    </script>
+    <script src="/includes/network-bar.js?v=823f607dc7ec" async fetchpriority="high"></script><script type="text/javascript" src="/includes/overlib.js"></script>
+<script type="text/javascript" src="/includes/overlib_hideform.js"></script>
+<script type="text/javascript" src="/includes/JSON.js"></script>
+<script type="text/javascript" src="/includes/AJAXlib.js?version=2"></script>
+<script type="text/javascript" src="/includes/Base64_Utf8_objects.js?version=2"></script>
+<link REL="shortcut icon" HREF="/themes/default/images/favicon.ico" TYPE="image/x-icon">
+<link rel="alternate" type="application/rss+xml" title="RSS" href="backend.php">
+<LINK REL="StyleSheet" HREF="/themes/default/style/style.css?v=2919ea2965c1" TYPE="text/css">
+<LINK REL="StyleSheet" HREF="/themes/default/style/studio.css?v=2509c730ff18" TYPE="text/css">
+
+
+<link rel="stylesheet" type="text/css" href="modules/E-Solution/admin/calendar/spiffyCal.css">
+<script type="text/javascript" src="modules/E-Solution/admin/calendar/spiffyCal.js"></script>
+<style type="text/css">
+.demo{border:3px solid #000;background-color:#FFF;position:absolute;top:100px;left:100px;width:480px;height:280px;z-index:99;visibility:hidden;}
+.mtiny a,.moption{font:bold 8pt Verdana,sans-serif;text-decoration:none;}
+.demotwo{border:3px solid #000;background-color:#FFF;position:absolute;top:500px;left:500px;width:250px;height:180px;z-index:99;visibility:hidden;}
+#goodsadd,#goodsdel{position:absolute;top:100px;left:250px;width:450px;height:150px;border:1px #000 solid;background-color:#FFC;padding:.5em;}
+</style>
+<script type="text/javascript">
+var singleSelect=true,sortSelect=true,sortPick=true;
+function initIt(){var s=document.getElementById("SelectList"),p=document.getElementById("PickList");if(p&&p.options.length>0)p.options[0]=null;if(s)s.focus();}
+function selIt(b){var p=document.getElementById("PickList");if(!p)return false;var o=p.options,l=o.length;if(l<1){alert("No Selections in the Picklist\nPlease Select using the [->] button");return false;}for(var i=0;i<l;i++)o[i].selected=true;return true;}
+function addIt(){var s=document.getElementById("SelectList"),p=document.getElementById("PickList");if(!s||!p)return;var si=s.selectedIndex,so=s.options,po=p.options,pl=po.length;if(si>-1){po[pl]=new Option(so[si].text);po[pl].value=so[si].value;if(singleSelect)so[si]=null;if(sortPick){var t,v;while(pl>0&&po[pl].value<po[pl-1].value){t=po[pl-1].text;v=po[pl-1].value;po[pl-1].text=po[pl].text;po[pl-1].value=po[pl].value;po[pl].text=t;po[pl].value=v;pl--;}}}}
+function delIt(){var s=document.getElementById("SelectList"),p=document.getElementById("PickList");if(!s||!p)return;var so=s.options,sl=so.length,pi=p.selectedIndex,po=p.options;if(pi>-1){if(singleSelect){so[sl]=new Option(po[pi].text);so[sl].value=po[pi].value;}po[pi]=null;if(singleSelect&&sortSelect){var t,v;while(sl>0&&so[sl].value<so[sl-1].value){t=so[sl-1].text;v=so[sl-1].value;so[sl-1].text=so[sl].text;so[sl-1].value=so[sl].value;so[sl].text=t;so[sl].value=v;sl--;}}}}
+if(typeof ctlSpiffyCalendarBox==='function'){var cal1=new ctlSpiffyCalendarBox("cal1","frmTest","txtEndDate","btnEndDate","",scBTNMODE_CALBTN);cal1.readonly=true;cal1.useDateRange=true;var td=new Date();cal1.setMinDate(td.getFullYear(),td.getMonth()+1,td.getDate());cal1.setMaxDate(parseInt(td.getFullYear())+1,parseInt(td.getMonth())+48,td.getDate());}
+function showblock(o){var e=document.getElementById(o);if(e)e.style.display='block';}
+function clearblock(o){var e=document.getElementById(o);if(e)e.style.display='none';}
+function checkForPresenceInSelect2(v,t,l){for(var i=0;i<l.length;i++){if(l.options[i].value==v||l.options[i].text==t)return true;}return false;}
+function one2two(e1,e2){var m=document.getElementById(e1),s=document.getElementById(e2);if(!m||!s)return;for(var i=0;i<m.length;++i){if(m.options[i].selected){m.options[i].selected=false;if(m.options[i].text=="------")continue;if(!checkForPresenceInSelect2(m.options[i].value,m.options[i].text,s))s.options[s.length]=new Option(m.options[i].text,m.options[i].value);}}}
+function two2one(e1,e2){var s=document.getElementById(e2);if(!s)return;for(var i=s.length-1;i>=0;i--){if(s.options[i].selected)s.options[i]=null;}}
+</script>
+
+
+
+</head>
+
+<script type="text/javascript"></script><body class="station-sst" leftmargin="1" topmargin="1" marginwidth="1" marginheight="1">
+<h1 style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;">StreamingSoundtracks - Soundtrack Radio for Movies, TV &amp; Games</h1>
+
+<style>
+/* --------------------------------------------------------
+   UNIFIED GLOWING NAVIGATION (COMPONENT SCOPED)
+   -------------------------------------------------------- */
+.modern-nav { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 9pt; z-index: 999; position: relative; padding: 10px 0; }
+.modern-nav ul { list-style: none; margin: 0; padding: 0; display: flex; width: 100%; justify-content: space-between; gap: 8px; }
+.modern-nav li { position: relative; flex: 1; }
+
+/* Primary Button - 1px border, reduced shadow spread and alpha for 50% softer glow */
+.modern-nav > ul > li > a { 
+    display: block; text-align: center; text-decoration: none !important; padding: 8px 5px; border-radius: 4px; text-transform: uppercase; font-weight: bold; 
+    transition: background-color 0.2s, color 0.2s, box-shadow 0.2s, border-color 0.2s; 
+    color: #FFFFEE !important; 
+    background-color: #336699 !important; 
+    border: 1px solid #99CCFF !important; 
+    box-shadow: 0px 0px 10px rgba(153, 204, 255, 0.5), inset 0px 0px 6px rgba(153, 204, 255, 0.5) !important; 
+}
+
+/* Hover - Muted background, softer hover shadow */
+.modern-nav > ul > li > a:hover, .modern-nav > ul > li:hover > a { 
+    background-color: #EEEE55 !important; 
+    color: #000033 !important; 
+    border-color: #EEEE55 !important; 
+    box-shadow: 0px 0px 14px rgba(238, 238, 85, 0.4) !important; 
+}
+
+/* Submenus - 1px border, softer dropdown shadow */
+.modern-nav ul ul { display: none; position: absolute; top: 100%; left: 0; flex-direction: column; width: 220px; border-radius: 4px; margin-top: 0; z-index: 1000; 
+    background-color: #003366 !important; 
+    border: 1px solid #99CCFF !important; 
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.8), 0px 0px 8px rgba(153, 204, 255, 0.5) !important; }
+.modern-nav li:hover > ul { display: flex; }
+.modern-nav ul ul a { display: block; text-decoration: none; margin: 0; padding: 10px 14px; text-align: left; text-transform: none; font-weight: normal; transition: background-color 0.2s, color 0.2s; color: #FFFFEE; border-bottom: 1px solid #336699; }
+.modern-nav ul ul a:hover { background-color: #EEEE55; color: #000033; text-decoration: none !important; }
+.modern-nav ul ul a:last-child { border-bottom: none; }
+.modern-nav .nav-separator { text-align: center; pointer-events: none; padding: 2px 0; color: #99CCFF; }
+
+/* Dynamic PM Notification Badge */
+.pm-badge { background-color: #FF0000; color: #FFFFFF; font-size: 9px; font-weight: bold; padding: 2px 5px; border-radius: 10px; margin-left: 4px; box-shadow: 0px 0px 5px #FF0000; vertical-align: top; }
+</style>
+
+<section class="np-header station-sst" data-now-playing data-np-duration="138" data-np-remaining="12" data-np-search="&quot;Jack Moik&quot; &quot;Nydenion&quot;" aria-label="Now Playing"><a class="np-station-art" href="/"><img src="/images/logos/logo-sst-v200x200.png" width="200" height="200" alt="StreamingSoundtracks.com"></a><div class="np-center"><nav class="np-tabs network-tabs th01" aria-label="Stations"><a href="https://1980s.fm/" data-station="80s" data-base="https://1980s.fm"><img src="/images/favicons/80s.ico" width="15" height="15" alt="">80s</a><a href="https://adagio.fm/" data-station="afm" data-base="https://adagio.fm"><img src="/images/favicons/afm.ico" width="15" height="15" alt="">AFM</a><a href="https://death.fm/" data-station="dfm" data-base="https://death.fm"><img src="/images/favicons/dfm.ico" width="15" height="15" alt="">DFM</a><a href="https://entranced.fm/" data-station="efm" data-base="https://entranced.fm"><img src="/images/favicons/efm.ico" width="15" height="15" alt="">EFM</a><a href="https://streamingsoundtracks.com/" data-station="sst" data-base="https://streamingsoundtracks.com" class="np-selected" aria-current="page"><img src="/images/favicons/sst.ico" width="15" height="15" alt="">SST</a></nav><div class="np-track td01"><div class="np-eyebrow">Now Playing <span class="np-timer">02:06 / 02:18</span></div><div class="np-track-content" data-np-part="track" data-np-hash="1249535f61e44a65c3d22a4deae1f0a505d3123a"><div class="np-copy"><div class="np-album"><a href="/modules.php?name=Album&amp;asin=B00KRCY1VA" >Nydenion</a> - <a href="/modules.php?name=Requests&amp;postartistsearch=true&amp;artist=Jack%20Moik" target="_blank" rel="noopener">Jack Moik</a></div><h2>The War</h2></div></div><div class="np-tools"><div class="np-actions" data-np-part="actions" data-np-hash="5892431d2685821f41d2f5f02f9f238afeec1e38"><a href="https://www.amazon.com/dp/B00KRCY1VA?tag=24fmll-20" target="_blank" rel="sponsored noopener"><img src="/images/favorites/amazon.png" width="24" height="24" alt="Buy at Amazon"></a><a href="/modules/Ratings/playing_rating.php?asin=B00KRCY1VA" data-np-popup="rating" aria-label="Rate This Album"><span class="rating-box" data-rating-asin="B00KRCY1VA" title="3.4 out of 5"><span class="rating-bg" style="background-image:url(/images/ratings/sst.svg)"></span><span class="rating-fg" style="background-image:url(/images/ratings/sst.svg);width:68.1818%"></span></span></a><a href="/modules.php?name=Your_Account" ><img class="np-unselected" src="/images/favorites/heart.svg" width="24" height="24" alt="Sign In to Use Favorites"></a></div></div></div><div class="np-request td03" data-np-part="request" data-np-hash="5f8de24784d43c5e58741a909e83b949b91669e9">Requested by <a href="/modules.php?name=Your_Account&amp;op=userinfo&amp;username=MorG" >MorG</a> <a href="/modules.php?name=VIP_Subscribe" ><img class="np-vip" src="/images/vip-sst.svg" width="16" height="16" alt="VIP"></a></div><div class="np-stats td03" data-np-part="stats" data-np-hash="62bbc0cc204cbe875fafa9f5cea3251d136a0ce8"><div class="np-stat"><span class="np-stat-label">Listeners</span><a href="/modules.php?name=Stats" ><strong>65</strong></a></div><div class="np-stat"><span class="np-stat-label">In Queue</span><a href="/modules.php?name=Queue_Played" ><strong>00h 12m</strong></a></div><div class="np-stat"><span class="np-stat-label">Request Wait</span><a href="/modules.php?name=Requests" ><strong>20m <small>· VIP 1m</small></strong></a></div><div class="np-stat"><span class="np-stat-label">Repeat Interval</span><a href="/modules/Requests/repeat_rules.php" data-np-popup="repeat"><strong>5 / 15 Days</strong></a></div></div></div><a class="np-album-art" href="/modules.php?name=Album&amp;asin=B00KRCY1VA"><img src="/images/cover/B00KRCY1VA.jpg" width="200" height="200" alt="View Album Info"></a><span class="np-status" role="status" hidden>Live updates are temporarily unavailable. Retrying…</span></section><script src="/includes/favorites-actions.js?v=ed0cfcde01c4" defer></script>
+<script src="/includes/rating-display.js?v=cc27644a3119" defer></script>
+<script src="/includes/station-switch.js?v=e7fbc5125456" defer></script>
+<script src="/includes/now-playing.js?v=c0cb46438b61" defer></script>
+
+<script src="/includes/mobile-navigation.js?v=1" defer></script>
+<nav class="modern-nav" aria-label="Main navigation">
+  <ul>
+    <li>
+      <a href="/modules.php?name=Your_Account" target="_top">
+        <span id="auth-dot" title="Account login status">&#128308;</span> Account 
+        <span class="pm-badge" data-pm-count hidden>0</span>
+      </a>
+      <ul>
+                    <li><a href="/signin.php" target="_top">&#128274; Login</a></li>
+            <li><a href="/modules.php?name=Your_Account&op=new_user" target="_top">&#128221; Register</a></li>
+              </ul>
+    </li>
+    <li><a href="javascript:;">&#128100; Community</a>
+      <ul>
+        <li><a href="/modules.php?name=Chat" target="_top">&#128172; Chat</a></li>
+        <li><a href="/modules.php?name=AdvancedChatlog" target="_top">&#128172; ChatLog</a></li>
+        <li><a href="/modules.php?name=Birthdays" target="_top">&#128197; Events &amp; Birthdays</a></li>
+        <li><a href="/modules.php?name=Members_List" target="_top">&#128203; Members List</a></li>
+        <li><a href="/modules.php?name=Forums&file=ranks" target="_top">&#127894; Ranks</a></li>
+      </ul>
+    </li>
+    <li><a href="javascript:;">&#10024; Features</a>
+      <ul>
+        <li><a href="/modules.php?name=Contests" target="_top">&#127873; Contests</a></li>        <li><a href="/modules.php?name=Downloads" target="_top">&#128190; Downloads</a></li>
+        <li><a href="/modules.php?name=Interviews" target="_top">&#127908; Interviews</a></li>
+        <li><a href="/modules.php?name=Web_Links" target="_top">&#128279; Links</a></li>
+        <li><a href="/modules.php?name=Link_To_SST" target="_top">&#129309; Link To Us</a></li>
+        <li><a href="/modules.php?name=Surveys" target="_top">&#128202; Polls / Surveys</a></li>
+        <li><a href="https://24seven.fm/press-praise.php" target="_top">&#128240; Press / Praise</a></li>
+        <li><a href="/modules.php?name=Recommend_Us" target="_top">&#128140; Recommend Us</a></li>
+        
+                <li><a href="/modules.php?name=STM" target="_top">&#127916; Soundtrack Of The Month</a></li>
+        <li><a href="/modules.php?name=ScoreDVD" target="_top">&#128191; ScoreDVD</a></li>
+        <li><a href="/modules.php?name=SST_Awards" target="_top">&#127942; SST Awards</a></li>
+                
+        <li><a href="/modules.php?name=SocialDynamics" target="_top">&#127757; Social Dynamics</a></li>
+        <li><a href="/modules.php?name=Top" target="_top">&#128175; Top Stats</a></li>
+      </ul>
+    </li>
+    <li><a href="javascript:;"><img src="/images/vip-sst.svg" alt="VIP" class="menu-icon"> VIP</a>
+      <ul>
+                <li><a href="/modules.php?name=VIP_Subscribe" target="_top">&#11088; Sign up for VIP</a></li>
+        <li><a href="/modules.php?name=Forums&amp;file=viewforum&amp;f=15" target="_top">&#128172; VIP Forum</a></li>
+      </ul>
+    </li>
+    <li><a href="/modules.php?name=Forums" target="_top">&#128172; Forums <span class="forum-new-light" data-forum-new hidden role="img" aria-label="Unread forum posts" title="Unread forum posts"></span></a>
+      <ul>
+        <li><a href="/modules.php?name=Forums" target="_top">&#128194; Browse</a></li>
+        <li><a href="/modules.php?name=Forums&amp;file=index&amp;mark=forums" target="_top">&#10004; Mark All Read</a></li>
+        <li><a href="/modules.php?name=Forums&amp;file=search&amp;search_id=newposts" target="_top">&#127381; Posts Since Last Visit <span class="forum-new-light" data-forum-new hidden role="img" aria-label="Unread posts"></span></a></li>
+        <li><a href="/modules.php?name=Forums&amp;file=search" target="_top">&#128269; Search</a></li>
+        <li><a href="/modules.php?name=Forums&amp;file=search&amp;search_id=unanswered" target="_top">&#10067; Unanswered Posts <span class="forum-new-light" data-forum-unanswered hidden role="img" aria-label="Unanswered posts"></span></a></li>
+        <li><a href="/modules.php?name=Forums&amp;file=search&amp;search_id=egosearch" target="_top">&#128221; Your Posts</a></li>
+      </ul>
+    </li>
+    <li><a href="javascript:;">&#128251; Station</a>
+      <ul>
+        <li><a href="/modules.php?name=News&amp;view=articles" target="_top">&#128196; Articles</a></li>
+        <li><a href="/modules.php?name=Requests" target="_top">&#127926; Library / Requests</a></li>
+        <li><a href="/modules.php?name=News" target="_top">&#128240; News</a></li>
+        <li><a href="/modules.php?name=Played_History" target="_top">&#128336; Played History</a></li>
+        <li><a href="/modules.php?name=Queue_Played" target="_top">&#128220; Queue / Played</a></li>
+        <li><a href="/modules.php?name=News&amp;view=recent" target="_top">&#127926; Recently Added</a></li>
+        <li><a href="/modules.php?name=Album&file=ReviewsList" target="_top">&#128221; Reviews</a></li>
+        <li><a href="/modules.php?name=Stats" target="_top">&#128200; Stats</a></li>
+        <li><a href="/studio.php" target="_top">&#127915; Studio</a></li>
+        <li><a href="/modules.php?name=Top100" target="_top">&#129351; Top 100</a></li>
+      </ul>
+    </li>
+    <li><a href="javascript:;">&#9993; Contact</a>
+      <ul>
+        <li><a href="/modules.php?name=Contact_Us" target="_top">&#128231; Contact Us</a></li>
+        <li><a href="/modules.php?name=Forums&file=groupcp&g=12" target="_top">&#128616; Moderators</a></li>
+        <li><a href="/newsletter.php" target="_top">&#9993; Newsletter</a></li>
+        <li><a href="/privacy.php" target="_top">&#128274; Privacy Policy</a></li>
+        <li><a href="/tos.php" target="_top">&#128220; Terms of Service</a></li>
+      </ul>
+    </li>
+    <li><a href="/modules.php?name=Listen">&#127911; Listen</a>
+      <ul class="listen-dropdown"><li><div class="listen-options" data-listen-station="sst"><div class="listen-web-actions"><a href="/player.php?station=sst" target="RadioPlayer" onclick="return !window.open(this.href,'RadioPlayer','width=1000,height=1000,resizable=yes,scrollbars=yes');"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M9 5.5l17 10.5L9 26.5z" fill="var(--listen-accent)" fill-opacity=".72" stroke="var(--listen-accent)" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Player</span></a><a href="/studio.php" target="_top"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M9 5.5l17 10.5L9 26.5z" fill="var(--listen-accent)" fill-opacity=".72" stroke="var(--listen-accent)" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Studio</span></a></div><div class="listen-group-label">MOBILE APPS</div><a class="listen-option" href="https://play.google.com/store/apps/details?id=dk.Android.Cpmonster.StreamPlayer" target="_blank" rel="noopener"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><path fill="#00c4ff" d="M5 3l14 13L5 29z"/><path fill="#00d26a" d="M5 3l18 10-4 3z"/><path fill="#ffcf00" d="M23 13l5 3-5 3-4-3z"/><path fill="#ff3d55" d="M5 29l18-10-4-3z"/></svg><span>Android App by Cpmonster</span></a><a class="listen-option" href="https://play.google.com/store/apps/details?id=com.codeframe78.twentyfourseven.player" target="_blank" rel="noopener"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><path fill="#00c4ff" d="M5 3l14 13L5 29z"/><path fill="#00d26a" d="M5 3l18 10-4 3z"/><path fill="#ffcf00" d="M23 13l5 3-5 3-4-3z"/><path fill="#ff3d55" d="M5 29l18-10-4-3z"/></svg><span>Android App by MorG</span></a><a class="listen-option" href="https://apps.apple.com/us/app/sst-com/id6448686182" target="_blank" rel="noopener"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#087ef5"/><g fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round"><path d="M12 7l12 21M20 7L8 28M5 22h22"/></g></svg><span>iOS App for SST by DudeSoft</span></a><div class="listen-group-label">DESKTOP PLAYERS &amp; STREAMS</div><a class="listen-option" href="/listen.m3u" target="_top"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="2" y="2" width="28" height="28" rx="6" fill="#e74b68"/><path d="M13 23V10l11-3v14M13 13l11-3" fill="none" stroke="#fff" stroke-width="2"/><ellipse cx="10" cy="23" rx="4" ry="3" fill="#fff"/><ellipse cx="21" cy="21" rx="4" ry="3" fill="#fff"/></svg><span>Apple Music / iTunes</span></a><a class="listen-option" href="/listen.xspf" target="_top"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M13 3h6l7 24H6z" fill="#ff8b19" stroke="#cc6500"/><path d="M11 10h10l1 4H10zM8 20h16l1 4H7z" fill="#fff"/><rect x="3" y="27" width="26" height="3" rx="1" fill="#ff8b19"/></svg><span>VLC / Mobile</span></a><a class="listen-option" href="/listen.pls" target="_top"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="14" fill="#303039"/><path d="M20 2L7 18h8l-3 12 14-18h-9z" fill="#ffd45a" stroke="#fff0ad" stroke-linejoin="round"/></svg><span>Winamp / foobar2000</span></a><a class="listen-option" href="/listen.asx" target="_top"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="14" fill="#1b4368" stroke="#b8ddf5" stroke-width="1.5"/><circle cx="16" cy="16" r="10.5" fill="#f39a25"/><circle cx="16" cy="16" r="7.5" fill="#276b9e"/><path d="M13 10.5l9 5.5-9 5.5z" fill="#fff" stroke="#d9f1ff" stroke-width=".5" stroke-linejoin="round"/></svg><span>Windows Media Player</span></a><a class="listen-option" href="https://24sevenfm-covers.dudesoft.app/#plugins" target="_blank" rel="noopener noreferrer"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 23V7l13-3v16M13 11l13-3"/><ellipse cx="9" cy="24" rx="4" ry="3"/><ellipse cx="22" cy="21" rx="4" ry="3"/></svg><span>DudeCovers artwork plugins</span></a><hr><a class="listen-option" href="/modules.php?name=Listen" target="_top"><span class="listen-icon" aria-hidden="true">&#128251;</span><span>How To Listen</span></a></div></li></ul>
+    </li>
+  </ul>
+</nav>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    if (document.cookie.indexOf("user=") !== -1 || document.cookie.indexOf("admin=") !== -1) {
+        var authDot = document.getElementById("auth-dot");
+        if (authDot) authDot.innerHTML = "&#128994;"; // Green Dot
+    }
+});
+</script>
+
+<table class="table01 radio-page-layout">
+  <tr>
+    <td valign="top">
+      <table width="200" border="0" cellspacing="1" cellpadding="2">
+<tr><th height="20" class="th01"><h2 style="font-size: inherit; font-weight: inherit; margin: 0; padding: 0; display: inline;">Listen Now!</h2></th></tr>
+<tr><td class="td01"><div class="listen-options listen-block" data-listen-station="sst"><div class="listen-web-actions"><a href="/player.php?station=sst" target="RadioPlayer" onclick="return !window.open(this.href,'RadioPlayer','width=1000,height=1000,resizable=yes,scrollbars=yes');"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M9 5.5l17 10.5L9 26.5z" fill="var(--listen-accent)" fill-opacity=".72" stroke="var(--listen-accent)" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Player</span></a><a href="/studio.php" target="_top"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M9 5.5l17 10.5L9 26.5z" fill="var(--listen-accent)" fill-opacity=".72" stroke="var(--listen-accent)" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Studio</span></a></div><div class="listen-group-label">EXTERNAL PLAYERS</div><a class="listen-option" href="/listen.m3u" target="_top"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="2" y="2" width="28" height="28" rx="6" fill="#e74b68"/><path d="M13 23V10l11-3v14M13 13l11-3" fill="none" stroke="#fff" stroke-width="2"/><ellipse cx="10" cy="23" rx="4" ry="3" fill="#fff"/><ellipse cx="21" cy="21" rx="4" ry="3" fill="#fff"/></svg><span>Apple Music / iTunes</span></a><a class="listen-option" href="/listen.xspf" target="_top"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M13 3h6l7 24H6z" fill="#ff8b19" stroke="#cc6500"/><path d="M11 10h10l1 4H10zM8 20h16l1 4H7z" fill="#fff"/><rect x="3" y="27" width="26" height="3" rx="1" fill="#ff8b19"/></svg><span>VLC / Mobile</span></a><a class="listen-option" href="/listen.pls" target="_top"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="14" fill="#303039"/><path d="M20 2L7 18h8l-3 12 14-18h-9z" fill="#ffd45a" stroke="#fff0ad" stroke-linejoin="round"/></svg><span>Winamp / foobar2000</span></a><a class="listen-option" href="/listen.asx" target="_top"><svg class="listen-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="14" fill="#1b4368" stroke="#b8ddf5" stroke-width="1.5"/><circle cx="16" cy="16" r="10.5" fill="#f39a25"/><circle cx="16" cy="16" r="7.5" fill="#276b9e"/><path d="M13 10.5l9 5.5-9 5.5z" fill="#fff" stroke="#d9f1ff" stroke-width=".5" stroke-linejoin="round"/></svg><span>Windows Media Player</span></a><div class="listen-store-badges"><a class="radio-store-badge radio-store-google" href="https://play.google.com/store/apps/details?id=com.codeframe78.twentyfourseven.player" target="_blank" rel="noopener noreferrer" title="Official 24seven.FM Android player by MorG"><img src="/images/app-stores/google-play.png" width="154" height="60" alt="Get it on Google Play"></a></div></div></td></tr></table><br><table width="200" border="0" cellspacing="1" cellpadding="2">
+<tr><th height="20" class="th01"><h2 style="font-size: inherit; font-weight: inherit; margin: 0; padding: 0; display: inline;">Search</h2></th></tr>
+<tr><td class="td01"><form onSubmit="this.submit.disabled='true'" action="modules.php?name=SearchGeneral" method="post"><br><div style="text-align: center;"><input type="text" name="bsearchtext" size="19" maxlength="200">&nbsp;<input type="submit" value="Go"></div></form></td></tr></table><br><table width="200" border="0" cellspacing="1" cellpadding="2">
+<tr><th height="20" class="th01"><h2 style="font-size: inherit; font-weight: inherit; margin: 0; padding: 0; display: inline;">Follow Us</h2></th></tr>
+<tr><td class="td01"><div align="center"><a href="https://discord.gg/zwKBC3eB7z" target="_blank"><img border="0" src="/images/blocks/discord-64x64.png" width="64" height="64" alt="Discord" title="Discord"></a><a href="https://facebook.com/StreamingSoundtracks" target="_blank"><img border="0" src="/images/blocks/facebook-64x64.png" width="64" height="64" alt="Facebook" title="Facebook"></a><a href="https://x.com/streamingsoundtracks" target="_blank"><img border="0" src="/images/blocks/x-64x64.png" width="64" height="64" alt="X" title="X"></a><table width="100%" border="0" cellspacing="0" cellpadding="0"><tr><td align="center"><div class="fb-like" data-send="false" data-layout="box_count" data-show-faces="true" data-colorscheme="dark" data-font="verdana"></div></td></tr></table></div></td></tr></table><br><table width="200" border="0" cellspacing="1" cellpadding="2">
+<tr><th height="20" class="th01"><h2 style="font-size: inherit; font-weight: inherit; margin: 0; padding: 0; display: inline;">Support Us</h2></th></tr>
+<tr><td class="td01"><center>
+    <a class="donation-block-button" href="modules.php?name=Donations"><span aria-hidden="true">&#9829;</span><span>Donate <span class="donation-button-provider">with PayPal</span></span></a><br>
+    <table><tr>
+    <td align=right valign=middle><b>Monthly Goal:</b><br>$500.00<br><br><b>Need:</b><br>$76.40<br><br><b>7 Donations:</b><br>$423.60</td>
+    <td><img border="0" src="/modules/Donations/thermometer.php?Current=423.6&Goal=500&Width=60&Height=150&Font=1" alt="Donation Thermometer">
+    </td></tr></table>
+    <br><table><tr>
+<td><a href="https://streamingsoundtracks.com" target="_blank"><img width="16" src="/images/favicons/sst.ico" alt="StreamingSoundtracks.com (Nov-2)" title="StreamingSoundtracks.com (Nov-2)"></a></td>
+<td width="100%" align="center"><a data-donor-station="sst" href="https://streamingsoundtracks.com/modules.php?name=Your_Account&amp;op=userinfo&amp;username=danico">danico</a></td>
+<td width="100%" align="right">$25.00</td>
+</tr>
+<tr>
+<td><a href="https://death.fm" target="_blank"><img width="16" src="/images/favicons/dfm.ico" alt="Death.FM (Nov-1)" title="Death.FM (Nov-1)"></a></td>
+<td width="100%" align="center"><a data-donor-station="dfm" href="https://death.fm/modules.php?name=Your_Account&amp;op=userinfo&amp;username=Shru">Shru</a></td>
+<td width="100%" align="right">$66.6</td>
+</tr>
+<tr>
+<td><a href="https://streamingsoundtracks.com" target="_blank"><img width="16" src="/images/favicons/sst.ico" alt="StreamingSoundtracks.com (Nov-1)" title="StreamingSoundtracks.com (Nov-1)"></a></td>
+<td width="100%" align="center"><a data-donor-station="sst" href="https://streamingsoundtracks.com/modules.php?name=Your_Account&amp;op=userinfo&amp;username=Shru">Shru</a></td>
+<td width="100%" align="right">$50.00</td>
+</tr>
+<tr>
+<td><a href="https://death.fm" target="_blank"><img width="16" src="/images/favicons/dfm.ico" alt="Death.FM (Nov-1)" title="Death.FM (Nov-1)"></a></td>
+<td width="100%" align="center"><i>Anonymous</i></td>
+<td width="100%" align="right">$222.00</td>
+</tr>
+<tr>
+<td><a href="https://1980s.fm" target="_blank"><img width="16" src="/images/favicons/80s.ico" alt="1980s.FM (Nov-1)" title="1980s.FM (Nov-1)"></a></td>
+<td width="100%" align="center"><i>Anonymous</i></td>
+<td width="100%" align="right">$30.00</td>
+</tr>
+<tr>
+<td><a href="https://entranced.fm" target="_blank"><img width="16" src="/images/favicons/efm.ico" alt="Entranced.FM (Nov-1)" title="Entranced.FM (Nov-1)"></a></td>
+<td width="100%" align="center"><i>Anonymous</i></td>
+<td width="100%" align="right">$20.00</td>
+</tr>
+<tr>
+<td><a href="https://death.fm" target="_blank"><img width="16" src="/images/favicons/dfm.ico" alt="Death.FM (Nov-1)" title="Death.FM (Nov-1)"></a></td>
+<td width="100%" align="center"><a data-donor-station="dfm" href="https://death.fm/modules.php?name=Your_Account&amp;op=userinfo&amp;username=osiris">osiris</a></td>
+<td width="100%" align="right">$10.00</td>
+</tr>
+</table><br><table><tr><td colspan="3" align="center" width="100%"><hr color="#333366"><br><b>Last Month's Top Donors</b></td></tr>
+<tr><tr>
+<td><a href="https://death.fm" target="_blank"><img width="16" src="/images/favicons/dfm.ico" alt="Death.FM (Oct-1)" title="Death.FM (Oct-1)"></a></td>
+<td width="100%" align="center"><i>Anonymous</i></td>
+<td width="100%" align="right">$200.00</td>
+</tr>
+<tr>
+<td><a href="https://streamingsoundtracks.com" target="_blank"><img width="16" src="/images/favicons/sst.ico" alt="StreamingSoundtracks.com (Oct-14)" title="StreamingSoundtracks.com (Oct-14)"></a></td>
+<td width="100%" align="center"><a data-donor-station="sst" href="https://streamingsoundtracks.com/modules.php?name=Your_Account&amp;op=userinfo&amp;username=workervr">workervr</a></td>
+<td width="100%" align="right">$100.00</td>
+</tr>
+<tr>
+<td><a href="https://1980s.fm" target="_blank"><img width="16" src="/images/favicons/80s.ico" alt="1980s.FM (Oct-1)" title="1980s.FM (Oct-1)"></a></td>
+<td width="100%" align="center"><i>Anonymous</i></td>
+<td width="100%" align="right">$80.00</td>
+</tr>
+<tr>
+<td><a href="https://streamingsoundtracks.com" target="_blank"><img width="16" src="/images/favicons/sst.ico" alt="StreamingSoundtracks.com (Oct-3)" title="StreamingSoundtracks.com (Oct-3)"></a></td>
+<td width="100%" align="center"><a data-donor-station="sst" href="https://streamingsoundtracks.com/modules.php?name=Your_Account&amp;op=userinfo&amp;username=Shru">Shru</a></td>
+<td width="100%" align="right">$50.00</td>
+</tr>
+<tr>
+<td><a href="https://death.fm" target="_blank"><img width="16" src="/images/favicons/dfm.ico" alt="Death.FM (Oct-3)" title="Death.FM (Oct-3)"></a></td>
+<td width="100%" align="center"><a data-donor-station="dfm" href="https://death.fm/modules.php?name=Your_Account&amp;op=userinfo&amp;username=Shru">Shru</a></td>
+<td width="100%" align="right">$50.00</td>
+</tr>
+<tr>
+<td><a href="https://streamingsoundtracks.com" target="_blank"><img width="16" src="/images/favicons/sst.ico" alt="StreamingSoundtracks.com (Oct-2)" title="StreamingSoundtracks.com (Oct-2)"></a></td>
+<td width="100%" align="center"><a data-donor-station="sst" href="https://streamingsoundtracks.com/modules.php?name=Your_Account&amp;op=userinfo&amp;username=Paul4Opus">Paul4Opus</a></td>
+<td width="100%" align="right">$15.00</td>
+</tr>
+<tr>
+<td><a href="https://death.fm" target="_blank"><img width="16" src="/images/favicons/dfm.ico" alt="Death.FM (Oct-1)" title="Death.FM (Oct-1)"></a></td>
+<td width="100%" align="center"><a data-donor-station="dfm" href="https://death.fm/modules.php?name=Your_Account&amp;op=userinfo&amp;username=osiris">osiris</a></td>
+<td width="100%" align="right">$10.00</td>
+</tr>
+<tr>
+<td><a href="https://1980s.fm" target="_blank"><img width="16" src="/images/favicons/80s.ico" alt="1980s.FM (Oct-3)" title="1980s.FM (Oct-3)"></a></td>
+<td width="100%" align="center"><a data-donor-station="80s" href="https://1980s.fm/modules.php?name=Your_Account&amp;op=userinfo&amp;username=shru">shru</a></td>
+<td width="100%" align="right">$10.00</td>
+</tr>
+<tr>
+<td><a href="https://death.fm" target="_blank"><img width="16" src="/images/favicons/dfm.ico" alt="Death.FM (Oct-4)" title="Death.FM (Oct-4)"></a></td>
+<td width="100%" align="center"><i>Anonymous</i></td>
+<td width="100%" align="right">$6.66</td>
+</tr>
+</table><br><br><br></center></td></tr></table><br></td><td valign="top" width="100%">
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_US/all.js#xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+<script src="/includes/profile-hover.js?v=4b6480cd02d5" defer></script>
+<script src="/includes/rating-display.js?v=cc27644a3119" defer></script>
+<div class="requests-page"><section class="requests-intro"><h1>Request Music</h1><p>Browse the library, search for a favorite, or discover a random track.</p><div class="request-summary"><div class="request-stat"><span>Your Next Request</span><strong>Sign in to request a track.</strong></div><div class="request-stat"><span>Member Wait</span><strong>20 minutes</strong></div><div class="request-stat"><span><img class="request-member-icon" src="/images/vip-sst.svg" width="20" height="20" alt=""> VIP Wait</span><strong>1 minute</strong></div></div><p class="request-note">Request waits depend on queue length; the current normal and VIP/RIP waits are shown above. Your next-request status is checked when this page loads; the sidebar timer counts down live. Time until a track plays is shown separately in the <a href="/modules.php?name=Queue_Played">queue</a>.</p><p><a href="/modules.php?name=VIP_Subscribe"><img class="request-member-icon" src="/images/vip-sst.svg" width="20" height="20" alt="">VIP membership</a> supports the station and includes shorter request waits, the members-only forum, and request messages in Now Playing. Queue and track restrictions still apply.</p></section><script>
+function DoModalRate(url) {
+    var match = /(?:[?&])asin=([A-Za-z0-9_-]{1,80})(?:&|$)/.exec(String(url));
+    if (!match) return false;
+    var target = '/modules/Ratings/playing_rating.php?asin=' + encodeURIComponent(match[1]);
+    var popup = window.open(target, 'radioRatingSquare', 'width=420,height=420,menubar=0,scrollbars=no,resizable=yes');
+    if (popup) popup.focus(); else window.location.href = target;
+    return false;
+}
+function KillModalRate() {}
+function toggleRate(state) { if (state === 2) window.location.reload(); }
+</script>
+<script src="/includes/rating-display.js?v=cc27644a3119" defer></script>
+
+<script language="JavaScript" type="text/JavaScript">
+function RateAlbum(asin) {
+	DoModalRate('/modules/Ratings/playing_rating.php?asin='+encodeURIComponent(asin), 300, 170);
+}
+
+function checkSearch() {
+	var s = document.forms.playlistsearcher.genrefilter.value;
+	var opt = document.forms.playlistsearcher.searchby.options[document.forms.playlistsearcher.searchby.selectedIndex].value;
+	
+	if (s == null || s == '') {
+		if (document.forms.playlistsearcher.searchtext.value == '' && opt != 'genre' ) {
+			alert("Please enter search criteria.");
+			return false;
+		}
+	}
+	
+	document.forms.playlistsearcher.browse.value = '';
+	document.forms.playlistsearcher.searchfor.value = '1';
+	document.forms.playlistsearcher.searchpgstart.value = '1';
+	return true;
+}
+
+function checkRandom() {
+	document.forms.playlistsearcher.browse.value = '';
+	document.forms.playlistsearcher.random.value = '1';
+	document.forms.playlistsearcher.searchpgstart.value = '1';
+	document.forms.playlistsearcher.submit();
+	return true;
+}
+
+function checkRandomLeast() {
+	document.forms.playlistsearcher.browse.value = '';
+	document.forms.playlistsearcher.randomleast.value = '1';
+	document.forms.playlistsearcher.searchpgstart.value = '1';
+	document.forms.playlistsearcher.submit();
+	return true;
+}
+
+function checkSearchBy(select) {
+	document.forms.playlistsearcher.searchpgstart.value = '1';
+	document.forms.playlistsearcher.browse.value = '';
+	var option = document.forms.playlistsearcher.searchby.options[document.forms.playlistsearcher.searchby.selectedIndex].value;
+
+	if (option == 'genre') {
+	}
+	
+	return true;
+}
+
+function showSelect(select, whatto) {
+	var option = select.options[select.selectedIndex].value;
+
+	if (whatto == 'album') {
+		document.forms.playlistsearcher.letter.value = option;
+	} else if (whatto == 'artist') {
+		document.forms.playlistsearcher.letter.value = option;
+	} else if (whatto == 'year') {
+		document.forms.playlistsearcher.rangeyear.value = option;
+	} else {
+		alert("Invalid selection.");
+		return false;
+	}
+	
+	document.forms.playlistsearcher.searchfor.value = '';
+	document.forms.playlistsearcher.browse.value = whatto;
+	document.forms.playlistsearcher.searchpgstart.value = '1';
+	document.forms.playlistsearcher.submit();
+	return true;
+}
+</script>
+
+<br>
+
+<div align="center" style="display:none;position:absolute;top:100px;left:400px;z-index:99;" name="hiddenratetable" id="hiddenratetable">
+	<a style="position:relative;top:-16px;" href="javascript:toggleRate(0);">Close Me</a>
+</div>
+
+<form name="playlistsearcher" id="playlistsearcher" action="/modules.php" method="get" onSubmit="checkSearch()">
+<input type="hidden" name="name" value="Requests">
+<input type="hidden" name="searchfor" id="searchfor" value="">
+<input type="hidden" name="browse" id="browse" value="year">
+<input type="hidden" name="random">
+<input type="hidden" name="randomleast">
+<input type="hidden" name="letter" id="letter" value="">
+<input type="hidden" name="rangeyear" id="rangeyear" value="20252025">
+<input type="hidden" name="genrefilter" id="genrefilter" value="">
+<input type="hidden" name="searchpgstart" id="searchpgstart" value="1">
+
+<table align="center" cellspacing="0" cellpadding="0" border="0" width="460" style="width:100%;max-width:460px;">
+<tr>
+<td>
+<table align="center" cellspacing="1" cellpadding="0" class="td04" border="0" width="100%">
+<tr>
+<td>
+
+<table align="center" class="td02" border="0" width="100%">
+<tr height="30" style="display:flex;height:auto;min-height:30px;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px;">
+<td align="left" valign="middle" width="58" style="width:auto;">
+<b>Browse:</b>
+</td>
+
+<td align="left" valign="middle" width="90" style="width:auto;">
+<select aria-label="Browse albums" name="album" style="min-height:24px;" onchange="showSelect(this, 'album')">
+<option>&nbsp;&nbsp;Album&nbsp;&nbsp;</option>
+<option value="numbers">#</option>
+<option value="a">A</option>
+<option value="b">B</option>
+<option value="c">C</option>
+<option value="d">D</option>
+<option value="e">E</option>
+<option value="f">F</option>
+<option value="g">G</option>
+<option value="h">H</option>
+<option value="i">I</option>
+<option value="j">J</option>
+<option value="k">K</option>
+<option value="l">L</option>
+<option value="m">M</option>
+<option value="n">N</option>
+<option value="o">O</option>
+<option value="p">P</option>
+<option value="q">Q</option>
+<option value="r">R</option>
+<option value="s">S</option>
+<option value="t">T</option>
+<option value="u">U</option>
+<option value="v">V</option>
+<option value="w">W</option>
+<option value="x">X</option>
+<option value="y">Y</option>
+<option value="z">Z</option>
+</select>
+</td>
+
+<td align="center" valign="middle" width="135" style="width:auto;">
+<select aria-label="Browse artists" name="artist" style="min-height:24px;" onchange="showSelect(this, 'artist')">
+<option>&nbsp;&nbsp;&nbsp;&nbsp;Artist&nbsp;&nbsp;&nbsp;</option>
+<option value="numbers">#</option>
+<option value="a">A</option>
+<option value="b">B</option>
+<option value="c">C</option>
+<option value="d">D</option>
+<option value="e">E</option>
+<option value="f">F</option>
+<option value="g">G</option>
+<option value="h">H</option>
+<option value="i">I</option>
+<option value="j">J</option>
+<option value="k">K</option>
+<option value="l">L</option>
+<option value="m">M</option>
+<option value="n">N</option>
+<option value="o">O</option>
+<option value="p">P</option>
+<option value="q">Q</option>
+<option value="r">R</option>
+<option value="s">S</option>
+<option value="t">T</option>
+<option value="u">U</option>
+<option value="v">V</option>
+<option value="w">W</option>
+<option value="x">X</option>
+<option value="y">Y</option>
+<option value="z">Z</option>
+</select>
+</td>
+
+<td align="center" valign="middle" width="135" style="width:auto;">
+<select aria-label="Browse by year" name="year" style="min-height:24px;" onchange="showSelect(this, 'year')">
+<option>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Year&nbsp;</option>
+<option value="20262026">2026</option><option value="20252025">2025</option><option value="20242024">2024</option><option value="20232023">2023</option><option value="20222022">2022</option><option value="20212021">2021</option><option value="20202020">2020</option><option value="20192019">2019</option><option value="20182018">2018</option><option value="20172017">2017</option><option value="20162016">2016</option><option value="20152015">2015</option><option value="20142014">2014</option><option value="20132013">2013</option><option value="20122012">2012</option><option value="20112011">2011</option><option value="20102010">2010</option><option value="20092009">2009</option><option value="20082008">2008</option><option value="20072007">2007</option><option value="20062006">2006</option><option value="20052005">2005</option><option value="20042004">2004</option><option value="20032003">2003</option><option value="20022002">2002</option><option value="20012001">2001</option><option value="20002000">2000</option><option value="19991999">1999</option><option value="19981998">1998</option><option value="19971997">1997</option><option value="19961996">1996</option><option value="19951995">1995</option><option value="19941994">1994</option><option value="19931993">1993</option><option value="19921992">1992</option><option value="19911991">1991</option><option value="19901990">1990</option><option value="19801989">1980-1989</option><option value="19701979">1970-1979</option>
+          <option value="19601969">1960-1969</option>
+          <option value="19501959">1950-1959</option>
+          <option value="19001949">1900-1949</option></select>
+
+</td>
+
+<td style="width:auto;">
+&nbsp;
+</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td>
+	
+<table align="center" class="td02" border="0" width="100%" style="table-layout:fixed;">
+<tr height="30">
+	
+	<td align="left" valign="middle" width="58">
+	<b>Search:</b>
+	</td>
+	
+	<td align="left" valign="middle" width="85">
+	<select aria-label="Search field" name="searchby" id="searchby" style="min-height:24px;" onchange="checkSearchBy()">
+	<option value="album" >Album&nbsp;&nbsp;&nbsp;&nbsp;</option>
+	<option value="artist" >Artist</option>
+	<option value="genre" >Genre</option>
+	<option value="title" >Title</option>
+	</select>
+	</td>
+	
+	<td align="center" valign="middle">
+	<input type="text" aria-label="Search library" name="searchtext" style="min-height:24px;width:100%;max-width:266px;min-width:0;box-sizing:border-box;" size="35" maxlength="50" value="">
+	</td>
+	
+	<td align="center" valign="middle" width="66">
+	<input type="submit" name="search" value="Search" style="min-height:24px;">
+	</td>
+	
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td>
+
+<table align="center" cellpadding="4" class="td02" border="0" width="100%">
+<tr height="30">
+<td align="center" valign="middle">
+<input type="button" name="suggestrandom" value="Suggest A Random Track" style="min-height:24px;" onClick="checkRandom()">
+<input type="button" name="suggestrandomleast" value="Suggest A Least Played Random Track" style="min-height:24px;" onClick="checkRandomLeast()">
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+
+</form>
+<br>
+
+<div align="center">
+	
+<!-- AdsBase = /home/_AdsRotateStock/sst -->
+
+<!-- AdsBase not found! -->
+</div>
+
+<br>
+
+<div style="text-align:left;">This search has an only page.</div><br>
+		<table width="100%" cellspacing="1" cellpadding="2">
+		<tr height="20">
+		<th class="th01">Rating</th>
+
+		<th class="th01">Albums from 2025</th>		
+		<th class="th01">Year</th>
+				</tr>
+		
+					
+			<tr>
+			<td class="td01" nowrap width="130">
+			<nobr>
+
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a style="position:relative;top:2px;left:0px;" href="javascript:RateAlbum%28%22B0F1S53ZB6%22%29"><span class="rating-box" data-rating-asin="B0F1S53ZB6" title="4.0 out of 5"><span class="rating-bg" style="background-image:url(/images/ratings/sst.svg)"></span><span class="rating-fg" style="background-image:url(/images/ratings/sst.svg);width:80%"></span></span></a>			
+			</nobr>
+			</td>
+			
+			<td class="td01">
+			<a href="modules.php?name=Album&asin=B0F1S53ZB6">
+
+			Americas, The</a>&nbsp;			</td>
+			
+			<td class="td01" width="50" align="center">
+
+			2025			
+			</td>
+
+			
+			</tr>
+					
+			<tr>
+			<td class="td01" nowrap width="130">
+			<nobr>
+
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a style="position:relative;top:2px;left:0px;" href="javascript:RateAlbum%28%22B0FQ689Q8F%22%29"><span class="rating-box" data-rating-asin="B0FQ689Q8F" title="0.0 out of 5"><span class="rating-bg" style="background-image:url(/images/ratings/sst.svg)"></span><span class="rating-fg" style="background-image:url(/images/ratings/sst.svg);width:0%"></span></span></a>			
+			</nobr>
+			</td>
+			
+			<td class="td01">
+			<a href="modules.php?name=Album&asin=B0FQ689Q8F">
+
+			Guest, The</a>&nbsp;			</td>
+			
+			<td class="td01" width="50" align="center">
+
+			2025			
+			</td>
+
+			
+			</tr>
+					
+			<tr>
+			<td class="td01" nowrap width="130">
+			<nobr>
+
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a style="position:relative;top:2px;left:0px;" href="javascript:RateAlbum%28%22B0FMDFH69Z%22%29"><span class="rating-box" data-rating-asin="B0FMDFH69Z" title="0.0 out of 5"><span class="rating-bg" style="background-image:url(/images/ratings/sst.svg)"></span><span class="rating-fg" style="background-image:url(/images/ratings/sst.svg);width:0%"></span></span></a>			
+			</nobr>
+			</td>
+			
+			<td class="td01">
+			<a href="modules.php?name=Album&asin=B0FMDFH69Z">
+
+			Human</a>&nbsp;			</td>
+			
+			<td class="td01" width="50" align="center">
+
+			2025			
+			</td>
+
+			
+			</tr>
+					
+			<tr>
+			<td class="td01" nowrap width="130">
+			<nobr>
+
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a style="position:relative;top:2px;left:0px;" href="javascript:RateAlbum%28%22B0FMCJBK6N%22%29"><span class="rating-box" data-rating-asin="B0FMCJBK6N" title="0.0 out of 5"><span class="rating-bg" style="background-image:url(/images/ratings/sst.svg)"></span><span class="rating-fg" style="background-image:url(/images/ratings/sst.svg);width:0%"></span></span></a>			
+			</nobr>
+			</td>
+			
+			<td class="td01">
+			<a href="modules.php?name=Album&asin=B0FMCJBK6N">
+
+			Patience</a>&nbsp;			</td>
+			
+			<td class="td01" width="50" align="center">
+
+			2025			
+			</td>
+
+			
+			</tr>
+					
+			<tr>
+			<td class="td01" nowrap width="130">
+			<nobr>
+
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a style="position:relative;top:2px;left:0px;" href="javascript:RateAlbum%28%22B0DFZX8DCG%22%29"><span class="rating-box" data-rating-asin="B0DFZX8DCG" title="5.0 out of 5"><span class="rating-bg" style="background-image:url(/images/ratings/sst.svg)"></span><span class="rating-fg" style="background-image:url(/images/ratings/sst.svg);width:100%"></span></span></a>			
+			</nobr>
+			</td>
+			
+			<td class="td01">
+			<a href="modules.php?name=Album&asin=B0DFZX8DCG">
+
+			World Of Hans Zimmer, The - Part II: A New Dimension</a>&nbsp;			</td>
+			
+			<td class="td01" width="50" align="center">
+
+			2025			
+			</td>
+
+			
+			</tr>
+				
+		</table>
+	<br><div style="text-align:left;">This search has an only page.</div>
+<br>
+
+
+<div align="center">
+	
+<!-- AdsBase = /home/_AdsRotateStock/sst -->
+
+<!-- AdsBase not found! -->
+</div>
+
+<br>
+
+<section class="requests-library-stats"><h2>Library Overview</h2><div class="request-summary"><div class="request-stat"><span>Albums in Library</span><strong>7,849</strong></div><div class="request-stat"><span>Tracks in Library</span><strong>154,780</strong></div><div class="request-stat"><span>Matching Albums</span><strong>5</strong></div><div class="request-stat"><span>Matching Tracks</span><strong>156</strong></div></div></section>
+
+<table align="center" class="td04" cellspacing="1" cellpadding="8" border="0">
+<tr>
+<td class="td02">
+
+<table border="0" width="460" cellspacing="1" cellpadding="2">
+<tr>
+<td align="center">
+<b>Album: </b>
+<a href="modules.php?name=Requests&browse=album&letter=numbers">#</a> 
+<a href="modules.php?name=Requests&browse=album&letter=a">A</a> 
+<a href="modules.php?name=Requests&browse=album&letter=b">B</a> 
+<a href="modules.php?name=Requests&browse=album&letter=c">C</a> 
+<a href="modules.php?name=Requests&browse=album&letter=d">D</a> 
+<a href="modules.php?name=Requests&browse=album&letter=e">E</a> 
+<a href="modules.php?name=Requests&browse=album&letter=f">F</a> 
+<a href="modules.php?name=Requests&browse=album&letter=g">G</a> 
+<a href="modules.php?name=Requests&browse=album&letter=h">H</a> 
+<a href="modules.php?name=Requests&browse=album&letter=i">I</a> 
+<a href="modules.php?name=Requests&browse=album&letter=j">J</a> 
+<a href="modules.php?name=Requests&browse=album&letter=k">K</a> 
+<a href="modules.php?name=Requests&browse=album&letter=l">L</a> 
+<a href="modules.php?name=Requests&browse=album&letter=m">M</a> 
+<a href="modules.php?name=Requests&browse=album&letter=n">N</a> 
+<a href="modules.php?name=Requests&browse=album&letter=o">O</a> 
+<a href="modules.php?name=Requests&browse=album&letter=p">P</a> 
+<a href="modules.php?name=Requests&browse=album&letter=q">Q</a> 
+<a href="modules.php?name=Requests&browse=album&letter=r">R</a> 
+<a href="modules.php?name=Requests&browse=album&letter=s">S</a> 
+<a href="modules.php?name=Requests&browse=album&letter=t">T</a> 
+<a href="modules.php?name=Requests&browse=album&letter=u">U</a> 
+<a href="modules.php?name=Requests&browse=album&letter=v">V</a> 
+<a href="modules.php?name=Requests&browse=album&letter=w">W</a> 
+<a href="modules.php?name=Requests&browse=album&letter=x">X</a> 
+<a href="modules.php?name=Requests&browse=album&letter=y">Y</a> 
+<a href="modules.php?name=Requests&browse=album&letter=z">Z</a>
+<br><br>
+<b>Artist: </b>
+<a href="modules.php?name=Requests&browse=artist&letter=numbers">#</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=a">A</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=b">B</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=c">C</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=d">D</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=e">E</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=f">F</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=g">G</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=h">H</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=i">I</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=j">J</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=k">K</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=l">L</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=m">M</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=n">N</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=o">O</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=p">P</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=q">Q</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=r">R</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=s">S</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=t">T</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=u">U</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=v">V</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=w">W</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=x">X</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=y">Y</a> 
+<a href="modules.php?name=Requests&browse=artist&letter=z">Z</a>
+</td></tr>
+</table>
+
+</td>
+</tr>
+</table>
+
+</div>
+
+
+</td></table>
+<table class="table01">
+    <tr>
+        <td align="center">
+            <table class="table01">
+                <tr>
+                    <td align="center"></td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table><center>
+<table width="100%" border="0" cellspacing="0" cellpadding="5"><tr><td><table width="100%" border="0" cellspacing="0" cellpadding="0"><tr><td width="100%" align="center" valign="middle"></td></tr></table><table width="100%" border="0" cellspacing="0" cellpadding="1"><tr><td class="td02"><table width="100%" border="0" cellspacing="0" cellpadding="1"><tr><td class="td05"><table width="100%" border="0" cellspacing="0" cellpadding="0"><tr><td class="td02"><table width="100%" border="0" cellspacing="0" cellpadding="4"><tr><td><div class="site-footer-links"><nav aria-label="Footer"><a style="display:inline-flex;align-items:center;min-height:24px;" href="/modules.php?name=About_SST">About Us</a> &bull; <a style="display:inline-flex;align-items:center;min-height:24px;" href="/modules.php?name=News&amp;view=articles">Articles</a> &bull; <a style="display:inline-flex;align-items:center;min-height:24px;" href="/modules.php?name=Contact_Us">Contact Us</a> &bull; <a style="display:inline-flex;align-items:center;min-height:24px;" href="/modules.php?name=Listen">How to Listen</a> &bull; <a style="display:inline-flex;align-items:center;min-height:24px;" href="/modules.php?name=News">News</a><br><a style="display:inline-flex;align-items:center;min-height:24px;" href="/newsletter.php">Newsletter</a> &bull; <a style="display:inline-flex;align-items:center;min-height:24px;" href="/privacy.php">Privacy Policy</a> &bull; <a style="display:inline-flex;align-items:center;min-height:24px;" href="/modules.php?name=News&amp;view=recent">Recently Added</a> &bull; <a style="display:inline-flex;align-items:center;min-height:24px;" href="/tos.php">Terms of Service</a></nav><p class="site-copyright">Copyright &copy; 2001-2026 <a href="https://24seven.fm" target="_blank">24seven.FM</a> &mdash; Community Supported Internet Radio</p></div></td></tr></table></td></tr></table></td></tr></table></td></tr></table></td></tr></table></center>
+<div id="divselbg" style="position:absolute;top:0px;left:0px;width:0px;margin:0px 0px 0px 0px;z-index:0;background-color:#101010;display:none;">
+&nbsp;</div>
+<script src="/includes/member-volume.js?v=0d8d63344be1" defer></script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a547ed84e991e8d9',t:'MTc5MzY3MjcyMA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a547ed84e991e8d9',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
