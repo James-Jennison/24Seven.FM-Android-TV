@@ -95,36 +95,37 @@ fun StationPalette.themedAccent(): Color = if (isSystemInDarkTheme()) accent els
 fun StationPalette.onAccent(): Color = if (isSystemInDarkTheme()) Color(0xFF1C1424) else Color.White
 
 fun stationPalette(stationId: StationId?): StationPalette = when (stationId?.value) {
-    // Each accent is the colour the station's own website declares as its theme-color.
+    // Each accent is the colour the station's own website declares as its theme-color. The full set is shared with the
+    // mobile Player (its PR #147, codex/unified-station-colors) so both apps agree.
     "sst" -> StationPalette(
         accent = Color(0xFF99CCFF),
-        secondary = Color(0xFF5B8FD6),
-        glow = Color(0xFF172448),
-        accentOnLight = Color(0xFF1F5F9E),
+        secondary = Color(0xFF5B8FC7),
+        glow = Color(0xFF12253D),
+        accentOnLight = Color(0xFF1F5E99),
     )
     "1980s" -> StationPalette(
         accent = Color(0xFFFF99CC),
-        secondary = Color(0xFF35DFFF),
-        glow = Color(0xFF3A1647),
-        accentOnLight = Color(0xFFB3007F),
+        secondary = Color(0xFFEE88BB),
+        glow = Color(0xFF3A1530),
+        accentOnLight = Color(0xFFB8337A),
     )
     "afm" -> StationPalette(
         accent = Color(0xFFFFCC99),
-        secondary = Color(0xFFFF755F),
-        glow = Color(0xFF432519),
-        accentOnLight = Color(0xFF9A4D00),
+        secondary = Color(0xFFEEBB88),
+        glow = Color(0xFF3D2A14),
+        accentOnLight = Color(0xFF9A5A12),
     )
     "dfm" -> StationPalette(
         accent = Color(0xFFFF4D4D),
         secondary = Color(0xFFCC0000),
-        glow = Color(0xFF3A0B10),
+        glow = Color(0xFF3A0F12),
         accentOnLight = Color(0xFFB00020),
     )
     "efm" -> StationPalette(
         accent = Color(0xFFFFFF66),
-        secondary = Color(0xFFEEEE55),
-        glow = Color(0xFF3A3A12),
-        accentOnLight = Color(0xFF7A7A00),
+        secondary = Color(0xFFB5B545),
+        glow = Color(0xFF3A3A10),
+        accentOnLight = Color(0xFF6B6B00),
     )
     else -> StationPalette(
         accent = RadioLavender,
